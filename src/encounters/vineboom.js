@@ -5,7 +5,7 @@ import * as D from '../dressing.js';
 import { Encounter, weightedPick } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight, addStars } from '../world.js';
 import { tileTex, textSprite, emojiSprite, IMPACT } from '../textures.js';
-import { Enemy, Doge, MoaiKnight, Wizard, Stonks, spawnEnemy, registerNetType } from '../enemies.js';
+import { Enemy, Doge, MoaiKnight, Wizard, Stonks, spawnEnemy, registerNetType, applyMods } from '../enemies.js';
 import { Projectile, Shockwave, Pickup, los } from '../combat.js';
 import * as M from '../models.js';
 import { rimify } from '../rigs.js';
@@ -221,7 +221,7 @@ export class VineBoomChamber extends Encounter {
     for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + Math.PI / 8; this.spawners.push(new THREE.Vector3(Math.cos(a) * 30, 0, Math.sin(a) * 30)); }
   }
   start() {
-    this.boss = new Chungus(this);
+    this.boss = applyMods(new Chungus(this));
     this.boss.pos.set(0, 1, 0);
     G.enemies.push(this.boss);
     this.seqLen = 3; this.phase = 'intro'; this.enrageT = ENRAGE; this.spawnT = 3; this.awaiting = false;

@@ -943,8 +943,10 @@ export function registerNetType(Cls, make = () => new Cls()) { NET_TYPES[Cls.nam
 
 // Apply the enemy-side raid modifiers to a freshly made enemy (host spawns + client proxies)
 export function applyMods(e) {
-  if (e.rank === 'boss' || e.rank === 'neutral' || e.modded) return e;
+  if (e.rank === 'neutral' || e.modded) return e;
   e.modded = true;
+  if (modOn('master') && e.hostile !== false) { e.maxHp = e.hp = Math.round(e.maxHp * 1.6); e.master = true; }
+  if (e.rank === 'boss') return e;
   if (modOn('speedy')) e.speed *= 1.3;
   if (modOn('bighead')) {
     for (const hb of e.hitboxes) if (hb.crit) hb.r *= 1.6;

@@ -44,6 +44,7 @@ export const MODS = {
   speedy: { icon: '💨', name: 'Caffeinated', desc: 'enemies move 30% faster' },
   glass: { icon: '🪙', name: 'Glass Cannon', desc: 'you deal +50% damage and take double' },
   bighead: { icon: '🎈', name: 'Big Head', desc: 'enemy heads (and their crit spots) are 1.6x bigger' },
+  master: { icon: '⚔️', name: 'Master', desc: 'enemies (bosses too) have +60% health and hit 40% harder' },
   shuffle: { icon: '🔀', name: 'Shuffle', desc: 'after The Approach, the five encounters come in a random order' },
 };
 export const modOn = (k) => !!G.settings.mods?.[k];

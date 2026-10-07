@@ -658,42 +658,61 @@ export class WizardRig extends Rig {
 }
 
 // ---------------------------------------------------------------- Nyan (pop-tart cat with legs and a face)
+// pink frosting with a scalloped edge and scattered sprinkles, drawn once
+let frostTex = null;
+function frosting() {
+  if (frostTex) return frostTex;
+  const W = 128, H = 96, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  x.fillStyle = '#ff9ad9'; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#ffb8e6'; for (let k = 0; k < 40; k++) { x.beginPath(); x.arc(Math.random() * W, Math.random() * H, 3 + Math.random() * 6, 0, 7); x.fill(); }
+  const cols = ['#ff2277', '#22aaff', '#ffee22', '#ffffff', '#9d4dff'];
+  for (let k = 0; k < 34; k++) {
+    x.save(); x.translate(8 + Math.random() * (W - 16), 8 + Math.random() * (H - 16)); x.rotate(Math.random() * 3.2);
+    x.fillStyle = cols[k % cols.length]; x.fillRect(-5, -1.6, 10, 3.2); x.restore();
+  }
+  frostTex = new THREE.CanvasTexture(c); frostTex.colorSpace = THREE.SRGBColorSpace;
+  return frostTex;
+}
+const TRAIL_COLS = [0xff0000, 0xff9900, 0xffff00, 0x33ff00, 0x0099ff, 0x6633ff];
+const TRAIL_SEGS = 8, SPARKS = 6;
+const _tm = new THREE.Matrix4(), _tq = new THREE.Quaternion(), _tp = new THREE.Vector3(), _ts = new THREE.Vector3();
 export class NyanRig extends Rig {
   constructor() {
     super();
-    const crust = mat(0xe8c9a0, { rough: 0.8 }), pink = mat(0xff8fd6, { rough: 0.5, emissive: 0xff4fb0, ei: 0.35 });
-    const gray = mat(0x9a9a9a, { rough: 0.8 }), black = mat(0x111111), blush = mat(0xff8fb0, { emissive: 0xff6090, ei: 0.4 });
+    const crust = mat(0xe8c9a0, { rough: 0.8 });
+    const frost = new THREE.MeshStandardMaterial({ map: frosting(), roughness: 0.45, emissive: 0xff4fb0, emissiveIntensity: 0.25 });
+    const gray = mat(0x9a9a9a, { rough: 0.8 }), black = mat(0x111111), white = mat(0xffffff, { emissive: 0xffffff, ei: 0.4 });
+    const blush = mat(0xff8fb0, { emissive: 0xff6090, ei: 0.4 });
     const body = this.joint('body', null, 0, 0.5, 0);
     mesh(body, RB(0.25, 0.9, 1.2, 0.08), crust, 0, 0, 0);
-    mesh(body, RB(0.27, 0.72, 1.0, 0.1), pink, 0, 0, 0);
-    const sprCol = [0xff2277, 0x22aaff, 0xffee22];
-    for (let i = 0; i < 9; i++) mesh(body, RB(0.29, 0.05, 0.05, 0.02), mat(sprCol[i % 3]), 0, rand(-0.3, 0.3), rand(-0.42, 0.42), 0, 0, 0).rotation.x = rand(0, 3);
+    // frosting on both flat faces of the tart (the cat is seen side-on)
+    for (const s of [-1, 1]) { const f = mesh(body, RB(0.03, 0.74, 1.02, 0.012), frost, s * 0.125, 0, 0); f.rotation.y = 0; }
     const head = this.joint('head', body, 0, -0.08, 0.72);
     mesh(head, RB(0.34, 0.46, 0.56, 0.12), gray, 0, 0, 0);
     for (const s of [-1, 1]) {
       mesh(head, CONE(0.08, 0.16, 4), gray, s * 0.11, 0.28, -0.05);
       mesh(head, RB(0.06, 0.07, 0.02, 0.02), black, s * 0.08, 0.06, 0.285);
+      mesh(head, RB(0.022, 0.022, 0.01, 0.005), white, s * 0.08 - 0.012, 0.075, 0.296); // the pixel glint in each eye
       mesh(head, SPH(0.035, 8, 8), blush, s * 0.13, -0.06, 0.28).scale.set(1, 0.7, 0.3);
     }
-    mesh(head, RB(0.12, 0.025, 0.02, 0.01), black, 0, -0.1, 0.285);
+    // the little "w" mouth: three pixels
+    for (const [mx, my] of [[-0.045, -0.1], [0, -0.115], [0.045, -0.1]]) mesh(head, RB(0.04, 0.022, 0.02, 0.008), black, mx, my, 0.285);
     for (const n of ['FL', 'FR', 'BL', 'BR']) {
       const leg = this.joint('leg' + n, body, n[1] === 'L' ? -0.08 : 0.08, -0.45, n[0] === 'F' ? 0.4 : -0.4);
       mesh(leg, CAP(0.06, 0.1), gray, 0, -0.08, 0);
     }
     const tail = this.joint('tail', body, 0, 0.0, -0.65);
     mesh(tail, CAP(0.05, 0.2), gray, 0, 0, -0.1, Math.PI / 2);
-    // rainbow trail: segmented so it ripples
-    this.trail = [];
-    const cols = [0xff0000, 0xff9900, 0xffff00, 0x33ff00, 0x0099ff, 0x6633ff];
-    cols.forEach((c, i) => {
-      const m = new THREE.MeshBasicMaterial({ color: c });
-      for (let k = 0; k < 8; k++) {
-        const seg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.13, 0.4), m);
-        seg.position.set(0, 0.33 - i * 0.13, -0.85 - k * 0.38);
-        body.add(seg); this.trail.push({ seg, k, i });
-      }
-    });
     rimify(this.root, 0xffffff, 0.3);
+    // rainbow trail: one instanced mesh (48 stepped blocks), plus twinkling 8-bit sparkles
+    const n = TRAIL_COLS.length * TRAIL_SEGS;
+    this.trail = new THREE.InstancedMesh(new THREE.BoxGeometry(0.1, 0.13, 0.4), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), n);
+    TRAIL_COLS.forEach((c, i) => { for (let k = 0; k < TRAIL_SEGS; k++) this.trail.setColorAt(i * TRAIL_SEGS + k, new THREE.Color(c)); });
+    this.trail.castShadow = false; this.trail.frustumCulled = false; body.add(this.trail);
+    this.sparks = new THREE.InstancedMesh(new THREE.BoxGeometry(0.035, 0.035, 0.035), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), SPARKS * 5);
+    this.sparks.castShadow = false; this.sparks.frustumCulled = false; body.add(this.sparks);
+    this.sparkSeed = Array.from({ length: SPARKS }, () => [rand(-0.25, 0.25), rand(-0.5, 0.6), rand(-3.6, -0.8), rand(0, 10)]);
   }
   pose(dt) {
     const j = this.j;
@@ -701,6 +720,19 @@ export class NyanRig extends Rig {
     for (const n of ['FL', 'FR', 'BL', 'BR']) j['leg' + n].rotation.x = Math.sin(this.t * 14 + (n === 'FL' || n === 'BR' ? 0 : Math.PI)) * 0.7;
     j.head.rotation.x = Math.sin(this.t * 7 + 1) * 0.08;
     j.tail.rotation.x = Math.sin(this.t * 10) * 0.5;
-    for (const { seg, k, i } of this.trail) seg.position.y = 0.33 - i * 0.13 + (Math.floor(this.t * 8 + k) % 2 ? 0.05 : -0.05);
+    _tq.identity(); _ts.set(1, 1, 1);
+    for (let i = 0; i < TRAIL_COLS.length; i++) for (let k = 0; k < TRAIL_SEGS; k++) {
+      _tp.set(0, 0.33 - i * 0.13 + (Math.floor(this.t * 8 + k) % 2 ? 0.05 : -0.05), -0.85 - k * 0.38);
+      this.trail.setMatrixAt(i * TRAIL_SEGS + k, _tm.compose(_tp, _tq, _ts));
+    }
+    this.trail.instanceMatrix.needsUpdate = true;
+    // each sparkle is a "+" of 5 pixels that grows and shrinks on a 4-frame loop
+    let m = 0;
+    for (const [sx, sy, sz, ph] of this.sparkSeed) {
+      const f = Math.floor(this.t * 6 + ph) % 4, r = [0, 1, 2, 1][f] * 0.035;
+      const arms = [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]];
+      for (const [ay, az] of arms) { _ts.setScalar(f === 0 && (ay || az) ? 0 : 1); _tp.set(sx, sy + ay, sz + az); this.sparks.setMatrixAt(m++, _tm.compose(_tp, _tq, _ts)); }
+    }
+    this.sparks.instanceMatrix.needsUpdate = true;
   }
 }

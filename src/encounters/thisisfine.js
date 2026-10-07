@@ -8,7 +8,7 @@ import { Encounter, weightedPick } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight } from '../world.js';
 import { addFur } from '../surface.js';
 import { tileTex, textSprite, emojiSprite, textTex, IMPACT } from '../textures.js';
-import { Enemy, Doge, Stonks, Boyfriend, registerNetType } from '../enemies.js';
+import { Enemy, Doge, Stonks, Boyfriend, registerNetType, applyMods } from '../enemies.js';
 import { Shockwave, Pickup } from '../combat.js';
 import { rimify } from '../rigs.js';
 import { playCinematic } from '../cinematic.js';
@@ -440,7 +440,7 @@ export class ThisIsFine extends Encounter {
     this.spawners = [[-18, -18], [18, -18], [-19, 2], [19, 2], [-16, 18], [16, 18]].map(([x, z]) => new THREE.Vector3(x, 0, z));
   }
   start() {
-    this.boss = new FineDog(this);
+    this.boss = applyMods(new FineDog(this));
     this.boss.pos.set(0, 0, -15.2);
     G.enemies.push(this.boss);
     this.enrageT = ENRAGE; this.addT = 6; this.mountT = 22;

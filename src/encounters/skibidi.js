@@ -5,7 +5,7 @@ import * as D from '../dressing.js';
 import { Encounter, weightedPick } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight, addStars } from '../world.js';
 import { tileTex, textSprite, IMPACT } from '../textures.js';
-import { Enemy, Doge, Sigma, Stonks, Nyan, RickRoller, registerNetType } from '../enemies.js';
+import { Enemy, Doge, Sigma, Stonks, Nyan, RickRoller, registerNetType, applyMods } from '../enemies.js';
 import { Projectile, Shockwave, Pickup, los } from '../combat.js';
 import * as M from '../models.js';
 import { rimify } from '../rigs.js';
@@ -155,7 +155,7 @@ export class SkibidiFinale extends Encounter {
     this.brainrot = 0; this.brainT = 0;
   }
   start() {
-    this.boss = new SkibidiBoss(this);
+    this.boss = applyMods(new SkibidiBoss(this));
     this.boss.pos.set(0, 1, 0);
     G.enemies.push(this.boss);
     this.vibeT = 16; this.sigmaT = 4; this.addT = 8;
