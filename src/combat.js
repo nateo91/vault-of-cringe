@@ -98,6 +98,17 @@ export function explode(pos, radius, dmg, { owner = 'player', color = 0xff8a2a, 
 
 // ---------- Projectiles ----------
 const projGeo = new THREE.SphereGeometry(1, 10, 8);
+// enemy bolts: a white-hot core inside an over-bright coloured shell (blooms), stretched along the flight path
+const boltMats = new Map();
+function boltMats_(color) {
+  if (!boltMats.has(color)) {
+    const shell = new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(2.2), transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+    const core = new THREE.MeshBasicMaterial({ color: new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.7).multiplyScalar(2.5), toneMapped: false });
+    shell.userData.shared = core.userData.shared = true;
+    boltMats.set(color, { shell, core });
+  }
+  return boltMats.get(color);
+}
 export class Projectile {
   constructor(o) {
     Object.assign(this, { dmg: 10, radius: 0.25, owner: 'enemy', life: 6, gravity: 0, homing: 0, splash: 0, splashDmg: null, color: 0xff00ff, size: 0.2, target: null, source: 'a meme', onHit: null, crit: false, trail: 0, explodeColor: null, speed: 0, look: null, ghost: false, critable: false, element: null }, o);
@@ -106,6 +117,13 @@ export class Projectile {
     if (this.look === 'nova') {
       this.mesh = new THREE.Mesh(fx.sphGeo, new THREE.MeshBasicMaterial({ color: 0x9a4dff, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending }));
       this.mesh.scale.setScalar(0.9);
+    } else if (this.owner === 'enemy' && !this.gravity && this.size <= 0.3) {
+      const m = boltMats_(this.color);
+      this.mesh = new THREE.Group();
+      const len = 1.6 + this.speed * 0.045;
+      const shell = new THREE.Mesh(projGeo, m.shell); shell.scale.set(this.size * 1.05, this.size * 1.05, this.size * len * 1.2); this.mesh.add(shell);
+      const core = new THREE.Mesh(projGeo, m.core); core.scale.set(this.size * 0.4, this.size * 0.4, this.size * len); this.mesh.add(core);
+      this.bolt = true;
     } else {
       this.mesh = new THREE.Mesh(projGeo, fx.basicMat(this.color));
       this.mesh.scale.setScalar(this.size);
@@ -153,6 +171,7 @@ export class Projectile {
       if (this.checkHits()) return;
     }
     this.mesh.position.copy(this.pos);
+    if (this.bolt) this.mesh.lookAt(tmp.copy(this.pos).add(this.vel));
     if (this.trail) {
       this.trailT -= dt;
       if (this.trailT <= 0) { this.trailT = 0.03; local(() => fx.burst(this.pos, this.trail, 1, 0.5, this.size * 0.8, 0.35, 0)); }
