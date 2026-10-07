@@ -8,6 +8,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { G, damp } from './game.js';
 
@@ -23,7 +24,7 @@ class SoftAOPass extends GTAOPass {
   }
 }
 
-let composer = null, bloom = null, grade = null, smaa = null, vmPass = null, mainPass = null;
+let composer = null, bloom = null, grade = null, smaa = null, vmPass = null, mainPass = null, dof = null;
 let envTex = null, pmrem = null, arenaEnv = null;
 
 const GradeShader = {
@@ -114,7 +115,7 @@ export function applyQuality() {
   r.shadowMap.type = q === 'low' ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
   r.shadowMap.needsUpdate = true;
   composer?.dispose?.();
-  composer = null; bloom = null; grade = null; smaa = null;
+  composer = null; bloom = null; grade = null; smaa = null; dof = null;
   if (q === 'low') { onResize(); return; }
   composer = new EffectComposer(r);
   mainPass = new RenderPass(G.scene, G.camera);
@@ -125,6 +126,10 @@ export function applyQuality() {
     ao.blendIntensity = 0.85;
     ao.updateGtaoMaterial({ radius: 0.7, distanceExponent: 1.5, thickness: 1.5, scale: 1.2 });
     composer.addPass(ao);
+    // depth of field, only while a boss intro plays
+    dof = new BokehPass(G.scene, G.camera, { focus: 6, aperture: 0.0004, maxblur: 0.009 });
+    dof.enabled = false;
+    composer.addPass(dof);
   }
   vmPass = new RenderPass(G.vmScene, G.vmCamera);
   vmPass.clear = false; vmPass.clearDepth = true;
@@ -167,6 +172,10 @@ export function render(dt) {
     return;
   }
   if (grade) { grade.uniforms.time.value = performance.now() / 1000; grade.uniforms.hurt.value = hurtFx; }
+  if (dof) {
+    dof.enabled = !!G.cine;
+    if (G.cine) dof.uniforms.focus.value = damp(dof.uniforms.focus.value, G.cine.focus || 6, 8, dt);
+  }
   composer.render(dt);
 }
 

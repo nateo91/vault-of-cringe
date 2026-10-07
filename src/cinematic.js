@@ -29,7 +29,9 @@ export function playCinematic({ shots, card, choreo, duration, lines = [], onEnd
       const u = ease(Math.min(1, Math.max(0, (t - shot.t[0]) / (shot.t[1] - shot.t[0]))));
       const cam = G.camera;
       cam.position.copy(shot.pc ? shot.pc.getPoint(u) : shot.path[0]);
-      cam.lookAt(shot.lc ? shot.lc.getPoint(u) : shot.look[0]);
+      const look = shot.lc ? shot.lc.getPoint(u) : shot.look[0];
+      cam.lookAt(look);
+      c.focus = cam.position.distanceTo(look); // the boss is in focus, the world behind it goes soft
       // a little handheld drift and whatever shake the choreography adds
       const sh = Math.min(0.6, G.shake) * 0.2;
       cam.position.x += Math.sin(t * 1.3) * 0.04 + (Math.random() - 0.5) * sh;
