@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { Peer } from 'peerjs';
 import { G, pick, local } from './game.js';
-import { applyFx, dmgNumber, impact, superRing, crater, grenadeField } from './fx.js';
+import { applyFx, dmgNumber, impact, superRing, crater, grenadeField, rally } from './fx.js';
 import { play, playAt, say } from './audio.js';
 import { HUD } from './hud.js';
 import { Projectile, Shockwave, Pickup, applyPickup } from './combat.js';
@@ -323,6 +323,7 @@ function handleEvent(ev, from) {
       if (a === 'boom') { applyFx('explosion', [b, c, d]); playAt(b, 'explosion', 1.5); }
       else if (a === 'ring') superRing(new THREE.Vector3(...b), c, 7);
       else if (a === 'gren') grenadeField(c, new THREE.Vector3(...b), 3);
+      else if (a === 'rally') rally(new THREE.Vector3(...b));
       else if (a === 'crater') { const q = new THREE.Vector3(...b); superRing(q, 0x7fd7ff, 12); crater(q, 7); }
       break;
     case 'hurt': G.player?.hurt(a, b); break;

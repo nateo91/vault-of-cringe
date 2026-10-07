@@ -324,6 +324,7 @@ export class Player {
     this.reset(at, this.yaw);
     this.superCharge = sc;
     HUD.death(false);
+    fx.rally(at.clone(), true); G.net.playerEv(['pfx', 'rally', v3(at)]);
     lhud('bigText', 'REVIVED', 'thank your fireteam', 1.5, 'good');
     play('superReady');
   }

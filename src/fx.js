@@ -289,6 +289,19 @@ export function grenadeField(kind, pos, life = 3) {
   }
 }
 
+// A revive: a column of Light where the Guardian stands back up, rising motes, a ring
+export function rally(pos, self = false) {
+  // (the revived player is standing inside the column, so they just get the ring and the motes)
+  if (!self) {
+  const col = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 1.0, 12, 20, 1, true), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x9fe2ff).multiplyScalar(2), transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false }));
+  col.position.copy(pos).setY(pos.y + 6);
+  addTimed(col, 1.2, (k, o) => { o.material.opacity = 0.5 * k; o.scale.set(0.4 + k * 0.6, 1, 0.4 + k * 0.6); }, (o) => { o.geometry.dispose(); o.material.dispose(); });
+  }
+  superRing(pos, 0x9fe2ff, 5);
+  for (let i = 0; i < 20; i++) _burst(pos.clone().add(new THREE.Vector3(rand(-0.6, 0.6), rand(0, 1.5), rand(-0.6, 0.6))), 0xcff4ff, 1, 2, 0.08, 1.2, -6);
+  flashLight(pos.clone().setY(pos.y + 1.5), 0x9fe2ff, self ? 12 : 40, 10, 0.6);
+}
+
 // ---------- bullet holes ----------
 const decals = [];
 const decalGeo = new THREE.PlaneGeometry(1, 1);
