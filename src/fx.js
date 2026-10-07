@@ -384,10 +384,43 @@ function _ringFx(pos, radius, color = 0xb06cff, life = 0.5) {
   addTimed(m, life, (k, o) => { const r = radius * (1 - k * 0.9); o.scale.set(r, r, r); o.material.opacity = k; }, (o) => o.material.dispose());
 }
 
+// Enemy arrival: a swirling portal opens facing you, spits the enemy out, and closes; a column of light + sparks.
+const portalGeo = new THREE.PlaneGeometry(1, 1);
+function portalMat() {
+  return new THREE.ShaderMaterial({
+    uniforms: { uT: { value: 0 }, uOpen: { value: 0 } },
+    vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `uniform float uT, uOpen; varying vec2 vUv;
+      void main() {
+        vec2 p = (vUv - 0.5) * 2.0; float r = length(p), a = atan(p.y, p.x);
+        float edge = smoothstep(1.0, 0.82, r) * smoothstep(0.0, 0.25, r);
+        float swirl = 0.5 + 0.5 * sin(a * 5.0 + r * 9.0 - uT * 9.0);
+        float core = smoothstep(0.55, 0.0, r);
+        vec3 col = mix(vec3(0.55, 0.2, 1.0), vec3(1.0, 0.45, 0.95), swirl) * (0.8 + swirl * 0.6);
+        col = mix(col, vec3(0.08, 0.0, 0.18), core * 0.85);
+        float rim = smoothstep(0.75, 0.95, r) * smoothstep(1.0, 0.95, r);
+        float alpha = (edge * (0.22 + swirl * 0.3) + rim * 1.0) * uOpen;
+        gl_FragColor = vec4(col * alpha + vec3(1.0, 0.8, 1.0) * rim * uOpen * 0.6, alpha);
+      }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
+  });
+}
 function _spawnFx(pos) {
-  const p = pos.clone(); p.y += 1;
-  _burst(p, 0xb06cff, 14, 5, 0.18, 0.6, 2);
+  const p = pos.clone(); p.y += 1.1;
+  const m = new THREE.Mesh(portalGeo, portalMat()); m.position.copy(p);
+  addTimed(m, 1.0, (k, o, dt) => {
+    const t = 1 - k;
+    const open = t < 0.25 ? t / 0.25 : t > 0.7 ? (1 - t) / 0.3 : 1;
+    o.material.uniforms.uT.value += dt; o.material.uniforms.uOpen.value = open;
+    o.scale.setScalar(2.6 * (0.3 + 0.7 * open));
+    o.lookAt(G.camera.position);
+  }, (o) => o.material.dispose());
+  const col = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.9, 6, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xc08cff, transparent: true, opacity: 0.3, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+  col.position.copy(pos).setY(pos.y + 3);
+  addTimed(col, 0.7, (k, o) => { o.material.opacity = 0.3 * k; o.scale.set(k, 1, k); }, (o) => { o.geometry.dispose(); o.material.dispose(); });
+  _burst(p, 0xb06cff, 14, 5, 0.12, 0.6, 2);
   _ringFx(pos, 2.5, 0xb06cff, 0.6);
+  flashLight(p, 0xb06cff, 18, 8, 0.5);
 }
 
 // ---------- DOM damage numbers ----------

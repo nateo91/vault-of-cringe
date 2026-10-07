@@ -79,7 +79,7 @@ export class Enemy {
       G.fxGroup.add(this.bar);
     }
   }
-  spawnAt(x, y, z) { this.pos.set(x, y, z); fx.spawnFx(this.pos); playAt(this.pos, 'spawn'); return this; }
+  spawnAt(x, y, z) { this.pos.set(x, y, z); fx.spawnFx(this.pos); playAt(this.pos, 'spawn'); this.spawnIn = 0; return this; }
   hb(x, y, z, r, crit = false) { this.hitboxes.push({ off: new THREE.Vector3(x, y, z), r, crit }); return this; }
   hbWorld(hb, out) {
     const c = Math.cos(this.yaw), s = Math.sin(this.yaw), o = hb.off;
@@ -239,7 +239,10 @@ export class Enemy {
     this.animate?.(dt);
     if (this.rig) this.rig.update(dt, { speed: this.animSpeed || 0, ...(G.net.isClient ? this.netPose : this.pose?.()) });
     if (this.pop > 0) { this.pop = Math.max(0, this.pop - dt * 6); }
-    const s = 1 + this.pop * 0.06;
+    // grow out of the portal on arrival
+    if (this.spawnIn !== undefined && this.spawnIn < 1) this.spawnIn = Math.min(1, this.spawnIn + dt * 2.6);
+    const g = this.spawnIn === undefined ? 1 : Math.max(0.01, 1 - Math.pow(1 - this.spawnIn, 3));
+    const s = (1 + this.pop * 0.06) * g;
     this.mesh.scale.set(s, s, s);
     this.mesh.rotation.y = this.yaw;
     this.flinch = Math.max(0, this.flinch - dt * 4);
