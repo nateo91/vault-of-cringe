@@ -86,8 +86,9 @@ export class SkibidiFinale extends Encounter {
   cursed = 5;
   build() {
     this.spawn.set(0, 0.1, 24); this.spawnYaw = 0;
-    setEnv({ sky: 0x2a0838, fog: 0x6a2060, near: 60, far: 280, hemi: [0xff9cf0, 0x20102a, 0.85], sun: { color: 0xffe0f0, int: 1.7, pos: [30, 35, -60] }, shadowSize: 50,
-      dome: { top: 0x1a0430, horizon: 0xff5a9a, bottom: 0x10021a, sun: 0xfff0a0, sunSize: 6, haze: 2.2 } });
+    setEnv({ sky: 0x2a0838, fog: 0x6a2060, near: 60, far: 280, hemi: [0xff9cf0, 0x20102a, 0.85], sun: { color: 0xffe0f0, int: 1.7, pos: [-45, 38, 55] }, shadowSize: 50,
+      // the sun sits behind you as you walk in, so Skibidi is lit and readable instead of a silhouette in the glare
+      dome: { top: 0x1a0430, horizon: 0xff5a9a, bottom: 0x10021a, sun: 0xfff0a0, sunSize: 6, haze: 1.5 } });
     addStars(2000, 320, 0xffaaff, 1.6);
     const ft = tileTex({ base: '#5a4a68', line: '#3a2e46', accent: '#ff4fd8', n: 4, seed: 21 }); ft.repeat.set(8, 8);
     this.floorMat = std(0xffffff, { map: ft, emissive: 0xff2200, emissiveIntensity: 0 });

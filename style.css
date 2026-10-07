@@ -118,8 +118,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060a; col
 #deepfry .e4 { left: 24%; top: 12%; transform: rotate(12deg); font-size: 60px; }
 #deepfry .e5 { left: 46%; bottom: 3%; font-size: 70px; }
 #deepfry .flare { position: absolute; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, #fff 0%, #ff2020 25%, rgba(255,0,0,.4) 45%, transparent 70%); mix-blend-mode: screen; }
-#deepfry .f1 { left: calc(50% - 160px); top: calc(50% - 90px); }
-#deepfry .f2 { left: calc(50% + 40px); top: calc(50% - 90px); }
+#deepfry .f1 { left: calc(50% - 170px); top: 9%; }
+#deepfry .f2 { left: calc(50% + 50px); top: 9%; }
 #deepfry.lvl4 { opacity: .55; }
 #deepfry.lvl5 { opacity: .9; animation: jitter .2s infinite; }
 @keyframes jitter { 0% { transform: translate(0,0); } 50% { transform: translate(3px,-2px); } }
