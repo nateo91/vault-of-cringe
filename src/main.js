@@ -144,6 +144,18 @@ function setupMenus() {
   $('#boardClose').onclick = () => $('#leaderboard').classList.add('hidden');
   $('#boardClear').onclick = () => { if (confirm('Delete every saved clear on this browser?')) { clearBoard(); renderBoard($('#leaderboard')); } };
   $('#pauseArmory').onclick = () => { $('#pause').classList.add('hidden'); openArmory(); };
+  // credits: who was in your fireteam goes at the top
+  const closeCredits = () => $('#credits').classList.add('hidden');
+  $('#creditsBtn').onclick = () => {
+    const team = [G.net.active ? G.net.name : (localStorage.getItem('voc-name') || 'Guardian'), ...[...G.avatars.values()].map((a) => a.name)].map((n) => String(n).replace(/[<>&]/g, '')).join(', ');
+    const roll = $('#credits .cr-roll');
+    roll.dataset.tpl ??= roll.innerHTML;
+    roll.innerHTML = roll.dataset.tpl.replace('{team}', team);
+    const C = $('#credits'); C.classList.remove('hidden');
+    roll.style.animation = 'none'; void roll.offsetWidth; roll.style.animation = '';
+  };
+  $('#credits').onclick = closeCredits;
+  addEventListener('keydown', (e) => { if (e.code === 'Escape' && !$('#credits').classList.contains('hidden')) closeCredits(); });
   $('#again').onclick = () => {
     if (G.net.isHost) { $('#victory').classList.add('hidden'); G.stats.start = performance.now(); G.runLoot = []; beginRun(0); loadEncounter(0); lockPointer(canvas); }
     else if (!G.net.isClient) location.reload();

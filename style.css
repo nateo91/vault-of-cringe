@@ -385,3 +385,17 @@ label { cursor: pointer; }
 .arm-view-name small { display: block; font-size: 11px; letter-spacing: .2em; opacity: .7; }
 .arm-view-name.exotic { color: #ffd23f; } .arm-view-name.legendary { color: #d9b8ff; }
 .arm-view-hint { position: absolute; right: 14px; bottom: 10px; font-size: 11px; letter-spacing: .15em; opacity: .45; pointer-events: none; }
+
+/* ---------- credits ---------- */
+#credits.overlay { background: #000; overflow: hidden; align-items: flex-start; cursor: pointer; }
+#credits .cr-roll { width: min(640px, 92vw); margin: 0 auto; text-align: center; transform: translateY(100vh); }
+#credits:not(.hidden) .cr-roll { animation: crRoll 48s linear forwards; }
+@keyframes crRoll { to { transform: translateY(calc(-100% - 10vh)); } }
+#credits .cr-h { font-family: var(--impact); font-size: 64px; color: #ffd23f; text-shadow: 0 0 24px rgba(255,210,63,.4); }
+#credits .cr-s { font-size: 18px; letter-spacing: .2em; color: #bbb; margin-top: 6px; }
+#credits .cr-h2 { font-size: 13px; letter-spacing: .35em; color: #9fe2ff; font-weight: 700; margin: 14px 0 10px; }
+#credits .cr-role { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 9px 0; font-size: 17px; }
+#credits .cr-role span { text-align: right; color: #ccd; } #credits .cr-role b { text-align: left; color: #fff; }
+#credits .cr-line { margin: 8px 0; color: #ddd; font-size: 16px; }
+#credits .cr-gap { height: 60px; }
+#credits .cr-skip { position: fixed; right: 20px; bottom: 16px; font-size: 12px; letter-spacing: .2em; opacity: .4; }
