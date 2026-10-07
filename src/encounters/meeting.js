@@ -1,6 +1,8 @@
 // Encounter 2: EMERGENCY MEETING — one of the crewmates is the impostor. Watch for venting.
+// From round 2 the impostor sabotages the lights: vision shrinks to a few metres, name tags go dark,
+// and the next "accident" comes sooner. Someone has to get to Electrical and hold the panel to fix them.
 import * as THREE from 'three';
-import { G, rand, pick, shuffle, distXZ, after, hurtPlayer, playerById, local } from '../game.js';
+import { G, rand, pick, shuffle, distXZ, after, hurtPlayer, playerById, local, players } from '../game.js';
 import * as D from '../dressing.js';
 import { Encounter } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight, addStars } from '../world.js';
@@ -215,6 +217,22 @@ export class EmergencyMeeting extends Encounter {
     for (const x of [-40.8, 40.8]) D.trimStrip(x, 0, 0.2, 80, 0x00ccff);
     for (const [x, z] of [[-33, -20], [33, 20], [-20, 33], [20, -33], [6, -20], [-6, 20]]) D.crate(x, z, { s: 1.4, color: 0x4a5468, stripe: 0xffd200 });
     D.dust({ min: [-40, 0.3, -40], max: [40, 8, 40], color: 0xbfe6ff, count: 500, opacity: 0.45 });
+    // Electrical: a breaker panel on the east and west hulls (the sabotage picks one)
+    this.panels = [[39.2, 22, -Math.PI / 2], [-39.2, -22, Math.PI / 2]].map(([x, z, ry]) => {
+      const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; add(g);
+      const box = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.2, 0.35), std(0x3a4150, { metalness: 0.6, roughness: 0.5 })); box.position.set(0, 1.7, 0); g.add(box);
+      const lamp = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0xffcc00, emissiveIntensity: 0.4 });
+      for (let i = 0; i < 6; i++) { const sw = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.32, 0.1), lamp); sw.position.set(-0.55 + (i % 3) * 0.55, 1.35 + Math.floor(i / 3) * 0.6, 0.2); g.add(sw); }
+      const sign = textSprite('⚡ ELECTRICAL', 0.36, { font: IMPACT, weight: 'normal', color: '#ffd23f' }); sign.position.set(0, 3.2, 0.3); g.add(sign);
+      const marker = textSprite('⚡ FIX LIGHTS', 0.6, { font: IMPACT, weight: 'normal', color: '#ffd23f', fog: false, depthTest: false }); marker.position.set(0, 4.2, 0.3); marker.visible = false; g.add(marker);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false, fog: false, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(new THREE.RingGeometry(1.9, 2.2, 64, 1, Math.PI / 2, Math.PI * 2), ringMat); ring.rotation.x = -Math.PI / 2;
+      const pos = new THREE.Vector3(x, 0, z).add(new THREE.Vector3(0, 0, 1.8).applyAxisAngle(new THREE.Vector3(0, 1, 0), ry));
+      ring.position.copy(pos).setY(0.05); ring.geometry.setDrawRange(0, 0); add(ring);
+      return { pos, lamp, marker, ring };
+    });
+    this.dark = 0; this.darkK = 0; this.fixProg = 0; this.panelI = 0;
+    this.vision = new THREE.PointLight(0xbfd4ff, 0, 11, 1.6); add(this.vision); // made now: adding a light later recompiles every shader
     this.addSpawns = [[-36, -36], [36, 36], [-36, 36], [36, -36], [0, -37], [0, 37]].map(([x, z]) => new THREE.Vector3(x, 0, z));
   }
   start() {
@@ -237,8 +255,60 @@ export class EmergencyMeeting extends Encounter {
     });
     shuffle(this.crew.slice()).slice(0, r.imps).forEach((c) => { c.impostor = true; c.ventT = rand(4, 7); });
     this.killT = r.killEvery; this.phase = 'play'; this.addT = 6; this.sniperT = 3;
+    this.sabT = this.round >= 1 ? rand(9, 15) : Infinity;
     HUD.bigText(`ROUND ${this.round + 1}`, `${r.imps} impostor${r.imps > 1 ? 's' : ''} among us`, 2.5, 'meme');
     play('sus');
+  }
+  // host: sabotage + the fix
+  updateSabotage(dt) {
+    if (!this.dark) {
+      if ((this.sabT -= dt) <= 0 && this.impostors().some((i) => !i.revealed)) {
+        this.sabT = Infinity; // once per round
+        const far = this.panels.map((pn, i) => [i, Math.min(...players().map((q) => distXZ(q.pos, pn.pos)))]).sort((a, b) => b[1] - a[1]);
+        this.panelI = far[0][0]; this.fixProg = 0;
+        this.ev('lights', { on: 1, i: this.panelI });
+        this.killT = Math.min(this.killT, 9); // it's dark. someone is about to have an accident.
+        this.ghost(pick(['The lights! Someone sabotaged the lights. Get to Electrical!', 'Guardian, I cannot see. Neither can you. Electrical, NOW.']));
+      }
+      return;
+    }
+    const pn = this.panels[this.panelI];
+    const on = players().some((q) => q.alive && distXZ(q.pos, pn.pos) < 2.2);
+    this.fixProg = on ? Math.min(1, this.fixProg + dt / 3.5) : Math.max(0, this.fixProg - dt / 12);
+    if (this.fixProg >= 1) { this.ev('lights', { on: 0 }); this.ghost(pick(['Lights fixed. Now: who was standing near the switch? ...It was you. Never mind.', 'And there was light. Somebody is still dead though, probably.'])); }
+  }
+  // every machine: the lights going out / coming back
+  ev_lights({ on, i = 0 }) {
+    this.dark = on ? 1 : 0; this.panelI = i; this.flickerT = 0.8;
+    if (!on) this.fixProg = 0;
+    play(on ? 'alarm' : 'correct');
+    if (on) HUD.bigText('⚡ LIGHTS SABOTAGED', 'Fix them in Electrical', 2.5, 'warn');
+    G.waypoint = on ? this.panels[i].pos.clone().setY(2) : null;
+  }
+  netState() { return { fx: Math.round(this.fixProg * 100) / 100 }; }
+  applyNet(s) { if (s) this.fixProg = s.fx || 0; }
+  // the darkness itself: fog closes in, every light dims, and your own little circle of vision
+  applyDark(dt) {
+    if (!this.lightsSaved) {
+      this.lightsSaved = [];
+      G.scene.traverse((o) => { if (o.isLight) this.lightsSaved.push([o, o.intensity]); });
+      const f = G.scene.fog; this.fogSaved = [f.color.clone(), f.near, f.far];
+    }
+    let want = this.dark;
+    if (this.flickerT > 0) { this.flickerT -= dt; want = Math.random() < 0.5 ? 1 - this.dark : this.dark; }
+    this.darkK += (want - this.darkK) * Math.min(1, dt * (this.flickerT > 0 ? 30 : 4));
+    const k = this.darkK, f = G.scene.fog, [fc, fn, ff] = this.fogSaved;
+    f.color.copy(fc).multiplyScalar(1 - k); f.near = fn + (1.5 - fn) * k; f.far = ff + (12 - ff) * k;
+    for (const [l, i] of this.lightsSaved) l.intensity = i * (1 - k * 0.88);
+    this.vision.intensity = k * 7; this.vision.position.copy(G.camera.position);
+    // name tags are the first thing you lose
+    for (const c of this.crew || []) if (c.tag?.material) c.tag.material.opacity = 1 - k;
+    for (const [n, pn] of this.panels.entries()) {
+      const active = this.dark && n === this.panelI;
+      pn.marker.visible = !!active;
+      pn.lamp.emissiveIntensity = active ? 0.6 + Math.sin(G.time * 10) * 0.5 : 0.4;
+      pn.ring.geometry.setDrawRange(0, active ? Math.floor(this.fixProg * 64) * 6 : 0);
+    }
   }
   innocents() { return this.crew.filter((c) => c.alive && !c.impostor && c.state !== 'ejected'); }
   impostors() { return this.crew.filter((c) => c.alive && c.impostor); }
@@ -249,6 +319,7 @@ export class EmergencyMeeting extends Encounter {
       HUD.objective(null, `Round ${this.round + 1}/3 — find the impostor.\nCrewmates alive: ${inn.length + imps.filter((i) => !i.revealed).length}   Impostors left: ${imps.length}\nNext "accident" in: ${Math.max(0, Math.ceil(this.killT))}s`);
       if (this.phase === 'play') {
         this.killT -= dt;
+        this.updateSabotage(dt);
         if (this.killT <= 0) {
           this.killT = ROUNDS[this.round].killEvery;
           const hunter = pick(imps.filter((i) => !i.revealed && (i.state === 'walk' || i.state === 'task')));
@@ -281,6 +352,7 @@ export class EmergencyMeeting extends Encounter {
     local(() => fx.burst(v.pos.clone().setY(0.3), 0x5a5a5a, 14, 3.5, 0.14, 0.7, -1));
   }
   localUpdate(dt) {
+    if (this.panels) this.applyDark(dt);
     for (const v of this.ventLids || []) {
       v.open = Math.max(0, v.open - dt * 1.1);
       const k = v.open > 0.65 ? 1 : v.open / 0.65; // snaps open, eases shut
@@ -406,6 +478,7 @@ export class EmergencyMeeting extends Encounter {
     if (this.impostors().length > 0) return;
     this.phase = 'between';
     this.round++;
+    if (this.dark) this.ev('lights', { on: 0 });
     for (const cm of this.crew) if (cm.alive && !cm.impostor) { cm.state = 'task'; cm.wait = 99; cm.vel.y = 7; fx.floatText(cm.top().clone(), pick(['ty', 'gg', 'pog', 'ez']), { height: 0.5 }); }
     if (this.round >= ROUNDS.length) {
       this.ghost('Victory. The crewmates thank you. Well, the ones that are left.');
@@ -415,6 +488,7 @@ export class EmergencyMeeting extends Encounter {
       after(5, () => { if (G.encounter === this) this.startRound(); });
     }
   }
+  cleanup() { G.waypoint = null; }
   lose() {
     this.phase = 'lost';
     play('stab');
