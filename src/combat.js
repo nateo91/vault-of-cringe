@@ -282,6 +282,11 @@ export class Pickup {
       const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: fx.glowTex, color: 0xb070ff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
       glow.scale.setScalar(1.6); this.mesh.add(glow);
       this.life = 90;
+      // the loot beam: a tall shaft of light + a ring on the ground once it lands
+      this.beam = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.35, 14, 12, 1, true), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xb070ff).multiplyScalar(1.8), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false, fog: false }));
+      this.beam.position.y = 7; this.mesh.add(this.beam);
+      this.ring = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.65, 40), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xb070ff).multiplyScalar(2), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false }));
+      this.ring.rotation.x = -Math.PI / 2; G.fxGroup.add(this.ring);
     } else if (kind === 'aura') {
       this.mesh.add(emojiSprite('✨', 1.2));
       const t = textSprite('+1000 AURA', 0.35, { color: '#ffd23f' }); t.position.y = 0.9; this.mesh.add(t);
@@ -309,12 +314,19 @@ export class Pickup {
       this.vel.y -= 20 * dt;
       this.vel.x *= 0.96; this.vel.z *= 0.96;
       const r = moveCollide(this.pos, this.vel, dt, 0.15, 0.3);
-      if (r.ground) { this.vel.x *= 0.5; this.vel.z *= 0.5; }
+      if (r.ground) { this.vel.x *= 0.5; this.vel.z *= 0.5; if (this.beam && !this.landed) { this.landed = true; local(() => playAt(this.pos, 'engram')); } }
       if (this.pos.y < -30) return this.remove();
     }
     this.mesh.position.copy(this.pos);
     this.mesh.position.y += 0.4 + Math.sin(G.time * 4 + this.life) * 0.12;
     if (this.spin) this.spin.rotation.y += dt * 2;
+    if (this.beam) {
+      const k = this.landed ? Math.min(1, (this.beamK = (this.beamK || 0) + dt * 2)) : 0;
+      this.beam.material.opacity = k * (0.32 + Math.sin(G.time * 3) * 0.06);
+      this.ring.position.set(this.pos.x, this.pos.y + 0.03, this.pos.z);
+      const rr = 1 + ((G.time * 0.8) % 1) * 1.8;
+      this.ring.scale.setScalar(rr); this.ring.material.opacity = k * (1 - (rr - 1) / 1.8) * 0.8;
+    }
   }
   collect(p = G.player) {
     if (p === G.player) local(() => applyPickup(this.kind));
@@ -328,6 +340,7 @@ export class Pickup {
     if (!this.alive) return;
     this.alive = false;
     G.fxGroup.remove(this.mesh);
+    if (this.ring) G.fxGroup.remove(this.ring);
   }
 }
 
