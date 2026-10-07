@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildGun } from './player.js';
-import { DEFS } from './arsenal.js';
+import { DEFS, applyShader } from './arsenal.js';
 
 let renderer = null, scene, camera, holder, current = null, canvas, running = false, last = 0;
 let spin = 0, spinV = 0.5, tilt = 0.12, dragging = false, lastX = 0;
@@ -29,9 +29,9 @@ function init(c) {
 }
 
 // Show a weapon (by DEFS id). The model is framed to fill the view.
-export function showGun(id, c) {
+export function showGun(id, c, force = false) {
   if (!renderer) init(c);
-  if (current === id) return;
+  if (current === id && !force) return;
   current = id;
   holder.clear();
   const d = DEFS[id];
@@ -39,6 +39,7 @@ export function showGun(id, c) {
   let g = cache.get(d.model);
   if (!g) { g = buildGun(d.model).group; cache.set(d.model, g); }
   holder.add(g);
+  applyShader(g);
   // frame it: centre the bounds, back the camera off to fit the longest side
   g.position.set(0, 0, 0); g.updateMatrixWorld(true);
   // (only visible meshes: the hidden muzzle-flash sprites would make the gun look tiny)

@@ -11,7 +11,7 @@ import { buildGuardian, poseEmote, EMOTES } from './avatars.js';
 import { play as rawPlay, say as rawSay } from './audio.js';
 import { HUD } from './hud.js';
 import { hurtPulse } from './render.js';
-import { DEFS, PERKS, PerkEngine, equippedItem, buildModel, LEFT_HAND } from './arsenal.js';
+import { DEFS, PERKS, PerkEngine, equippedItem, buildModel, LEFT_HAND, applyShader } from './arsenal.js';
 
 // Your own guns/abilities are cosmetic-local: teammates see them via explicit 'shot'/'proj'/'pfx' events instead.
 const play = (...a) => local(() => rawPlay(...a));
@@ -240,11 +240,14 @@ export class Player {
     this.showGun();
   }
   get def() { return this.superActive === 'gg' ? GG : this.wpn[this.cur].def; }
+  // recolour every gun you're carrying (Armory shader picker)
+  applyShaderAll() { for (const k in this.rigs) applyShader(this.rigs[k].group); }
   get rig() { return this.rigs[this.superActive === 'gg' ? 'gg' : this.wpn[this.cur].def.model]; }
   showGun() { const r = this.rig; for (const k in this.rigs) this.rigs[k].rig.visible = this.rigs[k] === r; }
   ensureRig(model) {
     if (this.rigs[model]) return;
     const r = this.rigs[model] = buildRig(model, this.cls);
+    applyShader(r.group);
     r.rig.visible = false; this.vm.add(r.rig);
   }
   makeSlot(item) {

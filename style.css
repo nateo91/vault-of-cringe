@@ -399,3 +399,10 @@ label { cursor: pointer; }
 #credits .cr-line { margin: 8px 0; color: #ddd; font-size: 16px; }
 #credits .cr-gap { height: 60px; }
 #credits .cr-skip { position: fixed; right: 20px; bottom: 16px; font-size: 12px; letter-spacing: .2em; opacity: .4; }
+
+/* ---------- weapon shaders ---------- */
+.arm-shaders { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 14px; }
+.arm-sh { display: flex; align-items: center; gap: 7px; padding: 5px 10px 5px 6px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); color: #ccd; font: inherit; font-size: 12px; letter-spacing: .06em; cursor: pointer; }
+.arm-sh i { width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35); }
+.arm-sh:hover { background: rgba(255,255,255,.1); }
+.arm-sh.on { border-color: #ffd23f; color: #fff; box-shadow: 0 0 10px rgba(255,210,63,.3); }

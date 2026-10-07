@@ -94,7 +94,7 @@ Loot is personal and saved in your browser, so it carries over between sessions.
 - Majors sometimes drop **engrams** (spinning purple octahedrons), and some minors do too.
 - Exotics have a growing chance to drop the deeper you go.
 
-Open the **Armory** (Tab mid-raid, or from the main menu) to swap guns. Legendaries roll one perk from each of two columns. Exotics have fixed signature perks.
+Open the **Armory** (Tab mid-raid, or from the main menu) to swap guns. A turntable shows the gun you're hovering (drag to spin it), and a row of **shaders** recolours all your guns: Gold Digger, Welcome to Ohio, Simply Too Purple, Sigma Grindset, Such Shiba, Touch Grass. Legendaries roll one perk from each of two columns. Exotics have fixed signature perks.
 
 | Slot | Weapons |
 |---|---|

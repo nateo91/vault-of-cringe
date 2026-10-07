@@ -1,6 +1,6 @@
 // The Armory: browse your loot, read perks, equip weapons. Tab / I toggles it in-game.
 import { G, ELEMENTS } from './game.js';
-import { DEFS, PERKS, INV, SLOT_NAMES, saveInventory } from './arsenal.js';
+import { DEFS, PERKS, INV, SLOT_NAMES, SHADERS, saveInventory } from './arsenal.js';
 import { showGun, startView, stopView } from './gunview.js';
 
 let root = null, onClose = null;
@@ -15,6 +15,15 @@ export function initArmory(closeCb) {
     if (!card) return;
     equip(card.dataset.uid);
   });
+  // the shader picker
+  root.querySelector('.arm-shaders').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-shader]');
+    if (!b) return;
+    INV.shader = b.dataset.shader; saveInventory();
+    G.player?.applyShaderAll();
+    renderShaders();
+    if (lastPreview) preview(lastPreview, true);
+  });
   // hovering a card puts that gun on the turntable
   root.addEventListener('mouseover', (e) => { const c = e.target.closest('.arm-card'); if (c) preview(c.dataset.uid); });
   addEventListener('keydown', (e) => {
@@ -24,17 +33,25 @@ export function initArmory(closeCb) {
 }
 export const isOpen = () => root && !root.classList.contains('hidden');
 
-function preview(uid) {
+let lastPreview = null;
+function renderShaders() {
+  root.querySelector('.arm-shaders').innerHTML = Object.entries(SHADERS).map(([k, s]) => {
+    const a = '#' + (s.a ?? 0x8a8f99).toString(16).padStart(6, '0'), b = '#' + (s.b ?? 0x2a2c33).toString(16).padStart(6, '0');
+    return `<button class="arm-sh ${INV.shader === k ? 'on' : ''}" data-shader="${k}" title="${esc(s.name)}"><i style="background:linear-gradient(135deg, ${a} 0 50%, ${b} 50% 100%)"></i><span>${esc(s.name)}</span></button>`;
+  }).join('');
+}
+function preview(uid, force = false) {
   const item = INV.items.find((i) => i.uid === uid);
   if (!item) return;
+  lastPreview = uid;
   const d = DEFS[item.id];
-  try { showGun(item.id, root.querySelector('.arm-view canvas')); } catch (e) { return; }
+  try { showGun(item.id, root.querySelector('.arm-view canvas'), force); } catch (e) { return; }
   const n = root.querySelector('.arm-view-name');
   n.innerHTML = `${ELEMENTS[d.element]?.icon || ''} ${esc(d.name)} <small>${d.rarity === 'exotic' ? 'EXOTIC' : 'LEGENDARY'} ${esc(d.type.toUpperCase())}</small>`;
   n.className = 'arm-view-name ' + d.rarity;
 }
 export function openArmory() {
-  render();
+  render(); renderShaders();
   root.classList.remove('hidden');
   G.uiOpen = true;
   const uid = INV.equipped[0];

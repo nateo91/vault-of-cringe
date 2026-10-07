@@ -73,11 +73,36 @@ for (const id in DEFS) DEFS[id].element = ELEMENT_OF[id] || 'solar';
 
 export function makeItem(id, perks = null) { return { uid: 'w' + (uidN++).toString(36), id, perks: perks || rollPerks(DEFS[id]), isNew: true }; }
 
-export const INV = { items: [], equipped: [null, null, null] };
+export const INV = { items: [], equipped: [null, null, null], shader: 'default' };
+
+// Weapon shaders: recolour every gun. Dark parts take the base colour, lighter parts the accent (keeping their
+// shading); glowing bits (sights, cores) keep theirs. Originals are remembered so you can switch back.
+export const SHADERS = {
+  default: { name: 'Factory' },
+  gold: { name: 'Gold Digger', a: 0xe8b84a, b: 0x2a2015, metal: 0.95, rough: 0.22 },
+  ohio: { name: 'Welcome to Ohio', a: 0xff4fd8, b: 0x34105a, metal: 0.45, rough: 0.35 },
+  chungus: { name: 'Simply Too Purple', a: 0xb8acff, b: 0x3a2d6a, metal: 0.5, rough: 0.4 },
+  sigma: { name: 'Sigma Grindset', a: 0x3a3a42, b: 0x0b0b0d, metal: 0.85, rough: 0.18 },
+  doge: { name: 'Such Shiba', a: 0xe8a858, b: 0xf6e8cc, metal: 0.1, rough: 0.65 },
+  grass: { name: 'Touch Grass', a: 0x8dff9a, b: 0x1e3a24, metal: 0.3, rough: 0.5 },
+};
+export function applyShader(group, key = INV.shader) {
+  const s = SHADERS[key] || SHADERS.default;
+  group.traverse((o) => {
+    if (!o.isMesh || !o.material?.isMeshStandardMaterial) return;
+    const m = o.material, ud = m.userData;
+    ud.orig ??= { c: m.color.getHex(), metal: m.metalness, rough: m.roughness };
+    if (!s.a) { m.color.setHex(ud.orig.c); m.metalness = ud.orig.metal; m.roughness = ud.orig.rough; return; }
+    if (m.emissiveIntensity > 0.5 && m.emissive.getHex() !== 0) return;
+    const c = new THREE.Color(ud.orig.c), l = c.r * 0.3 + c.g * 0.59 + c.b * 0.11;
+    m.color.setHex(l < 0.12 ? s.b : s.a).multiplyScalar(0.55 + Math.min(1, l) * 0.9);
+    m.metalness = s.metal ?? ud.orig.metal; m.roughness = s.rough ?? ud.orig.rough;
+  });
+}
 export function loadInventory() {
   try {
     const s = JSON.parse(localStorage.getItem(STORE) || 'null');
-    if (s && s.items?.length) { INV.items = s.items.filter((i) => DEFS[i.id]); INV.equipped = s.equipped; }
+    if (s && s.items?.length) { INV.items = s.items.filter((i) => DEFS[i.id]); INV.equipped = s.equipped; INV.shader = s.shader || 'default'; }
   } catch (e) { /* fresh start */ }
   if (!INV.items.length) {
     // starter kit
