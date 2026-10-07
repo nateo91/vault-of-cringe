@@ -367,7 +367,21 @@ export class MoaiKnightRig extends Rig {
       const el = this.joint('el' + n, sh, 0, -0.5, 0);
       mesh(el, RB(0.24, 0.45, 0.26, 0.05), stone, 0, -0.2, 0);
       mesh(el, RB(0.32, 0.28, 0.32, 0.06), dark, 0, -0.5, 0.02);
+      // a rune band glowing in each forearm
+      mesh(el, RB(0.27, 0.04, 0.29, 0.01), this.runeMat ||= mat(0x111111, { emissive: 0x5fd8ff, ei: 1.6, detail: false }), 0, -0.3, 0.0);
     }
+    // carved runes on the chest, moss on the shoulders and head
+    const rune = this.runeMat;
+    for (const [x, y, w, h, r] of [[0, 0.45, 0.05, 0.42, 0], [-0.14, 0.52, 0.22, 0.04, 0.6], [0.14, 0.52, 0.22, 0.04, -0.6], [0, 0.26, 0.3, 0.04, 0], [-0.09, 0.62, 0.04, 0.16, 0], [0.09, 0.62, 0.04, 0.16, 0]]) {
+      const g = mesh(this.j.chest, RB(w, h, 0.02, 0.008), rune, x, y, 0.36); g.rotation.z = r; g.castShadow = false;
+    }
+    const moss = mat(0x4d6a2a, { rough: 1 });
+    for (const [p, x, y, z, sx] of [[this.j.chest, -0.6, 0.9, 0, 0.32], [this.j.chest, 0.62, 0.9, 0.05, 0.28], [this.j.chest, 0.2, 0.8, 0.3, 0.2], [this.j.head, 0, 1.45, 0, 0.42]]) {
+      const m = mesh(p, SPH(1, 10, 6), moss, x, y, z); m.scale.set(sx, sx * 0.25, sx * 0.85);
+    }
+    // the boulder it hoists overhead while winding up a throw
+    this.boulder = mesh(this.j.chest, new THREE.DodecahedronGeometry(0.42, 1), mat(0x6e6a62, { rough: 1, flat: true }), 0, 2.75, 0.15);
+    this.boulder.scale.setScalar(0.001);
     rimify(this.root, 0xffb090, 0.22);
   }
   pose(dt, s) {
@@ -388,6 +402,9 @@ export class MoaiKnightRig extends Rig {
       j['el' + n].rotation.x = -0.3 - w * 0.6;
     }
     this.eyeMat.emissiveIntensity = 0.6 + w * 6 + sl * 3;
+    this.runeMat.emissiveIntensity = 1.2 + w * 3 + Math.sin(this.t * 2) * 0.3;
+    this.boulder.scale.setScalar(Math.max(0.001, w * 1.0));
+    this.boulder.rotation.y += dt * 2;
   }
 }
 
