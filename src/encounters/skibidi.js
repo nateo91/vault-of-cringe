@@ -85,6 +85,7 @@ registerNetType(MiniToilet, (a) => new MiniToilet(G.encounter, a[0]));
 export class SkibidiFinale extends Encounter {
   static title = 'SKIBIDI OF A THOUSAND TOILETS';
   cursed = 5;
+  floor = 'tile';
   build() {
     this.spawn.set(0, 0.1, 24); this.spawnYaw = 0;
     setEnv({ sky: 0x2a0838, fog: 0x6a2060, near: 60, far: 280, hemi: [0xff9cf0, 0x20102a, 0.85], sun: { color: 0xffe0f0, int: 1.7, pos: [-45, 38, 55] }, shadowSize: 50,

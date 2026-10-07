@@ -136,6 +136,7 @@ class Crewmate extends Enemy {
 export class EmergencyMeeting extends Encounter {
   static title = 'EMERGENCY MEETING';
   cursed = 2;
+  floor = 'metal';
   build() {
     this.spawn.set(0, 0.1, 30); this.spawnYaw = 0;
     setEnv({ sky: 0x0b0f1c, fog: 0x0b0f1c, near: 40, far: 160, hemi: [0xbfd4ff, 0x202430, 0.8], sun: { color: 0xdde8ff, int: 1.3, pos: [20, 60, 30] }, shadowSize: 45,

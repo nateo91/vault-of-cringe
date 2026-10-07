@@ -299,6 +299,7 @@ const trimCeil = () => std(0xcbb894, { roughness: 0.8 });
 export class ThisIsFine extends Encounter {
   static title = 'THIS IS FINE';
   cursed = 4;
+  floor = 'wood';
   build() {
     this.spawn.set(0, 0.1, 21); this.spawnYaw = 0;
     setEnv({ sky: 0x2a1408, fog: 0x3a2e24, near: 18, far: 110, hemi: [0xfff0dc, 0x3a2a1a, 0.8], sun: { color: 0xfff0d8, int: 1.2, pos: [20, 45, 30] }, shadowSize: 40,

@@ -260,10 +260,32 @@ export const sfxs = {
   hcClose() { noise({ dur: 0.05, freq: 2200, type: 'bandpass', q: 5, gain: 0.5 }); tone({ type: 'triangle', freq: 500, dur: 0.05, gain: 0.1 }); noise({ dur: 0.05, freq: 3500, type: 'bandpass', q: 8, gain: 0.3, delay: 0.12 }); },
   rlLoad() { noise({ dur: 0.18, freq: 600, freqEnd: 1600, type: 'bandpass', q: 2, gain: 0.5 }); tone({ type: 'square', freq: 130, dur: 0.06, gain: 0.15, delay: 0.2 }); },
   clink() { tone({ type: 'triangle', freq: 2400 + Math.random() * 1200, dur: 0.06, gain: 0.05 }); },
-  step() { noise({ dur: 0.07, freq: 380 + Math.random() * 120, type: 'lowpass', gain: 0.16 }); },
+  // footsteps by floor: stone scuffs, metal clanks, wood knocks, tile clicks (alternating feet, slightly panned)
+  step(surface = 'stone', side = 1) {
+    const pan = side * 0.18, r = Math.random();
+    if (surface === 'metal') {
+      noise({ dur: 0.05, freq: 1700 + r * 500, q: 3, type: 'bandpass', gain: 0.12, pan });
+      tone({ type: 'triangle', freq: 380 + r * 90, freqEnd: 320, dur: 0.12, gain: 0.035, pan, rev: 0.2 });
+      noise({ dur: 0.08, freq: 300, type: 'lowpass', gain: 0.12, pan });
+    } else if (surface === 'wood') {
+      tone({ freq: 150 + r * 30, freqEnd: 90, dur: 0.09, gain: 0.16, pan });
+      noise({ dur: 0.05, freq: 650 + r * 200, q: 2, type: 'bandpass', gain: 0.12, pan });
+    } else if (surface === 'tile') {
+      noise({ dur: 0.025, freq: 3200 + r * 800, q: 3, type: 'bandpass', gain: 0.1, pan });
+      noise({ dur: 0.06, freq: 450, type: 'lowpass', gain: 0.12, pan });
+    } else {
+      noise({ dur: 0.07, freq: 380 + r * 120, type: 'lowpass', gain: 0.16, pan });
+      noise({ dur: 0.04, freq: 4500, type: 'highpass', gain: 0.03 + r * 0.02, pan, delay: 0.01 }); // grit
+    }
+  },
   dry() { noise({ dur: 0.03, freq: 4000, type: 'bandpass', q: 8, gain: 0.3 }); },
   slide() { noise({ dur: 0.5, freq: 900, freqEnd: 300, type: 'bandpass', q: 0.7, gain: 0.25 }); },
-  land(k = 1) { noise({ dur: 0.12, freq: 300, type: 'lowpass', gain: 0.3 * k }); tone({ freq: 70, freqEnd: 40, dur: 0.1, gain: 0.2 * k }); },
+  land(k = 1, surface = 'stone') {
+    noise({ dur: 0.12, freq: 300, type: 'lowpass', gain: 0.3 * k }); tone({ freq: 70, freqEnd: 40, dur: 0.1, gain: 0.2 * k });
+    if (surface === 'metal') tone({ type: 'triangle', freq: 260, freqEnd: 200, dur: 0.3, gain: 0.06 * k, rev: 0.3 });
+    else if (surface === 'wood') tone({ freq: 120, freqEnd: 70, dur: 0.15, gain: 0.2 * k });
+    else if (surface === 'tile') noise({ dur: 0.03, freq: 3000, q: 3, type: 'bandpass', gain: 0.12 * k });
+  },
   rl() { noise({ dur: 0.7, freq: 900, freqEnd: 150, type: 'bandpass', q: 0.8, gain: 0.9 }); tone({ type: 'sawtooth', freq: 220, freqEnd: 60, dur: 0.4, gain: 0.25 }); },
   gg() { noise({ dur: 0.5, freq: 5000, freqEnd: 200, gain: 1.1, rev: 0.6 }); tone({ type: 'sawtooth', freq: 600, freqEnd: 80, dur: 0.35, gain: 0.3, dist: true }); },
   explosion(big = 1) {

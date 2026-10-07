@@ -442,13 +442,13 @@ export class Player {
       if (!wasGround) this.onLand(fallV);
       // footsteps
       const sp = Math.hypot(this.vel.x, this.vel.z);
-      if (sp > 2 && this.slideT <= 0) { this.stepT -= dt * sp; if (this.stepT <= 0) { this.stepT = 3.2; play('step'); } }
+      if (sp > 2 && this.slideT <= 0) { this.stepT -= dt * sp; if (this.stepT <= 0) { this.stepT = 3.2; this.foot = -(this.foot || 1); play('step', G.encounter?.floor || 'stone', this.foot); } }
     }
   }
 
   onLand(fallV) {
     const k = clamp(-fallV / 18, 0, 1);
-    if (k > 0.15) { this.landDip += 0.18 * k; this.kickPV.y -= 1.5 * k; play('land', k); }
+    if (k > 0.15) { this.landDip += 0.18 * k; this.kickPV.y -= 1.5 * k; play('land', k, G.encounter?.floor || 'stone'); }
     if (this.superActive === 'slam') {
       this.superActive = null;
       const p = this.pos.clone(); p.y += 0.3;
@@ -754,6 +754,15 @@ export class Player {
     // canted slightly inward at the hip so you see the gun's flank, straight when aiming
     let ry = 0.09 * (1 - a) + this.sway.x * 0.8 * swayK + this.sprintK * 0.55 + punch * 0.5;
     let rz = 0.04 * (1 - a) + this.kickR.z * 0.01 + this.sway.x * 0.5 * swayK + (this.slideT > 0 ? 0.25 : 0);
+    // breathing when still, lean into strafes, the gun lags behind jumps and falls
+    const still = 1 - Math.min(1, speedXZ / 2);
+    const br = this.t2 = (this.t2 || 0) + dt;
+    py += Math.sin(br * 1.6) * 0.0035 * still * (1 - a * 0.7); rx += Math.sin(br * 1.6 + 0.6) * 0.006 * still * (1 - a * 0.7);
+    const lateral = this.vel.x * Math.cos(this.yaw) - this.vel.z * Math.sin(this.yaw);
+    this.strafeK = damp(this.strafeK || 0, Math.max(-1, Math.min(1, lateral / 7)), 8, dt);
+    rz -= this.strafeK * 0.07 * (1 - a * 0.6); px -= this.strafeK * 0.008 * (1 - a);
+    this.airK = damp(this.airK || 0, this.onGround ? 0 : Math.max(-1, Math.min(1, this.vel.y / 10)), 7, dt);
+    py -= this.airK * 0.025 * (1 - a * 0.7); rx -= this.airK * 0.06 * (1 - a * 0.7);
     // reload choreography
     const rk = this.reloadKind;
     if (r.parts.crane) r.parts.crane.rotation.z = 0;
