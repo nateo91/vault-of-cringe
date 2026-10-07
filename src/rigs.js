@@ -201,9 +201,31 @@ export function stonksRig() {
   rimify(r.root, 0x9cc8ff, 0.3);
   return r;
 }
+// The Sigma: broad shoulders, a long open overcoat whose tails swing, a slicked-back pompadour, gold chain + watch.
 export function sigmaRig() {
-  const r = new Humanoid({ suit: 0x101012, shirt: 0x1c1c1c, tie: 0x050505, skin: 0x9a958c, shoes: 0x050505,
-    head: (h) => { moaiHead(h, 1.0); sigmaShades(h); } });
+  const gold = mat(0xd9b04a, { metal: 0.95, rough: 0.22 });
+  const r = new Humanoid({ suit: 0x101012, shirt: 0x1c1c1c, tie: 0x050505, skin: 0x9a958c, shoes: 0x050505, bulk: 1.15,
+    head: (h) => {
+      moaiHead(h, 1.0); sigmaShades(h);
+      const hair = mat(0x0b0b0d, { rough: 0.15, metal: 0.3 });
+      const pomp = mesh(h, CAP(0.1, 0.16), hair, 0, 0.44, 0.0, Math.PI / 2 - 0.25); pomp.scale.set(1.35, 1, 0.7);
+      mesh(h, RB(0.27, 0.06, 0.2, 0.025), hair, 0, 0.42, -0.04);
+    } });
+  // the overcoat: open at the front, hangs from the chest, tails sway below the waist
+  r.uTime = { value: 0 };
+  const coatM = swayCloth(mat(0x34343c, { rough: 0.5, metal: 0.1 }), r.uTime, 0.0, 0.8, 0.05);
+  coatM.side = THREE.DoubleSide;
+  const prof = [[0.36, -0.78], [0.31, -0.4], [0.27, 0.0], [0.29, 0.3], [0.32, 0.6], [0.2, 0.68]].map(([x, y]) => new THREE.Vector2(x, y));
+  const coat = mesh(r.j.chest, new THREE.LatheGeometry(prof, 40, 0.55, Math.PI * 2 - 1.1), coatM, 0, 0, -0.01);
+  coat.scale.set(1.05, 1, 0.72);
+  // collar points
+  for (const sx of [-1, 1]) mesh(r.j.chest, RB(0.1, 0.18, 0.03, 0.01), mat(0x18181c, { rough: 0.7 }), sx * 0.12, 0.62, 0.17, -0.3, 0, sx * 0.4);
+  // drip
+  const chain = mesh(r.j.chest, new THREE.TorusGeometry(0.12, 0.011, 6, 28), gold, 0, 0.5, 0.12); chain.rotation.x = 1.25;
+  mesh(r.j.chest, RB(0.05, 0.06, 0.015, 0.006), gold, 0, 0.39, 0.165);
+  mesh(r.j.elL, new THREE.TorusGeometry(0.055, 0.014, 6, 16), gold, 0, -0.27, 0).rotation.x = Math.PI / 2;
+  const pose = r.pose.bind(r);
+  r.pose = (dt, st) => { r.uTime.value = r.t; pose(dt, st); };
   rimify(r.root, 0xffffff, 0.25);
   return r;
 }
