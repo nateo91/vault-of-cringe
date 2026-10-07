@@ -8,7 +8,7 @@ import { Encounter, weightedPick } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight } from '../world.js';
 import { addFur } from '../surface.js';
 import { tileTex, textSprite, emojiSprite, textTex, IMPACT } from '../textures.js';
-import { Enemy, Doge, Stonks, registerNetType } from '../enemies.js';
+import { Enemy, Doge, Stonks, Boyfriend, registerNetType } from '../enemies.js';
 import { Shockwave, Pickup } from '../combat.js';
 import { rimify } from '../rigs.js';
 import { playCinematic } from '../cinematic.js';
@@ -604,7 +604,7 @@ export class ThisIsFine extends Encounter {
     if (this.addT <= 0) {
       this.addT = rand(4, 6.5);
       if (this.hostiles((e) => e !== b) < 6) {
-        const T = weightedPick([[HotTake, this.count(HotTake) < 3 ? 4 : 0], [Doge, 3], [Stonks, 1.5]]);
+        const T = weightedPick([[HotTake, this.count(HotTake) < 3 ? 4 : 0], [Doge, 3], [Stonks, 1.5], [Boyfriend, this.count(Boyfriend) < 1 ? 0.7 : 0]]);
         this.spawnAway(T, this.spawners, 14);
       }
     }

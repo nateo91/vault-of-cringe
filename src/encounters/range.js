@@ -5,7 +5,7 @@ import * as D from '../dressing.js';
 import { Encounter } from './base.js';
 import { setEnv, addBox, add, std, addStars } from '../world.js';
 import { tileTex, textSprite, IMPACT } from '../textures.js';
-import { Enemy, Doge, Stonks, MoaiKnight, Wizard, Sigma, RickRoller, Troll, spawnEnemy, registerNetType } from '../enemies.js';
+import { Enemy, Doge, Stonks, MoaiKnight, Wizard, Sigma, RickRoller, Troll, Boyfriend, spawnEnemy, registerNetType } from '../enemies.js';
 import { hit } from '../input.js';
 import { play } from '../audio.js';
 import { HUD } from '../hud.js';
@@ -51,6 +51,7 @@ const WAVES = [
   { name: 'MOON + MOG', spawn: [[Wizard, 1], [Sigma, 2]] },
   { name: 'NEVER GONNA', spawn: [[RickRoller, 5]] },
   { name: 'PROBLEM?', spawn: [[Troll, 3]] },
+  { name: 'DISTRACTED', spawn: [[Boyfriend, 1], [Doge, 4], [Stonks, 2]] },
   { name: 'EVERYTHING', spawn: [[Doge, 4], [Stonks, 2], [MoaiKnight, 1], [Sigma, 1]] },
 ];
 

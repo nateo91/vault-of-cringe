@@ -508,6 +508,11 @@ window.simulate = (seconds, dt = 1 / 60) => { for (let t = 0; t < seconds; t += 
 function step(dt, doRender = true) {
   // the raid clock: counts while playing (cutscenes included), stops while paused or loading
   if (G.state === 'playing' && !G.paused) updateMusicIntensity(dt);
+  // the Distracted Boyfriend's stare
+  if (G.state === 'playing' && G.player) {
+    const n = G.enemies.some((e) => e.alive && e.markId && e.markId === G.net.myId);
+    if (n !== G.player.noticed) { G.player.noticed = n; if (n) HUD.setDebuff('noticed', '👀 NOTICED: +50% damage taken, enemies focus you', true); else HUD.clearDebuff('noticed'); }
+  }
   if (G.state === 'playing' && !G.paused && G.run && !G.net.isClient) {
     G.run.clock += dt;
     if (G.godMode) G.run.eligible = false; // nice try

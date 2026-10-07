@@ -783,6 +783,55 @@ export class Sigma extends Enemy {
 
 // co-op: how clients rebuild each enemy type. Encounters register their own bosses/mechanic actors.
 export const NET_TYPES = {};
+// ---------------- DISTRACTED BOYFRIEND ----------------
+// Support. Hangs back and turns his head to stare at one guardian; while he can see you, you're NOTICED:
+// you take +50% damage and nearby enemies switch to you. Kill him first, or break his line of sight.
+export class Boyfriend extends Enemy {
+  constructor() {
+    super({ name: 'Distracted Boyfriend', hp: 240, radius: 0.45, height: 2.0, speed: 4.2, rank: 'major', gib: 0x3d63a8, deathLines: ['went back to his girlfriend', 'was not, in fact, single', 'got caught looking'] });
+    this.useRig(R.boyfriendRig());
+    this.hb(0, 1.2, 0, 0.42).hb(0, 0.6, 0, 0.3).hb(0, 1.93, 0.02, 0.24, true);
+    this.beam = new fx.Beam(0xff6fb0, 0.035, 0.55);
+    this.markId = 0; this.headYaw = 0; this.heartT = 0;
+  }
+  netVis() { return [this.markId || 0]; }
+  applyVis(v) { this.markId = v[0] || 0; }
+  pose() { return { lookDown: -0.05 }; }
+  animate(dt) {
+    // the look: head turned hard toward whoever he's noticed
+    const tgt = this.markId ? playerById(this.markId) : null;
+    let want = 0;
+    if (tgt && tgt.alive) {
+      want = Math.atan2(tgt.pos.x - this.pos.x, tgt.pos.z - this.pos.z) - this.yaw;
+      while (want > Math.PI) want -= Math.PI * 2; while (want < -Math.PI) want += Math.PI * 2;
+      want = Math.max(-1.6, Math.min(1.6, want));
+      const eye = this.hbWorld({ off: _t.set(0, 1.93, 0.1) }, new THREE.Vector3());
+      this.beam.set(eye, _t2.set(tgt.pos.x, tgt.pos.y + 1.4, tgt.pos.z), 0.03 + Math.sin(this.t * 8) * 0.01);
+      if ((this.heartT -= dt) <= 0) { this.heartT = 0.6; local(() => fx.floatText(eye.clone().add(_t.set(0, 0.35, 0)), pick(['😍', '👀', '💕']), { height: 0.35, life: 0.8 })); }
+    } else this.beam.hide();
+    this.headYaw += (want - this.headYaw) * Math.min(1, dt * 6);
+    if (this.rig?.j?.head) this.rig.j.head.rotation.y = this.headYaw;
+  }
+  think(dt) {
+    const p = this.tgt();
+    // hang back at 16-24 m, strafing
+    const d = this.distToPlayer();
+    const ax = this.pos.x - p.pos.x, az = this.pos.z - p.pos.z, l = Math.hypot(ax, az) || 1;
+    const goal = d < 16 ? [this.pos.x + ax / l * 4, this.pos.z + az / l * 4] : d > 24 ? [p.pos.x, p.pos.z] : [this.pos.x - az / l * 3, this.pos.z + ax / l * 3];
+    this.steer(goal[0], goal[1], this.speed, dt, { stopDist: 0.5 });
+    this.yaw = dampAngle(this.yaw, Math.atan2(-ax, -az) + 0.9, 3, dt); // body faces away a bit, head turns
+    // who's he looking at? the nearest guardian he can see
+    this.markT = (this.markT || 0) - dt;
+    if (this.markT <= 0) {
+      this.markT = 0.3;
+      const q = this.canSee && p.alive && d < 40 ? p : null;
+      this.markId = q ? (q === G.player ? G.net.myId : q.id) : 0;
+      // the others go for whoever he's noticed
+      if (q) for (const e of G.enemies) if (e !== this && e.alive && e.hostile && e.rank !== 'boss' && e.pos.distanceTo(this.pos) < 30) { e.target = q; e.retargetT = 1; }
+    }
+  }
+}
+
 // ---------------- SMUG TROLL ----------------
 // Cloaked (a faint shimmer), it circles round behind you. Close and unseen, it decloaks with a snicker
 // ("u mad?") and strikes. Turn and look at it and it panics and backs off; shooting it knocks the cloak off.
@@ -925,3 +974,4 @@ export function clearEnemies() {
 }
 registerNetType(RickRoller);
 registerNetType(Troll);
+registerNetType(Boyfriend);

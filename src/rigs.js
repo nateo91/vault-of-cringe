@@ -274,6 +274,40 @@ export function trollRig() {
   return r;
 }
 
+// The Distracted Boyfriend: plaid shirt, jeans, side-parted hair, and a head that's always turned.
+let plaidTex = null;
+function plaid() {
+  if (plaidTex) return plaidTex;
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const x = c.getContext('2d');
+  x.fillStyle = '#3d63a8'; x.fillRect(0, 0, 64, 64);
+  x.fillStyle = 'rgba(20,30,70,.55)'; for (let i = 0; i < 64; i += 16) { x.fillRect(i, 0, 6, 64); x.fillRect(0, i, 64, 6); }
+  x.fillStyle = 'rgba(230,235,255,.5)'; for (let i = 8; i < 64; i += 16) { x.fillRect(i, 0, 2, 64); x.fillRect(0, i, 64, 2); }
+  plaidTex = new THREE.CanvasTexture(c); plaidTex.colorSpace = THREE.SRGBColorSpace; plaidTex.wrapS = plaidTex.wrapT = THREE.RepeatWrapping; plaidTex.repeat.set(3, 3);
+  return plaidTex;
+}
+export function boyfriendRig() {
+  const r = new Humanoid({ suit: 0xffffff, pants: 0x34507e, shirt: 0xf4f4f4, tie: 0xffffff, skin: 0xe2b896, shoes: 0x3a2a20,
+    head: (h) => {
+      const skin = mat(0xe2b896, { rough: 0.5 }), hair = mat(0x2a1a10, { rough: 0.85 });
+      const skull = mesh(h, SPH(0.15, 22, 16), skin, 0, 0.15, 0.01); skull.scale.set(0.95, 1.12, 1.02);
+      const hairCap = mesh(h, new THREE.SphereGeometry(0.16, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.45), hair, 0, 0.18, -0.01); hairCap.scale.set(1, 1.05, 1.08);
+      mesh(h, RB(0.17, 0.05, 0.1, 0.02), hair, 0.03, 0.29, 0.08, 0, 0, -0.15); // the side part
+      for (const s of [-1, 1]) {
+        mesh(h, SPH(0.022, 10, 8), mat(0x241810, { rough: 0.3 }), s * 0.055, 0.17, 0.135);
+        mesh(h, RB(0.05, 0.012, 0.015, 0.005), hair, s * 0.055, 0.21, 0.14, 0, 0, s * -0.25); // raised brows: interested
+        mesh(h, SPH(0.035, 8, 8), skin, s * 0.15, 0.15, 0).scale.set(0.5, 1, 0.8);
+      }
+      mesh(h, CAP(0.02, 0.04), skin, 0, 0.12, 0.155, 0.4);
+      const mouth = mesh(h, RB(0.05, 0.012, 0.012, 0.005), mat(0x7a3a30), 0, 0.07, 0.14); mouth.rotation.z = 0.15; // a little "ooh"
+    } });
+  // swap the suit for a plaid shirt
+  const shirt = mat(0xffffff, { rough: 0.85 }); shirt.map = plaid();
+  r.root.traverse((o) => { if (o.material && o.material.color?.getHex() === 0xffffff && !o.material.map && o.material !== shirt) o.material = shirt; });
+  rimify(r.root, 0xffc0d0, 0.25);
+  return r;
+}
+
 export function sigmaRig() {
   const gold = mat(0xd9b04a, { metal: 0.95, rough: 0.22 });
   const r = new Humanoid({ suit: 0x101012, shirt: 0x1c1c1c, tie: 0x050505, skin: 0x9a958c, shoes: 0x050505, bulk: 1.15,

@@ -99,6 +99,10 @@ A mirrored disco ball that rolls at you trailing music notes (Normie Gate, Ohio,
 
 Cloaked stalkers (just a faint shimmer) that circle around behind you. If one gets close while you're not looking, it decloaks with a snicker ("u mad?") and lunges. **Look at it** and it panics and backs off; **shoot it** and the cloak drops for a moment. They join the Emergency Meeting from round 2, and there's a PROBLEM? wave in the Firing Range.
 
+## Distracted Boyfriends
+
+A support enemy in a plaid shirt who hangs back and turns his head to stare at one Guardian (a pink beam and heart-eyes). While he can see you, you're **NOTICED**: you take +50% damage and nearby enemies switch to you. Kill him first, or break his line of sight. Normie Gate (once a plate is held), This Is Fine, and the range's DISTRACTED wave.
+
 ## Elements and shields
 
 Every gun has an element: 🔥 Solar, ⚡ Arc or 🟣 Void. The icon shows next to its name on the HUD and in the Armory.
