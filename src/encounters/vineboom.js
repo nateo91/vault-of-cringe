@@ -162,8 +162,19 @@ export class VineBoomChamber extends Encounter {
       const a = (i / N) * Math.PI * 2;
       addBox(Math.cos(a) * R, 0, Math.sin(a) * R, 9, 14, 9, wall);
     }
-    // dais for chungus
-    addCyl(0, 0, 0, 6.5, 1, std(0x5a4a66, { metalness: 0.4 }), { seg: 32 });
+    // dais for chungus: two steps and a ring of glowing runes
+    addCyl(0, 0, 0, 7.6, 0.5, std(0x4a3d55, { metalness: 0.3 }), { seg: 48 });
+    addCyl(0, 0, 0, 6.5, 1, std(0x5a4a66, { metalness: 0.4 }), { seg: 48 });
+    const rune = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0xb06cff, emissiveIntensity: 2.4 });
+    for (const [r, y, w] of [[7.0, 0.52, 0.12], [5.6, 1.02, 0.08]]) { const t = new THREE.Mesh(new THREE.TorusGeometry(r, w, 6, 96), rune); t.rotation.x = Math.PI / 2; t.position.y = y; add(t); }
+    for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; const g = textSprite(pick(['🗿', 'ᚱ', 'ᛟ', 'ᚦ', 'BOOM']), 0.35, { color: '#d9b8ff', font: IMPACT, weight: 'normal' }); g.position.set(Math.cos(a) * 6.1, 1.25, Math.sin(a) * 6.1); add(g); }
+    // inlaid floor rings + an inner colonnade with a carved frieze above it
+    for (const r of [12, 19.5]) { const t = new THREE.Mesh(new THREE.TorusGeometry(r, 0.09, 6, 160), rune); t.rotation.x = Math.PI / 2; t.position.y = 0.03; add(t); }
+    // (offset so they stay clear of the braziers, banners and the entrance)
+    for (let i = 0; i < 12; i++) { const a = (i * 30 + 15) * Math.PI / 180; D.column(Math.cos(a) * 31, Math.sin(a) * 31, { h: 11, r: 1.1, color: 0x6a5f72, accent: 0xb06cff }); }
+    const frieze = new THREE.Mesh(new THREE.CylinderGeometry(32.5, 32.5, 1.6, 96, 1, true), std(0x5a4f63, { roughness: 0.8 }));
+    frieze.material.side = THREE.BackSide; frieze.position.y = 11.8; add(frieze);
+    const fr2 = new THREE.Mesh(new THREE.TorusGeometry(32.3, 0.25, 6, 128), std(0x7a6f82, { metalness: 0.3 })); fr2.rotation.x = Math.PI / 2; fr2.position.y = 11; add(fr2);
     // statues on pillars
     this.statues = STATUES.map((def, i) => {
       const a = Math.PI / 4 + i * Math.PI / 2;
