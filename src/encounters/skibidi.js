@@ -1,4 +1,4 @@
-// Encounter 4: SKIBIDI OF A THOUSAND TOILETS — touch grass, farm aura, pass the vibe check, survive Ohio.
+// Encounter 5: SKIBIDI OF A THOUSAND TOILETS — touch grass, farm aura, pass the vibe check, survive Ohio.
 import * as THREE from 'three';
 import { G, rand, pick, after, dampAngle, distXZ, local } from '../game.js';
 import * as D from '../dressing.js';

@@ -159,6 +159,11 @@ export const sfxs = {
   fanfare() { [392, 523, 659, 784, 659, 784, 1046].forEach((f, i) => tone({ type: 'square', freq: f, dur: 0.22, gain: 0.07, delay: i * 0.12, rev: 0.3 })); },
   wipe() { [392, 370, 349, 330].forEach((f, i) => tone({ type: 'sawtooth', freq: f, freqEnd: f * 0.97, dur: i === 3 ? 1.2 : 0.4, gain: 0.12, delay: i * 0.42, rev: 0.4 })); },
   sus() { tone({ type: 'square', freq: 300, freqEnd: 900, dur: 0.15, gain: 0.08 }); tone({ type: 'square', freq: 900, freqEnd: 300, dur: 0.15, gain: 0.08, delay: 0.16 }); },
+  sip() { noise({ dur: 0.5, freq: 900, freqEnd: 500, q: 4, type: 'bandpass', gain: 0.25 }); tone({ freq: 220, freqEnd: 180, dur: 0.1, gain: 0.08, delay: 0.55 }); },
+  fireball() { noise({ dur: 0.6, freq: 500, freqEnd: 1800, gain: 0.5, rev: 0.3 }); tone({ type: 'sawtooth', freq: 70, freqEnd: 40, dur: 0.4, gain: 0.12 }); },
+  roar() { tone({ type: 'sawtooth', freq: 140, freqEnd: 90, dur: 0.9, gain: 0.25, dist: true, rev: 0.5 }); noise({ dur: 0.8, freq: 1200, freqEnd: 300, gain: 0.35, rev: 0.4 }); },
+  sizzle() { noise({ dur: 0.35, freq: 5000, type: 'highpass', gain: 0.18 }); },
+  spray() { noise({ dur: 0.3, freq: 2600, q: 0.7, type: 'bandpass', gain: 0.22, attack: 0.03 }); },
   chime(i = 0) { const f = [523, 659, 784, 988][i % 4]; tone({ type: 'triangle', freq: f, dur: 0.3, gain: 0.15, rev: 0.4 }); },
 };
 

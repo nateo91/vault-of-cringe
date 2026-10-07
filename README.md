@@ -58,13 +58,19 @@ How it works:
 1. **The Normie Gate** (cursed 1/5). Capture the 👍 LIKE, ▶ SUBSCRIBE and 🔔 BELL plates and hold all three at once. Stonks Acolytes walk onto your plates to un-capture them. A wizard comes from the moon.
 2. **Emergency Meeting** (cursed 2/5). Crewmates wander around doing tasks, and one of them is the impostor. Crewmates don't use vents. Shoot the wrong one and you get "bruh" plus a penalty. Every 30s the impostor kills someone, which calls a meeting and shuffles everyone. Three rounds.
 3. **The Vine Boom Chamber** (cursed 3/5). Moai Says: the four statues vine-boom in a sequence, and you shoot them back in the same order to drop Big Chungus's "simply too big" shield. Jump his stomp shockwaves and outrun his eye laser. If you take too long, Cheems bonks the whole raid.
-4. **Skibidi of a Thousand Toilets** (cursed 5/5, deep fried). You're in Ohio:
+4. **This Is Fine** (cursed 4/5). The room is on fire and the Dog, Who Is Fine, is sipping coffee at his table:
+   - The floor is a grid of tiles, and the fire spreads tile by tile. Standing on a burning tile burns you (hop on the furniture).
+   - The dog is in denial (immune) until **50%** of the floor is burning. Then it stops being fine, he panics, and you can damage him. Under 35% he goes back into denial.
+   - If **90%** of the floor burns for 4 seconds, everyone dies.
+   - 🧯 Fire extinguishers light up on the side walls. Walk into one to pick it up, then walk through the fire to put it out. Your hands are full, so you can't shoot while carrying it.
+   - Hot Takes walk around setting the floor on fire, and they explode into more fire when they die, so shoot them from a distance. The dog lobs flaming coffee that lights up wherever it lands, and once he panics he flails out shockwaves you have to jump.
+5. **Skibidi of a Thousand Toilets** (cursed 5/5, deep fried). You're in Ohio:
    - Brainrot stacks up over time and kills you at 10. Standing on 🌱 grass cleanses it.
    - Kill Sigmas and collect their +1000 AURA to break the Rizz Shield.
    - Vibe checks: don't move, look away, or jump.
    - At 50% health the toilets multiply. At 15% the floor is lava.
 
-Big Chungus and Skibidi get cinematic boss intros on your first attempt, and each impostor gets a reveal cutscene (full the first time, a quick cut after that). Press Space, Enter or click to skip.
+Big Chungus, the Dog and Skibidi get cinematic boss intros on your first attempt, and each impostor gets a reveal cutscene (full the first time, a quick cut after that). Press Space, Enter or click to skip.
 
 You get 3 revives per encounter. Run out and the squad wipes, which restarts the encounter. You can start from any encounter in the main menu to practice.
 
@@ -99,6 +105,7 @@ Every run has a clock in the objective panel (it doesn't count while the game is
 Runs that start at a later encounter, or that use cheats, show up as **PRACTICE**.
 
 - The board stores your top 25 clears, with splits for each encounter, a "best segments" column and a sum-of-best time.
+- Adding This Is Fine made the raid longer, so the board started fresh when it was added.
 - In co-op, the host's clock is the official time, and the clear is saved for everyone in the fireteam.
 - Boards are saved in each player's own browser. Hit **📋 COPY RESULT** on the victory screen and paste it in the group chat to settle disputes.
 

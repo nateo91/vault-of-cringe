@@ -1,5 +1,5 @@
 // Raid clear-time leaderboard, stored in this browser. Co-op clears are saved for everyone in the fireteam.
-const KEY = 'voc-leaderboard-v1';
+const KEY = 'voc-leaderboard-v2'; // v2: the raid gained This Is Fine, so older times aren't comparable
 const MAX = 25;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const CLASS_ICON = { hunter: '🔺', titan: '🛡️', warlock: '📖' };

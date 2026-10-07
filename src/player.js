@@ -336,7 +336,7 @@ export class Player {
       this.vm.visible = false;
       return;
     }
-    this.vm.visible = !this.scoped;
+    this.vm.visible = !this.scoped && !this.carry;
     // look (aim slows a touch over enemies: "reticle friction")
     const friction = this.overTarget && (G.settings.aimAssist ?? true) ? 0.72 : 1;
     const sens = 0.0022 * G.settings.sens * (this.ads ? 0.65 : 1) * friction;
@@ -390,7 +390,7 @@ export class Player {
     if (down('KeyD') || down('ArrowRight')) mx += 1;
     if (down('KeyA') || down('ArrowLeft')) mx -= 1;
     const len = Math.hypot(mx, mz) || 1;
-    this.ads = Input.right && this.alive && this.reloadKind !== 'hc';
+    this.ads = Input.right && this.alive && this.reloadKind !== 'hc' && !this.carry;
     this.sprinting = (down('ShiftLeft') || down('ShiftRight')) && mz > 0 && !this.ads && !Input.left && this.slideT <= 0;
     // slide: crouch while sprinting
     this.slideCd -= dt;
@@ -521,6 +521,7 @@ export class Player {
 
   // ---------------------------------------------------------------- shooting
   combat(dt) {
+    if (this.carry) { this.inspectT = 0; return; }
     let want = -1;
     if (hit('Digit1')) want = 0;
     if (hit('Digit2')) want = 1;

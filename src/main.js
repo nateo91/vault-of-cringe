@@ -19,9 +19,10 @@ import { TheApproach } from './encounters/approach.js';
 import { NormieGate } from './encounters/normie.js';
 import { EmergencyMeeting } from './encounters/meeting.js';
 import { VineBoomChamber } from './encounters/vineboom.js';
+import { ThisIsFine } from './encounters/thisisfine.js';
 import { SkibidiFinale } from './encounters/skibidi.js';
 
-const ENCOUNTERS = [TheApproach, NormieGate, EmergencyMeeting, VineBoomChamber, SkibidiFinale];
+const ENCOUNTERS = [TheApproach, NormieGate, EmergencyMeeting, VineBoomChamber, ThisIsFine, SkibidiFinale];
 const TIPS = [
   'Tip: Have you tried not dying?',
   'Tip: Bungie has nerfed this loading screen.',
@@ -73,7 +74,7 @@ function init() {
   setupMenus();
   setupCoop();
   G.onEngram = () => grantLoot({ exoticChance: 0.04 }, 'ENGRAM DECRYPTED');
-  G.onLoot = (i) => { if (ENCOUNTERS[i]?.traversal) return; grantLoot({ exoticChance: [0, 0.05, 0.12, 0.25, 0.5][i] ?? 0.1 }); if (i === ENCOUNTERS.length - 1) after(1.2, () => grantLoot({ exoticChance: 0.2 })); };
+  G.onLoot = (i) => { if (ENCOUNTERS[i]?.traversal) return; grantLoot({ exoticChance: [0, 0.05, 0.12, 0.2, 0.3, 0.5][i] ?? 0.1 }); if (i === ENCOUNTERS.length - 1) after(1.2, () => grantLoot({ exoticChance: 0.2 })); };
   // skip a boss intro
   addEventListener('keydown', (e) => { if (G.cine && ['Space', 'Enter', 'KeyE', 'Escape'].includes(e.code)) G.cine.skip(); });
   addEventListener('mousedown', () => { if (G.cine) G.cine.skip(); });
