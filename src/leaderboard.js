@@ -3,6 +3,7 @@ const KEY = 'voc-leaderboard-v2'; // v2: the raid gained This Is Fine, so older 
 const MAX = 25;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const CLASS_ICON = { hunter: '🔺', titan: '🛡️', warlock: '📖' };
+const MOD_ICON = { shielded: '🛡️', oneLife: '💀', speedy: '💨', glass: '🪙', bighead: '🎈' };
 
 export function formatTime(sec, tenths = true) {
   if (!isFinite(sec)) return '--:--';
@@ -56,7 +57,7 @@ export function renderBoard(el) {
   const best = bestSplits(board);
   const rows = board.map((r, i) => `<tr class="${i === 0 ? 'top' : ''}">
       <td class="rk">${i === 0 ? '👑' : i + 1}</td>
-      <td class="tm">${formatTime(r.time)}</td>
+      <td class="tm">${formatTime(r.time)}${(r.mods || []).length ? `<div class="mods-b">${r.mods.map((k) => MOD_ICON[k] || '').join(' ')}</div>` : ''}</td>
       <td class="team">${r.team.map((m) => `<span title="${esc(m.cls || '')}">${CLASS_ICON[m.cls] || '◆'} ${esc(m.name)}</span>`).join('')}</td>
       <td>${r.wipes || 0}</td>
       <td>${r.kills ?? '-'}</td>

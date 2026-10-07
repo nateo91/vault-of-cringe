@@ -289,6 +289,7 @@ export class Player {
   }
 
   hurt(amount, cause = 'a meme') {
+    if (G.settings.mods?.glass) amount *= 2;
     if (!this.alive || G.godMode || G.state !== 'playing' || G.cine) return;
     if (this.superActive === 'slam') amount *= 0.3;
     if (this.superActive === 'gg') amount *= 0.6;

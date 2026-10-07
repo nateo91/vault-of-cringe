@@ -1,6 +1,6 @@
 // Bootstrap, raid flow, game loop.
 import * as THREE from 'three';
-import { G, pick, after, updateTimers, alivePlayers, local } from './game.js';
+import { MODS, G, pick, after, updateTimers, alivePlayers, local } from './game.js';
 import { Input, initInput, lockPointer, endFrame, down, hit } from './input.js';
 import { initAudio, play, say, setVolume, startMusic, stopMusic, updateListener, setRoom, setAmbience, setMusicIntensity } from './audio.js';
 import { HUD } from './hud.js';
@@ -142,6 +142,11 @@ function setupMenus() {
   $('#restartEnc').onclick = () => { $('#pause').classList.add('hidden'); G.paused = false; G.player.revives = 3; loadEncounter(G.encounterIndex); lockPointer(canvas); };
   $('#quit').onclick = () => { leave(); location.reload(); };
   $('#armoryBtn').onclick = () => openArmory();
+  // raid modifiers
+  G.settings.mods ||= {};
+  const drawMods = () => { $('#mods').innerHTML = Object.entries(MODS).map(([k, m]) => `<button class="mod ${G.settings.mods[k] ? 'on' : ''}" data-mod="${k}" title="${m.desc}">${m.icon} ${m.name}</button>`).join(''); };
+  drawMods();
+  $('#mods').onclick = (e) => { const b = e.target.closest('[data-mod]'); if (!b) return; G.settings.mods[b.dataset.mod] = !G.settings.mods[b.dataset.mod]; try { localStorage.setItem('voc-settings', JSON.stringify(G.settings)); } catch (err) { /* fine */ } drawMods(); };
   $('#boardBtn').onclick = () => { renderBoard($('#leaderboard')); $('#leaderboard').classList.remove('hidden'); };
   $('#boardClose').onclick = () => $('#leaderboard').classList.add('hidden');
   $('#boardClear').onclick = () => { if (confirm('Delete every saved clear on this browser?')) { clearBoard(); renderBoard($('#leaderboard')); } };
@@ -346,6 +351,7 @@ function onPlayerDeath() {
     return;
   }
   if (G.net.active) return; // co-op: teammates revive you; the host wipes when everyone is down
+  if (G.settings.mods?.oneLife) { wipe('One Life. You had one job. (Modifier: 💀 One Life)'); return; }
   if (p.revives > 0) {
     p.revives--;
     HUD.setRevives(p.revives);
@@ -408,7 +414,8 @@ function finishRun() {
   const r = G.run;
   if (!r) return null;
   const team = [{ name: G.net.active ? G.net.name : (localStorage.getItem('voc-name') || 'Guardian'), cls: G.player.cls }, ...[...G.avatars.values()].map((a) => ({ name: a.name, cls: a.cls }))];
-  return { id: r.id, time: +r.clock.toFixed(2), date: Date.now(), team, wipes: r.wipes, kills: G.stats.kills, splits: r.splits, eligible: r.eligible };
+  const mods = Object.keys(MODS).filter((k) => G.settings.mods?.[k]);
+  return { id: r.id, time: +r.clock.toFixed(2), date: Date.now(), team, wipes: r.wipes, kills: G.stats.kills, splits: r.splits, eligible: r.eligible, mods };
 }
 
 function victory(run = null) {

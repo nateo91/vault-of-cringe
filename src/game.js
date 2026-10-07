@@ -36,6 +36,17 @@ export const ELEMENTS = {
 };
 export const ELEMENT_KEYS = Object.keys(ELEMENTS);
 
+// Raid modifiers (menu toggles). Enemy-side ones are applied by whoever simulates the enemy (the host),
+// player-side ones (one life, glass cannon) by each player's own settings.
+export const MODS = {
+  shielded: { icon: '🛡️', name: 'Shielded', desc: 'every minor enemy carries a random elemental shield' },
+  oneLife: { icon: '💀', name: 'One Life', desc: 'solo: no revives, die once and the squad wipes' },
+  speedy: { icon: '💨', name: 'Caffeinated', desc: 'enemies move 30% faster' },
+  glass: { icon: '🪙', name: 'Glass Cannon', desc: 'you deal +50% damage and take double' },
+  bighead: { icon: '🎈', name: 'Big Head', desc: 'enemy heads (and their crit spots) are 1.6x bigger' },
+};
+export const modOn = (k) => !!G.settings.mods?.[k];
+
 // Run fn without mirroring its fx/sounds/HUD to the fireteam (local-player-only stuff).
 export function local(fn) { G.netLocal++; try { return fn(); } finally { G.netLocal--; } }
 // True when we're the host and this effect should be mirrored to clients.

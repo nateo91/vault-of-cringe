@@ -1,6 +1,6 @@
 // Enemy base class + the common meme roster.
 import * as THREE from 'three';
-import { G, rand, pick, clamp, damp, dampAngle, distXZ, distToSegment, nearestPlayer, hurtPlayer, playerById, local, ELEMENTS, ELEMENT_KEYS } from './game.js';
+import { G, rand, pick, clamp, damp, dampAngle, distXZ, distToSegment, nearestPlayer, hurtPlayer, playerById, local, ELEMENTS, ELEMENT_KEYS, modOn } from './game.js';
 import * as fx from './fx.js';
 import { play, playAt } from './audio.js';
 import { moveCollide, pointInWorld } from './world.js';
@@ -93,6 +93,7 @@ export class Enemy {
     if (G.net.isClient) return G.net.clientHit(this, dmg, crit, info);
     const mine = !info.from; // damage numbers only for your own shots, like the real game
     if (this.immune || this.untargetable) { if (mine) fx.dmgNumber(this.top(_t), 'IMMUNE', 'immune'); return 0; }
+    if (mine && modOn('glass')) dmg *= 1.5;
     if (this.shieldHp > 0) return this.hitShield(dmg, info, mine);
     dmg = Math.max(1, Math.round(dmg));
     this.hp -= dmg; this.pop = 1; this.aggro = true;
@@ -891,8 +892,20 @@ export class RickRoller extends Enemy {
 export function registerNetType(Cls, make = () => new Cls()) { NET_TYPES[Cls.name] = make; }
 [Doge, Stonks, Nyan, SusSniper, MoaiKnight, Wizard, Sigma].forEach((C) => registerNetType(C));
 
+// Apply the enemy-side raid modifiers to a freshly made enemy (host spawns + client proxies)
+export function applyMods(e) {
+  if (e.rank === 'boss' || e.rank === 'neutral' || e.modded) return e;
+  e.modded = true;
+  if (modOn('speedy')) e.speed *= 1.3;
+  if (modOn('bighead')) {
+    for (const hb of e.hitboxes) if (hb.crit) hb.r *= 1.6;
+    const head = e.rig?.j?.head; if (head) head.scale.multiplyScalar(1.6);
+  }
+  if (modOn('shielded') && e.rank === 'minor' && !e.shieldMax && e.hostile !== false) e.addShield(pick(ELEMENT_KEYS), 0.35);
+  return e;
+}
 export function spawnEnemy(Type, x, z, y = null, ...args) {
-  const e = new Type(...args);
+  const e = applyMods(new Type(...args));
   e.spawnAt(x, y ?? (e.flying ? 5 : 0.05), z);
   G.enemies.push(e);
   return e;

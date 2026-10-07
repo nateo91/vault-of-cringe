@@ -409,3 +409,12 @@ label { cursor: pointer; }
 
 #photohint { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 8px 14px; background: rgba(0,0,0,.55); color: #ddd; font: 600 13px Rajdhani, sans-serif; letter-spacing: .06em; z-index: 20; pointer-events: none; }
 #photohint b { color: #ffd23f; }
+
+/* ---------- raid modifiers ---------- */
+.row.mods { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 12px; }
+.mods-l { font-size: 11px; letter-spacing: .25em; color: #9fe2ff; font-weight: 700; }
+#mods { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+#mods .mod { padding: 5px 10px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); color: #bbc; font: 600 13px Rajdhani, sans-serif; letter-spacing: .04em; cursor: pointer; }
+#mods .mod:hover { background: rgba(255,255,255,.1); }
+#mods .mod.on { border-color: #ff4d4d; color: #fff; background: rgba(255,60,60,.15); box-shadow: 0 0 10px rgba(255,60,60,.25); }
+.lb-table .mods-b { font-family: Rajdhani, sans-serif; font-size: 13px; letter-spacing: .1em; }

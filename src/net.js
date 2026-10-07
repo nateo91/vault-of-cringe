@@ -7,7 +7,7 @@ import { applyFx, dmgNumber, impact, superRing, crater, grenadeField, rally } fr
 import { play, playAt, say } from './audio.js';
 import { HUD } from './hud.js';
 import { Projectile, Shockwave, Pickup, applyPickup } from './combat.js';
-import { NET_TYPES } from './enemies.js';
+import { NET_TYPES, applyMods } from './enemies.js';
 import { Avatar } from './avatars.js';
 
 const PREFIX = 'vault-of-cringe-v1-';
@@ -226,6 +226,7 @@ function applySnap(s) {
         if (!make) continue;
         e = make(row[2]);
         if (!e) continue;
+        applyMods(e);
         e.nid = nid; e.proxy = true;
         G.enemies.push(e);
       }
@@ -266,6 +267,7 @@ export function resetClientWorld() { proxyPickups.forEach((p) => p.remove()); pr
 // Clients: report a hit on a proxy to the host, and predict the feedback locally.
 Net.clientHit = (e, dmg, crit, info) => {
   if (!e.alive) return 0;
+  if (G.settings.mods?.glass) dmg *= 1.5;
   Net.outbox.push(['__hit', e.nid, Math.round(dmg), !!crit, !!info.splash, info.element || 0]);
   if (e.hostile === false) return 0; // crewmates / statues: the host decides what happens
   if (e.immune || e.untargetable) { dmgNumber(e.top(), 'IMMUNE', 'immune'); return 0; }
