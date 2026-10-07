@@ -186,6 +186,62 @@ export const flashTex = (() => {
 // a little wisp of barrel smoke in the world, left behind as you move
 export function muzzleSmoke(pos) { smoke(pos, 0xb8b4ac, 1, 0.07, 0.8, 0.45); }
 
+// ---------- supers ----------
+// A ring of energy sweeping out along the floor (cast + Fist of Yeet), with rising motes
+export function superRing(pos, color, radius = 8) {
+  const m = new THREE.Mesh(new THREE.RingGeometry(0.85, 1, 64), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(2.5), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false }));
+  m.rotation.x = -Math.PI / 2; m.position.copy(pos).setY(pos.y + 0.06);
+  addTimed(m, 0.7, (k, o) => { o.scale.setScalar(radius * (1 - k) + 0.5); o.material.opacity = k; }, (o) => { o.geometry.dispose(); o.material.dispose(); });
+  for (let i = 0; i < 24; i++) {
+    const a = i / 24 * Math.PI * 2;
+    _burst(pos.clone().add(new THREE.Vector3(Math.cos(a) * 1.2, 0.2, Math.sin(a) * 1.2)), color, 1, 3, 0.09, 0.9, -4);
+  }
+}
+// The Fist of Yeet crater: a cracked, scorched decal on the floor + rubble + a rolling dust ring
+const craterTex = (() => {
+  const S = 256, c = document.createElement('canvas'); c.width = c.height = S;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+  g.addColorStop(0, 'rgba(10,8,8,0.95)'); g.addColorStop(0.35, 'rgba(25,20,20,0.75)'); g.addColorStop(0.7, 'rgba(30,25,25,0.3)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = g; x.fillRect(0, 0, S, S);
+  x.strokeStyle = 'rgba(0,0,0,0.85)'; x.lineCap = 'round';
+  for (let i = 0; i < 14; i++) {
+    let a = Math.random() * Math.PI * 2, r = 18, px = S / 2, py = S / 2;
+    x.lineWidth = 3 + Math.random() * 3; x.beginPath(); x.moveTo(px, py);
+    while (r < S * 0.48) { a += (Math.random() - 0.5) * 0.7; r += 8 + Math.random() * 10; px = S / 2 + Math.cos(a) * r; py = S / 2 + Math.sin(a) * r; x.lineTo(px, py); x.lineWidth *= 0.92; }
+    x.stroke();
+  }
+  return new THREE.CanvasTexture(c);
+})();
+export function crater(pos, size = 7, color = 0x7fd7ff) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshBasicMaterial({ map: craterTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+  m.rotation.x = -Math.PI / 2; m.rotation.z = rand(0, 6); m.position.copy(pos).setY(pos.y + 0.03);
+  addTimed(m, 14, (k, o) => { o.material.opacity = Math.min(1, k * 4); }, (o) => { o.geometry.dispose(); o.material.dispose(); });
+  // glowing embers in the cracks that cool off
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(size * 0.3, 32), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(2), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+  glow.rotation.x = -Math.PI / 2; glow.position.copy(pos).setY(pos.y + 0.04);
+  addTimed(glow, 2.5, (k, o) => { o.material.opacity = k * k * 0.8; }, (o) => { o.geometry.dispose(); o.material.dispose(); });
+  debris(pos.clone().setY(pos.y + 0.3), 0x6a6570, 14, 9, 0.22, 1.4);
+  // a ring of dust rolling outward (not on top of the camera)
+  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; smoke(pos.clone().add(new THREE.Vector3(Math.cos(a) * 3, 0.3, Math.sin(a) * 3)), 0x9a948c, 1, 2.6, 1.6, 0.5); }
+}
+// Nova Bomb: the void ball collapses inward for a beat, then detonates
+export function implode(pos, radius = 4, color = 0x9a4dff) {
+  const m = new THREE.Mesh(sphGeo, new THREE.MeshBasicMaterial({ color: 0x1a0030, transparent: true, opacity: 0.9, depthWrite: false }));
+  m.position.copy(pos);
+  addTimed(m, 0.28, (k, o) => { o.scale.setScalar(radius * k); }, (o) => o.material.dispose());
+  const rim = new THREE.Mesh(sphGeo, new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(2.5), transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide, toneMapped: false }));
+  rim.position.copy(pos);
+  addTimed(rim, 0.28, (k, o) => { o.scale.setScalar(radius * 1.15 * k); }, (o) => o.material.dispose());
+  for (let i = 0; i < 30; i++) {
+    const d = new THREE.Vector3().randomDirection();
+    if (parts.length >= MAX_PARTS) break;
+    const s = new THREE.Sprite(glowMat(color)); s.position.copy(pos).addScaledVector(d, radius * 1.6); s.scale.setScalar(0.25);
+    G.fxGroup.add(s);
+    parts.push({ m: s, v: d.multiplyScalar(-radius * 5.5), life: 0.3, max: 0.3, s: 0.25, grav: 0, drag: 0 });
+  }
+}
+
 // ---------- bullet holes ----------
 const decals = [];
 const decalGeo = new THREE.PlaneGeometry(1, 1);

@@ -1,6 +1,6 @@
 // Raycasts, explosions, projectiles, shockwaves and pickups.
 import * as THREE from 'three';
-import { G, rand, pick, local, nearestPlayer, playerById } from './game.js';
+import { G, rand, pick, local, after, nearestPlayer, playerById } from './game.js';
 import * as fx from './fx.js';
 import { play, playAt, concuss } from './audio.js';
 import { moveCollide } from './world.js';
@@ -206,6 +206,16 @@ export class Projectile {
     if (!this.alive) return;
     this.alive = false;
     G.fxGroup.remove(this.mesh);
+    if (this.look === 'nova') {
+      // the void ball collapses inward for a beat, then detonates
+      const at = this.pos.clone();
+      local(() => fx.implode(at, 3.5));
+      after(0.28, () => {
+        explode(at, this.splash, this.splashDmg ?? this.dmg, { owner: this.owner, color: this.explodeColor || this.color, source: this.source, big: 1.6, localFx: true, ghost: this.ghost, element: this.element });
+        if (!this.ghost) this.onHit?.(at, hitEnemy);
+      });
+      return;
+    }
     if (this.splash) explode(this.pos, this.splash, this.splashDmg ?? this.dmg, { owner: this.owner, color: this.explodeColor || this.color, source: this.source, big: this.splash > 6 ? 1.6 : 1, localFx: true, ghost: this.ghost, element: this.element });
     else local(() => fx.burst(this.pos, this.color, 5, 3, 0.1, 0.3));
     if (!this.ghost) this.onHit?.(this.pos, hitEnemy);

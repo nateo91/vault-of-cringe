@@ -348,3 +348,12 @@ label { cursor: pointer; }
 .lb-splits .seg { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; color: #ccd; }
 .lb-splits .seg b { color: #fff; font-variant-numeric: tabular-nums; }
 .lb-splits .sob { border-top: 1px solid rgba(255,255,255,.15); margin-top: 6px; padding-top: 6px; color: #ffd23f; font-weight: 700; }
+
+/* ---------- supers ---------- */
+#superfx { position: absolute; inset: 0; pointer-events: none; }
+#superfx .sf-flash { position: absolute; inset: 0; opacity: 0; background: radial-gradient(circle at 50% 55%, transparent 10%, var(--sfc, #ffb030) 75%); mix-blend-mode: screen; }
+#superfx .sf-flash.go { animation: sfFlash .7s ease-out; }
+@keyframes sfFlash { 0% { opacity: .85; transform: scale(1.25); } 100% { opacity: 0; transform: scale(1); } }
+#superfx .sf-gold { position: absolute; inset: 0; opacity: 0; transition: opacity .4s; box-shadow: inset 0 0 120px 30px rgba(255, 170, 40, .45); animation: sfGold 1.1s ease-in-out infinite; }
+#superfx .sf-gold.on { opacity: 1; }
+@keyframes sfGold { 50% { box-shadow: inset 0 0 160px 45px rgba(255, 140, 20, .6); } }

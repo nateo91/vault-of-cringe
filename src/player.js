@@ -309,6 +309,7 @@ export class Player {
     if (!this.alive) return;
     this.alive = false; this.hp = 0; this.shield = 0;
     this.deadT = 0; this.superActive = null;
+    document.querySelector('#superfx .sf-gold')?.classList.remove('on');
     G.stats.deaths++; G.stats.bruh++;
     say('bruh', 'bruh');
     HUD.death(true, `Killed by ${cause}. ${pick(DEATH_QUIPS)}` + (G.net.active ? '\nWaiting for a teammate to revive you (they hold E on your Ghost).' : ''));
@@ -454,6 +455,9 @@ export class Player {
       const p = this.pos.clone(); p.y += 0.3;
       explode(p, 10, 850, { color: 0x7fd7ff, big: 2, knock: 0, localFx: true });
       fx.ringFx(this.pos, 11, 0x7fd7ff, 0.6);
+      fx.superRing(this.pos.clone(), 0x7fd7ff, 12); fx.crater(this.pos.clone(), 7, 0x7fd7ff);
+      this.fov += 10;
+      G.net.playerEv(['pfx', 'crater', v3(this.pos)]);
       G.net.playerEv(['pfx', 'boom', v3(p), 10, 0x7fd7ff]);
       for (const e of G.enemies) {
         if (e.alive && e.rank !== 'boss' && e.knockable !== false && e.pos.distanceTo(this.pos) < 12) { e.vel.y += 16; fx.floatText(e.top().clone(), 'YEET', { color: '#7fd7ff', height: 0.6 }); }
@@ -856,10 +860,11 @@ export class Player {
     G.net.playerEv(['shot', v3(this.muzzleWorld()), v3(h.point), 0xffb030, 0.12]);
     if (h.enemy) this.applyHits(new Map([[h.enemy, { dmg: GG.dmg * (h.crit ? GG.crit : 1), crit: h.crit, point: h.point }]]));
     explode(h.point, 2.5, 90, { color: 0xffa020, knock: 0.3, silent: true, localFx: true });
+    fx.burst(h.point, 0xffd060, 18, 7, 0.08, 0.7, 6); fx.burst(h.point, 0xffffff, 6, 4, 0.05, 0.3, 0); // golden embers
     this.ggShots--;
     if (this.ggShots <= 0) this.endSuper();
   }
-  endSuper() { this.superActive = null; this.showGun(); }
+  endSuper() { this.superActive = null; this.showGun(); document.querySelector('#superfx .sf-gold')?.classList.remove('on'); }
 
   abilities(dt) {
     this.grenadeCd = Math.max(0, this.grenadeCd - dt);
@@ -903,8 +908,16 @@ export class Player {
     play('superCast');
     lhud('bigText', this.clsDef.superName, this.clsDef.superSub, 1.6, 'meme');
     G.shake += 0.4;
+    // the moment: a flash in your class colour, a FOV punch, and a ring of energy around you
+    const col = { hunter: 0xffb030, titan: 0x7fd7ff, warlock: 0xb06cff }[this.cls];
+    const flash = document.querySelector('#superfx .sf-flash');
+    if (flash) { flash.style.setProperty('--sfc', '#' + col.toString(16).padStart(6, '0')); flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go'); }
+    this.fov += 14;
+    fx.superRing(this.pos.clone(), col, 7);
+    G.net.playerEv(['pfx', 'ring', v3(this.pos), col]);
     if (this.cls === 'hunter') {
       this.superActive = 'gg'; this.ggShots = 6; this.superTimer = 14; this.nextFire = G.time + 0.3; this.reloadT = 0; this.reloadKind = null; this.showGun();
+      document.querySelector('#superfx .sf-gold')?.classList.add('on');
     } else if (this.cls === 'titan') {
       this.superActive = 'slam'; this.slamArmed = false; this.vel.y = 13; this.onGround = false;
       after(0.35, () => { this.slamArmed = true; if (this.superActive === 'slam') this.vel.y = Math.min(this.vel.y, -20); });
