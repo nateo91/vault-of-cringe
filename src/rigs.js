@@ -595,7 +595,7 @@ export class WizardRig extends Rig {
     const ba = beardGeo.attributes.position;
     for (let i = 0; i < ba.count; i++) { const y = ba.getY(i), t = -y / 0.62; ba.setZ(i, ba.getZ(i) * 0.6 + Math.sin(t * 3.5) * 0.04 * t + t * 0.05); }
     beardGeo.computeVertexNormals();
-    this.beard = mesh(head, beardGeo, beard, 0, -0.07, 0.1);
+    this.beard = addFur(mesh(head, beardGeo, beard, 0, -0.07, 0.1), { shells: 5, len: 0.03, density: 170 }); // wispy, not a solid cone
 
     // hat: a drooping brim + a tall cone that bends over at the tip, with stars and a moon
     const hat = this.joint('hat', head, 0, 0.1, -0.01);
