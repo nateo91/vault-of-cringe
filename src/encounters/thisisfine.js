@@ -6,7 +6,7 @@ import { G, rand, pick, after, dampAngle, distXZ, alivePlayers, players, playerB
 import * as D from '../dressing.js';
 import { Encounter, weightedPick } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight } from '../world.js';
-import { tileTex, textSprite, emojiSprite, IMPACT } from '../textures.js';
+import { tileTex, textSprite, emojiSprite, textTex, IMPACT } from '../textures.js';
 import { Enemy, Doge, Stonks, registerNetType } from '../enemies.js';
 import { Shockwave, Pickup } from '../combat.js';
 import { rimify } from '../rigs.js';
@@ -254,23 +254,77 @@ class FineDog extends Enemy {
 const P0 = (e, p) => Math.atan2(p.pos.x - e.pos.x, p.pos.z - e.pos.z);
 
 // ---------- Hot Take: a walking bad opinion. Sets the floor alight as it goes, and when it dies. ----------
+// A living flame: a teardrop body whose surface licks upward (vertex noise), hot core -> orange -> red tips.
+const flameShell = (() => {
+  const prof = [];
+  for (let i = 0; i <= 20; i++) { const t = i / 20; prof.push(new THREE.Vector2(Math.sin(Math.min(1, t * 1.35) * Math.PI) * (0.62 - t * 0.38) * (t < 0.15 ? t / 0.15 * 0.6 + 0.4 : 1) + 0.001, t * 1.9)); }
+  return new THREE.LatheGeometry(prof, 32);
+})();
+function flameMat(core = false) {
+  return new THREE.ShaderMaterial({
+    uniforms: { uT: { value: 0 }, uSeed: { value: Math.random() * 10 } },
+    vertexShader: `uniform float uT, uSeed; varying float vH; varying vec3 vN; varying vec3 vV;
+      void main() {
+        vec3 p = position; float h = p.y / 1.9; vH = h;
+        float a = atan(p.z, p.x);
+        // tongues: higher up, the surface ripples and leans more
+        float w = sin(a * 6.0 + uT * 7.0 + uSeed - p.y * 2.0) * 0.55 + sin(a * 3.0 - uT * 4.3 + p.y * 4.0) * 0.45;
+        p.xz *= 1.0 + w * 0.3 * h;
+        p.y += max(0.0, w) * 0.6 * h * h;
+        p.x += sin(uT * 3.1 + uSeed + p.y * 2.0) * 0.08 * h; p.z += cos(uT * 2.7 + uSeed + p.y * 2.0) * 0.08 * h;
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `varying float vH; varying vec3 vN; varying vec3 vV;
+      void main() {
+        float f = abs(dot(normalize(vN), normalize(vV)));
+        ${core
+          ? 'vec3 c = mix(vec3(1.0, 0.82, 0.4), vec3(1.0, 0.45, 0.06), vH) * 1.1; float a = f * (1.0 - vH * 0.75) * 0.7;'
+          : 'vec3 c = mix(mix(vec3(1.0, 0.55, 0.12), vec3(1.0, 0.25, 0.02), smoothstep(0.05, 0.5, vH)), vec3(0.75, 0.05, 0.02), smoothstep(0.55, 1.0, vH)) * 1.05; float a = (0.2 + (1.0 - f) * 0.85) * (1.0 - smoothstep(0.65, 1.05, vH));'}
+        gl_FragColor = vec4(c * a, a);
+      }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
+  });
+}
+const TAKES = ['UNPOPULAR OPINION', 'HOT TAKE', 'WELL ACTUALLY', 'RATIO', 'L + BOZO', 'NOBODY:', 'PINEAPPLE ON PIZZA', 'TABS > SPACES'];
+
 class HotTake extends Enemy {
   constructor() {
     super({ name: 'Hot Take', hp: 85, radius: 0.55, height: 1.6, speed: rand(5, 6.2), gib: 0xff6a10, ash: 0xff4010, deathLines: ['got ratioed', 'cooled off', 'was, in fact, a bad take', 'has been fact-checked'] });
     this.model = new THREE.Group(); this.mesh.add(this.model);
-    this.flame = emojiSprite('🔥', 2.1); this.flame.position.y = 1.05; this.model.add(this.flame);
-    this.face = emojiSprite(pick(['😡', '🤬', '😤', '🤓']), 0.8); this.face.position.set(0, 0.85, 0.15); this.model.add(this.face);
+    this.flameMats = [flameMat(), flameMat(true)];
+    const shell = new THREE.Mesh(flameShell, this.flameMats[0]); this.model.add(shell);
+    const core = new THREE.Mesh(flameShell, this.flameMats[1]); core.scale.set(0.55, 0.62, 0.55); core.position.y = 0.05; this.model.add(core);
+    // the face: angry eyes, brows, a yelling mouth
+    const white = new THREE.MeshBasicMaterial({ color: 0xffffff }), black = new THREE.MeshBasicMaterial({ color: 0x1a0500 });
+    const face = new THREE.Group(); face.position.set(0, 0.82, 0.5); this.model.add(face); this.face = face;
+    for (const s of [-1, 1]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 10), white); eye.position.set(s * 0.15, 0.08, 0); eye.scale.set(1, 1.15, 0.6); face.add(eye);
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), black); pupil.position.set(s * 0.14, 0.06, 0.06); face.add(pupil);
+      const brow = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.065, 0.05), black); brow.position.set(s * 0.14, 0.21, 0.07); brow.rotation.z = s * 0.45; // angry: inner ends down face.add(brow);
+    }
+    this.mouth = new THREE.Mesh(new THREE.CircleGeometry(0.11, 20), black); this.mouth.position.set(0, -0.16, 0.06); this.mouth.scale.set(1.25, 0.9, 1); face.add(this.mouth); // yelling its take
+    // the take itself, on a picket sign
+    const sign = new THREE.Group(); sign.position.set(0.55, 0.6, 0.1); sign.rotation.z = -0.15; this.model.add(sign); this.signG = sign;
+    const wood = new THREE.MeshStandardMaterial({ color: 0x7a4b28, roughness: 0.9 });
+    const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.5, 6), wood); stick.position.y = 0.6; sign.add(stick);
+    const { tex, aspect } = textTex(pick(TAKES), { font: IMPACT, weight: 'normal', color: '#111', bg: '#f4ecd8', stroke: null, px: 48 });
+    const bw = Math.min(1.3, 0.42 * aspect), board = new THREE.Mesh(new THREE.BoxGeometry(bw, 0.42, 0.03), [wood, wood, wood, wood, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 }), wood]);
+    board.position.y = 1.42; sign.add(board);
     this.light = new THREE.PointLight(0xff6a10, 8, 6, 2); this.light.position.y = 1; this.model.add(this.light);
-    this.sign = textSprite(pick(['UNPOPULAR OPINION', 'HOT TAKE', 'WELL ACTUALLY', 'RATIO', 'L + BOZO', 'NOBODY:']), 0.32, { font: IMPACT, weight: 'normal', color: '#ffd23f' });
-    this.sign.position.y = 2.25; this.model.add(this.sign);
     this.hb(0, 0.8, 0, 0.6).hb(0, 1.15, 0.1, 0.32, true);
-    this.burnT = rand(0.5, 1.2);
+    this.burnT = rand(0.5, 1.2); this.emberT = 0;
   }
+  cleanupMesh() { super.cleanupMesh(); this.flameMats.forEach((m) => m.dispose()); }
   animate(dt) {
-    const k = 1 + Math.sin(this.t * 12) * 0.07;
-    this.flame.scale.set(2.1 * k, 2.1 / k, 1);
-    this.model.position.y = Math.abs(Math.sin(this.t * 7)) * 0.15;
+    for (const m of this.flameMats) m.uniforms.uT.value = this.t;
+    this.model.position.y = Math.abs(Math.sin(this.t * 7)) * 0.12;
+    this.face.position.y = 0.82 + Math.sin(this.t * 7) * 0.03;
+    this.mouth.scale.y = 0.7 + Math.abs(Math.sin(this.t * 11)) * 0.6; // yelling its take
+    this.signG.rotation.z = -0.15 + Math.sin(this.t * 5) * 0.12;
     this.light.intensity = 7 + Math.sin(this.t * 20) * 2;
+    if ((this.emberT -= dt) <= 0) { this.emberT = 0.12; local(() => fx.burst(this.pos.clone().add(new THREE.Vector3(rand(-0.3, 0.3), 1.6, rand(-0.3, 0.3))), 0xff8a20, 1, 1.2, 0.05, 0.8, -3)); }
   }
   think(dt) {
     const p = this.tgt();
