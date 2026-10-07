@@ -7,6 +7,7 @@ import { Input, down, hit } from './input.js';
 import { moveCollide, groundY } from './world.js';
 import { raycast, explode, Projectile, los } from './combat.js';
 import * as fxm from './fx.js';
+import { buildGuardian, poseEmote, EMOTES } from './avatars.js';
 import { play as rawPlay, say as rawSay } from './audio.js';
 import { HUD } from './hud.js';
 import { hurtPulse } from './render.js';
@@ -339,7 +340,7 @@ export class Player {
       this.vm.visible = false;
       return;
     }
-    this.vm.visible = !this.scoped && !this.carry;
+    this.vm.visible = !this.scoped && !this.carry && !this.emote;
     // look (aim slows a touch over enemies: "reticle friction")
     const friction = this.overTarget && (G.settings.aimAssist ?? true) ? 0.72 : 1;
     const sens = 0.0022 * G.settings.sens * (this.ads ? 0.65 : 1) * friction;
@@ -360,6 +361,7 @@ export class Player {
     this.eyeOff = damp(this.eyeOff, this.slideT > 0 ? -0.65 : 0, 12, dt);
     cam.position.set(this.pos.x + rand(-sh, sh), this.pos.y + this.eye + this.eyeOff - this.landDip + rand(-sh, sh), this.pos.z + rand(-sh, sh));
     cam.rotation.set(this.pitch + this.aimPunch.x, this.yaw + this.aimPunch.y, this.slideT > 0 ? 0.06 : 0, 'YXZ');
+    this.updateEmote(dt, cam);
     cam.updateMatrixWorld();
     this.combat(dt);
     this.abilities(dt);
@@ -529,7 +531,7 @@ export class Player {
 
   // ---------------------------------------------------------------- shooting
   combat(dt) {
-    if (this.carry) { this.inspectT = 0; return; }
+    if (this.carry || this.emote) { this.inspectT = 0; return; }
     let want = -1;
     if (hit('Digit1')) want = 0;
     if (hit('Digit2')) want = 1;
@@ -926,6 +928,33 @@ export class Player {
         if (el === 'void' && !G.net.isClient && e.rank !== 'boss' && e.knockable !== false) e.vel.addScaledVector(P.clone().sub(e.center()).setY(0).normalize(), 6);
       }
     });
+  }
+  // Emotes: B dances, N sits. The camera swings out to third person so you can see yourself; moving, jumping
+  // or shooting cancels. Teammates see it on your avatar (it rides in the pose you send them).
+  updateEmote(dt, cam) {
+    if (hit('KeyB')) this.emote = this.emote === EMOTES.dance ? 0 : EMOTES.dance;
+    if (hit('KeyN')) this.emote = this.emote === EMOTES.sit ? 0 : EMOTES.sit;
+    if (this.emote && (down('KeyW') || down('KeyA') || down('KeyS') || down('KeyD') || down('Space') || Input.left || Input.right || !this.alive || this.superActive || this.carry)) this.emote = 0;
+    if (this.emote && !this.selfBody) { this.selfBody = buildGuardian(this.cls); this.selfBody.userData.cls = this.cls; G.avatarGroup.add(this.selfBody); }
+    if (this.selfBody && this.selfBody.userData.cls !== this.cls) { G.avatarGroup.remove(this.selfBody); this.selfBody = null; }
+    this.emoteK = damp(this.emoteK || 0, this.emote ? 1 : 0, 6, dt);
+    if (this.selfBody) {
+      this.selfBody.visible = this.emoteK > 0.05;
+      if (!this.selfBody.visible) return;
+      this.emoteT = (this.emoteT || 0) + dt;
+      const holder = this.selfBody;
+      poseEmote(holder, this.emote, this.emoteT);
+      holder.position.add(this.pos); holder.rotation.y += this.yaw + Math.PI;
+      // orbit a camera out in front of you, pulled in if a wall is in the way
+      const a = this.yaw + Math.sin(this.emoteT * 0.3) * 0.6;
+      const head = _c.set(this.pos.x, this.pos.y + 1.4, this.pos.z);
+      const want = _o.set(-Math.sin(a), 0.14, -Math.cos(a)).normalize();
+      const h = raycast(head, want, 3.6, { enemies: false });
+      const d = Math.max(0.8, Math.min(3.6, h.dist - 0.3));
+      const k = this.emoteK;
+      cam.position.lerp(_v.copy(head).addScaledVector(want, d), k);
+      if (k > 0.5) cam.lookAt(head.x, head.y - 0.2, head.z);
+    }
   }
   castSuper() {
     this.superCharge = 0;

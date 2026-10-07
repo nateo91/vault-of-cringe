@@ -169,7 +169,7 @@ export const HUD = {
     const sp = (base + move * 7 + p.bloomK * 14) * (p.ads ? 0.45 : 1);
     const spv = sp.toFixed(1) + 'px';
     if (last.sp !== spv) { last.sp = spv; els.cross.style.setProperty('--sp', spv); }
-    const cls = 'w-' + wid + (p.scoped || p.inspectT > 0 ? ' hidden-x' : '');
+    const cls = 'w-' + wid + (p.scoped || p.inspectT > 0 || p.emote || p.carry ? ' hidden-x' : '');
     if (els.cross.className !== cls) els.cross.className = cls;
     els.scope.classList.toggle('hidden', !p.scoped);
     if (p.scoped) {

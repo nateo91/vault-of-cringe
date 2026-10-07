@@ -42,6 +42,7 @@ How it works:
 | R, 1 2 3, wheel | reload, swap weapons |
 | T | inspect your weapon (admire the potato) |
 | Tab / I | Armory: browse loot and equip weapons |
+| B / N | Emote: dance / sit (third-person; move or shoot to stop) |
 | Q / V / F | grenade / melee / super |
 | Esc | pause |
 

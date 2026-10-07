@@ -147,7 +147,7 @@ Net.hostVictory = (run) => Net.broadcast({ t: 'victory', run });
 function myState() {
   const p = G.player;
   if (!p) return null;
-  return [r2(p.pos.x), r2(p.pos.y), r2(p.pos.z), r2(p.yaw), r2(p.pitch), p.alive ? 1 : 0, p.cls, Net.name, r2(p.lastSafe.x), r2(p.lastSafe.y), r2(p.lastSafe.z)];
+  return [r2(p.pos.x), r2(p.pos.y), r2(p.pos.z), r2(p.yaw), r2(p.pitch), p.alive ? 1 : 0, p.cls, Net.name, r2(p.lastSafe.x), r2(p.lastSafe.y), r2(p.lastSafe.z), p.emote || 0];
 }
 
 function buildSnap() {
