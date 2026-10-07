@@ -1,4 +1,4 @@
-// The Approach: the raid's walk-in. Land, cross the causeway, jump the chasm, clear the plaza, open the Vault.
+// The Approach: the raid's walk-in. Land, cross the causeway, jump the chasm, cross the Shy Bridge, clear the plaza, open the Vault.
 // Traversal rules: no wipes here, falling just puts you back at the last checkpoint.
 import * as THREE from 'three';
 import { G, rand, pick, after, players, distXZ, local } from '../game.js';
@@ -13,6 +13,7 @@ import * as D from '../dressing.js';
 import { playCinematic } from '../cinematic.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const _e1 = new THREE.Vector3();
 
 const LORE = [
   { title: 'The First Normie', text: 'Before the Vault there was only the Feed, endless and grey. Then someone posted a dog with a confused face, and the Feed blinked. Every meme since is a descendant of that blink. Most of them should not have been.' },
@@ -85,9 +86,8 @@ export class TheApproach extends Encounter {
     plat(-0.8, 1.0, -79.15, 5.5, 5.5, { slide: 1.2, speed: 0.4 });
     plat(-8, 2.0, -82.5, 3.5, 3.5, { bob: 0.2, speed: 0.7 }); // optional side platform with lore on it
     plat(0.8, 1.4, -85.85, 5.5, 5.5, { bob: 0.3, speed: 1.0, phase: 1 });
-    plat(-0.8, 1.0, -92.55, 5.5, 5.5, { slide: 1.2, speed: 0.45, phase: 2 });
-    plat(0.4, 0.6, -99.25, 5.5, 5.5, { bob: 0.2, speed: 0.8, phase: 3 });
-    plat(0, 0.3, -104, 5.5, 4, null);
+    plat(0, 0, -92.2, 6, 5, null); // the last ledge. After it: an 11 m gap and a sign.
+    this.buildShyBridge(trim);
     for (let i = 0; i < 18; i++) { const r = new THREE.Mesh(new THREE.DodecahedronGeometry(rand(1, 3.5), 0), rough); r.position.set(rand(-30, 30), rand(-30, -8), rand(-110, -55)); r.rotation.set(rand(0, 6), rand(0, 6), 0); add(r); }
     // 4) the plaza
     addBox(0, -2, -128, 36, 2, 44, stone);
@@ -132,6 +132,87 @@ export class TheApproach extends Encounter {
     });
     this.tt = 0; this.gateT = -1; this.section = 0;
   }
+  // THE SHY BRIDGE. The gap is too wide to jump, and a howling headwind shoves anyone airborne back.
+  // There *is* a glass bridge, but it only exists while nobody is looking at it: look at a panel and it
+  // fades out and stops being solid. Cross it backwards (moonwalk), or staring at the sky.
+  buildShyBridge(trim) {
+    this.bridge = [];
+    const z0 = -94.7, z1 = -106, n = 9, len = (z0 - z1) / n;
+    for (let i = 0; i < n; i++) {
+      const z = z0 - len * (i + 0.5);
+      const m = new THREE.MeshStandardMaterial({ color: 0xbfefff, emissive: 0x5fd8ff, emissiveIntensity: 1.2, metalness: 0.2, roughness: 0.05, transparent: true, opacity: 0, depthWrite: false });
+      const mesh = addBox(0, -0.25, z, 2.6, 0.25, len * 0.97, m);
+      mesh.castShadow = false;
+      removeCollider(mesh.userData.box); // starts invisible and not there; the first frame decides
+      this.bridge.push({ mesh, m, box: mesh.userData.box, c: V(0, -0.1, z), solid: false, vis: 0 });
+    }
+    // two posts where the bridge "used to be", and a sign
+    for (const s of [-1, 1]) { addBox(s * 1.5, 0, -94.4, 0.25, 1.2, 0.25, std(0x3a3f46, { roughness: 0.9 })); addBox(s * 1.5, 1.2, -94.4, 0.35, 0.1, 0.35, trim, { collide: false }); }
+    const wood = std(0x4a3828, { roughness: 0.95 });
+    addBox(-2.4, 0, -94.42, 0.12, 1.2, 0.12, wood); addBox(-2.4, 1.15, -94.42, 2.3, 0.85, 0.08, wood, { collide: false });
+    const sign = textSprite('BRIDGE OUT', 0.45, { font: IMPACT, weight: 'normal', color: '#ffcc33' }); sign.position.set(-2.4, 1.72, -94.2); add(sign);
+    const sub = textSprite("it's only there when you're not", 0.2, { color: '#9fe2ff', font: 'Rajdhani, sans-serif' }); sub.position.set(-2.4, 1.36, -94.2); add(sub);
+    this.tinkT = 0; this.gapFails = 0;
+  }
+  // is any guardian looking its way? Anything ahead of you (within ~53 degrees either side) counts, even
+  // the bit just past your toes that's off the bottom of the screen; staring up at the sky doesn't.
+  seenBy(c) {
+    for (const q of players()) {
+      if (!q.alive || (q.pitch || 0) > 0.5) continue;
+      const dx = c.x - q.pos.x, dz = c.z - q.pos.z, d = Math.hypot(dx, dz);
+      if (d > 0.15 && d < 60 && (-Math.sin(q.yaw) * dx - Math.cos(q.yaw) * dz) / d > 0.6) return true;
+    }
+    return false;
+  }
+  // a panel never vanishes out from under someone already standing on it
+  occupied(b) {
+    for (const q of players()) {
+      if (q.alive && Math.abs(q.pos.y - b.max.y) < 0.35 && q.pos.x > b.min.x - 0.3 && q.pos.x < b.max.x + 0.3 && q.pos.z > b.min.z - 0.3 && q.pos.z < b.max.z + 0.3) return true;
+    }
+    return false;
+  }
+  updateShyBridge(dt) {
+    const p = G.player;
+    this.tinkT -= dt;
+    for (const b of this.bridge) {
+      // either end of the panel counts, so walking forward over one doesn't put it "behind" you mid-step
+      const seen = (this.seenBy(_e1.set(0, 0, b.box.min.z)) || this.seenBy(_e1.set(0, 0, b.box.max.z))) && !(b.solid && this.occupied(b.box));
+      if (seen && b.solid) { b.solid = false; removeCollider(b.box); }
+      else if (!seen && !b.solid) {
+        b.solid = true; G.colliders.push(b.box);
+        if (this.tinkT <= 0 && p.pos.distanceTo(b.c) < 14) { this.tinkT = 0.12; playAt(b.c, 'tink', 0.6); }
+      }
+      // it fades fast, so you only ever glimpse it at the edge of your vision
+      b.vis += ((seen ? 0 : 1) - b.vis) * Math.min(1, dt * (seen ? 5 : 14)); // it lingers a moment as you turn to it
+      b.m.opacity = b.vis * 0.65; b.m.emissiveIntensity = 1.1 + Math.sin(this.tt * 3 + b.c.z) * 0.3;
+      b.mesh.visible = b.vis > 0.01;
+    }
+    // the headwind: only while you're in the air over the gap
+    const inGap = p.pos.z < -94.7 && p.pos.z > -106 && Math.abs(p.pos.x) < 20;
+    if (p.alive && inGap && !p.onGround) {
+      p.vel.z += 45 * dt; p.vel.x *= 1 - Math.min(1, dt * 1.5);
+      if (!this.windSaid) { this.windSaid = true; play('gust'); HUD.ghost('Whoa. That wind is not natural. Nobody is jumping this.'); }
+      if (Math.random() < dt * 30) fx.burst(V(p.pos.x + rand(-3, 3), p.pos.y + rand(0, 2.5), p.pos.z - rand(2, 6)), 0xcfe8f4, 1, 2, 0.05, 0.35, 0);
+    }
+    if (p.alive && p.onGround && p.pos.z < -106 && !this.crossed && this.gapFails + (this.windSaid ? 1 : 0) > 0) {
+      this.crossed = true;
+      HUD.ghost(pick(['...Did you just moonwalk across an invisible bridge? I am not putting that in the report.', 'You crossed it. Do not tell anyone how. They will not believe you.']));
+    }
+  }
+  gapFall() {
+    this.gapFails++;
+    const hints = [
+      null,
+      'Jumping is not going to work. That wind only gets you in the air.',
+      'Guardian... I could have sworn there was a bridge there. When I was not looking at it.',
+      'The sign said it is only there when you are not. Turn around. Walk backwards. Trust me.',
+      'Backwards. Facing me. Walk. BACKWARDS. Or look at the sky, I do not care, just stop looking at it.',
+    ];
+    const h = hints[Math.min(this.gapFails, hints.length - 1)];
+    if (h) HUD.ghost(h);
+    return !!h;
+  }
+
   start() {
     this.host = true;
     HUD.objective(TheApproach.title, 'Find the entrance to the Vault.');
@@ -199,13 +280,16 @@ export class TheApproach extends Encounter {
       pl.m.position.set(x, y + pl.h / 2, pl.base.z); pl.edge.position.set(x, y - 0.05 + 0.04, pl.base.z);
       pl.last.set(x, y, pl.base.z);
     }
+    this.updateShyBridge(dt);
     // missed a jump? your Ghost catches you and puts you back on the last platform you stood on
     if (p.alive && p.pos.y < -5 && p.pos.z < -60 && p.pos.z > -108) {
       const b = this.lastPlat?.box, back = b ? V((b.min.x + b.max.x) / 2, b.max.y + 0.05, (b.min.z + b.max.z) / 2) : V(0, 0.1, -58);
+      const fellInGap = p.pos.z < -94;
       p.pos.copy(back); p.vel.set(0, 0, 0);
       fx.spawnFx(p.pos); play('orb');
       this.catches = (this.catches || 0) + 1;
-      if (this.catches === 1 || Math.random() < 0.3) HUD.ghost(pick(['Got you. Try that again.', 'Caught you. You are welcome.', 'I am a Ghost, not a safety net. ...Fine. Safety net.', 'That was a skill issue. Go again.']));
+      const gap = fellInGap && this.gapFall();
+      if (!gap && (this.catches === 1 || Math.random() < 0.3)) HUD.ghost(pick(['Got you. Try that again.', 'Caught you. You are welcome.', 'I am a Ghost, not a safety net. ...Fine. Safety net.', 'That was a skill issue. Go again.']));
     }
     // lore Ghosts
     for (const l of this.lore) {

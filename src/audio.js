@@ -349,6 +349,8 @@ export const sfxs = {
     tone({ freq: 48, freqEnd: 30, dur: 3.5, gain: 0.35, attack: 0.3 });
   },
   troll() { [0, 0.11, 0.22, 0.33].forEach((d, i) => { tone({ type: 'sawtooth', freq: 300 - i * 18, freqEnd: 220 - i * 10, dur: 0.09, gain: 0.07, delay: d, rev: 0.2 }); noise({ dur: 0.06, freq: 1800, q: 3, type: 'bandpass', gain: 0.1, delay: d }); }); },
+  tink() { tone({ type: 'sine', freq: 2900, freqEnd: 2700, dur: 0.14, gain: 0.05, rev: 0.5 }); tone({ type: 'sine', freq: 4350, dur: 0.08, gain: 0.02, rev: 0.5 }); },
+  gust() { noise({ dur: 1.6, freq: 500, freqEnd: 1400, type: 'bandpass', q: 1.5, gain: 0.5, rev: 0.4 }); noise({ dur: 1.2, freq: 900, freqEnd: 300, type: 'bandpass', q: 2, gain: 0.3, delay: 0.5, rev: 0.4 }); },
   rick() { [[523, 659, 784], [587, 740, 880], [659, 831, 988]].forEach((ch, i) => ch.forEach((f) => tone({ type: 'square', freq: f, dur: 0.16, gain: 0.05, delay: i * 0.18, rev: 0.3 }))); noise({ dur: 0.05, freq: 7000, type: 'highpass', gain: 0.2, delay: 0.54 }); },
   sip() { noise({ dur: 0.5, freq: 900, freqEnd: 500, q: 4, type: 'bandpass', gain: 0.25 }); tone({ freq: 220, freqEnd: 180, dur: 0.1, gain: 0.08, delay: 0.55 }); },
   fireball() { noise({ dur: 0.6, freq: 500, freqEnd: 1800, gain: 0.5, rev: 0.3 }); tone({ type: 'sawtooth', freq: 70, freqEnd: 40, dur: 0.4, gain: 0.12 }); },
