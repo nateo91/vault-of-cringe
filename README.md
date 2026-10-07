@@ -43,6 +43,7 @@ How it works:
 | T | inspect your weapon (admire the potato) |
 | Tab / I | Armory: browse loot and equip weapons |
 | B / N / J / K | Emotes: dance / sit / dab / take the L (third-person; move or shoot to stop) |
+| P | Photo mode: freeze (solo), free camera (WASD, Space/C, Shift, wheel zoom), depth of field |
 | Q / V / F | grenade / melee / super |
 | Esc | pause |
 

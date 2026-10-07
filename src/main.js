@@ -1,7 +1,7 @@
 // Bootstrap, raid flow, game loop.
 import * as THREE from 'three';
 import { G, pick, after, updateTimers, alivePlayers, local } from './game.js';
-import { Input, initInput, lockPointer, endFrame, down } from './input.js';
+import { Input, initInput, lockPointer, endFrame, down, hit } from './input.js';
 import { initAudio, play, say, setVolume, startMusic, stopMusic, updateListener, setRoom, setAmbience, setMusicIntensity } from './audio.js';
 import { HUD } from './hud.js';
 import { Player } from './player.js';
@@ -10,6 +10,7 @@ import { updateCombat, clearCombat, Pickup } from './combat.js';
 import { updateFx, clearFx } from './fx.js';
 import { clearWorld, mergeStatic } from './world.js';
 import { initRenderer, render, applyQuality, followSun, bakeEnvironment, wipeGrade } from './render.js';
+import { togglePhoto, photoUpdate } from './photo.js';
 import { updateDressing } from './dressing.js';
 import { loadInventory, rollLoot, DEFS, PERKS } from './arsenal.js';
 import { initArmory, openArmory, closeArmory, isOpen as armoryOpen } from './inventory.js';
@@ -289,6 +290,7 @@ function updateMusicIntensity(dt) {
 }
 
 function loadEncounter(i) {
+  if (G.photo) togglePhoto();
   G.state = 'loading';
   if (G.net.isHost) G.net.hostLoad(i);
   stopMusic();
@@ -517,10 +519,14 @@ function step(dt, doRender = true) {
     for (const av of G.avatars.values()) av.update(dt);
     updateDressing(dt);
     updateFx(dt);
+  } else if (G.state === 'playing' && !G.paused && G.photo && !G.net.active) {
+    // photo mode, solo: the world is frozen, only the camera moves
+    if (hit('KeyP')) togglePhoto(); else photoUpdate(dt);
   } else if (G.state === 'playing' && !G.paused) {
+    if (hit('KeyP') && G.player.alive) togglePhoto();
     G.time += dt;
     updateTimers();
-    G.player.update(dt);
+    if (G.photo) photoUpdate(dt); else G.player.update(dt);
     followSun(G.sun, G.player.pos);
     updateEnemies(dt);
     updateCombat(dt);

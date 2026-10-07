@@ -204,8 +204,9 @@ export function render(dt) {
   }
   if (grade) { grade.uniforms.time.value = performance.now() / 1000; grade.uniforms.hurt.value = hurtFx; updateFlare(dt); }
   if (dof) {
-    dof.enabled = !!G.cine;
+    dof.enabled = !!G.cine || !!G.photo;
     if (G.cine) dof.uniforms.focus.value = damp(dof.uniforms.focus.value, G.cine.focus || 6, 8, dt);
+    else if (G.photo) dof.uniforms.focus.value = damp(dof.uniforms.focus.value, G.photoFocus || 10, 10, dt);
   }
   composer.render(dt);
 }
