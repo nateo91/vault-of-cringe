@@ -1,6 +1,6 @@
 // Encounter 2: EMERGENCY MEETING — one of the crewmates is the impostor. Watch for venting.
 import * as THREE from 'three';
-import { G, rand, pick, shuffle, distXZ, after, hurtPlayer, playerById } from '../game.js';
+import { G, rand, pick, shuffle, distXZ, after, hurtPlayer, playerById, local } from '../game.js';
 import * as D from '../dressing.js';
 import { Encounter } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight, addStars } from '../world.js';
@@ -81,7 +81,7 @@ class Crewmate extends Enemy {
       case 'toVent': {
         const d = this.steer(this.vent.x, this.vent.z, this.speed * 1.2, dt, { stopDist: 0.1 });
         walkAnim(1);
-        if (d < 0.5) { this.state = 'vent1'; this.vt = 0.6; this.pos.x = this.vent.x; this.pos.z = this.vent.z; playAt(this.pos, 'vent'); fx.burst(this.pos.clone().setY(0.3), 0x444444, 10, 3, 0.1, 0.5); }
+        if (d < 0.5) { this.state = 'vent1'; this.vt = 0.6; this.pos.x = this.vent.x; this.pos.z = this.vent.z; playAt(this.pos, 'vent'); this.enc.ev('vent', this.enc.vents.indexOf(this.vent)); }
         break;
       }
       case 'vent1':
@@ -93,7 +93,7 @@ class Crewmate extends Enemy {
         if (this.vt <= 0) {
           const nv = pick(this.enc.vents.filter((v) => distXZ(v, this.pos) > 8));
           this.pos.set(nv.x, 0.05, nv.z); this.state = 'vent2'; this.vt = 0.6; this.untargetable = false;
-          playAt(this.pos, 'vent'); fx.burst(this.pos.clone().setY(0.3), 0x444444, 10, 3, 0.1, 0.5);
+          playAt(this.pos, 'vent'); this.enc.ev('vent', this.enc.vents.indexOf(nv));
           fx.floatText(this.pos.clone().setY(2.4), '👀', { height: 0.8 });
         }
         break;
@@ -185,9 +185,19 @@ export class EmergencyMeeting extends Encounter {
       this.perches.push(new THREE.Vector3(x, 4.05, z));
     }
     // vents
+    // vents: a frame in the floor, a dark shaft, and a hinged grate that flips open when someone uses it
+    const ventFrame = std(0x2a2e38, { metalness: 0.8 }), grateM = std(0x5a6272, { metalness: 0.85, roughness: 0.35, detail: false });
+    this.ventLids = [];
     this.vents = [[-30, 0], [30, 0], [0, -25], [0, 25], [-20, -32], [20, 32], [-6, 10], [8, -12]].map(([x, z]) => {
-      addBox(x, 0, z, 1.6, 0.06, 1.6, std(0x2a2e38, { metalness: 0.8 }), { collide: false });
-      for (let i = -1; i <= 1; i++) addBox(x + i * 0.45, 0.06, z, 0.12, 0.02, 1.4, std(0x0e1015), { collide: false });
+      addBox(x, 0, z, 1.8, 0.05, 1.8, ventFrame, { collide: false });
+      const hole = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), new THREE.MeshBasicMaterial({ color: 0x020203 })); hole.rotation.x = -Math.PI / 2; hole.position.set(x, 0.055, z); add(hole);
+      const glint = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), new THREE.MeshBasicMaterial({ map: fx.glowTex, color: 0xff2a1a, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+      glint.rotation.x = -Math.PI / 2; glint.position.set(x, 0.06, z); add(glint);
+      const hinge = new THREE.Group(); hinge.position.set(x - 0.75, 0.07, z); add(hinge);
+      const lid = new THREE.Group(); lid.position.x = 0.75; hinge.add(lid);
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.04, 1.5), grateM); lid.add(plate);
+      for (let i = -2; i <= 2; i++) { const slat = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 1.3), std(0x0e1015, { detail: false })); slat.position.set(i * 0.27, 0.03, 0); lid.add(slat); }
+      this.ventLids.push({ hinge, glint, open: 0, smokeT: 0, pos: new THREE.Vector3(x, 0, z) });
       return new THREE.Vector3(x, 0, z);
     });
     // task waypoints
@@ -260,6 +270,25 @@ export class EmergencyMeeting extends Encounter {
         }
       }
       if (inn.length <= imps.filter((i) => !i.revealed).length && imps.length > 0) this.lose();
+    }
+  }
+  // a vent was used: the grate flips open (red glint inside), then it keeps smoking for a few seconds — a tell
+  ev_vent(i) {
+    const v = this.ventLids?.[i];
+    if (!v) return;
+    v.open = 1; v.smokeT = 4;
+    local(() => fx.burst(v.pos.clone().setY(0.3), 0x5a5a5a, 14, 3.5, 0.14, 0.7, -1));
+  }
+  localUpdate(dt) {
+    for (const v of this.ventLids || []) {
+      v.open = Math.max(0, v.open - dt * 1.1);
+      const k = v.open > 0.65 ? 1 : v.open / 0.65; // snaps open, eases shut
+      v.hinge.rotation.z = k * 1.9;
+      v.glint.material.opacity = k * 0.35 * (0.8 + Math.random() * 0.2);
+      if (v.smokeT > 0) {
+        v.smokeT -= dt;
+        if (Math.random() < dt * 7) local(() => fx.burst(v.pos.clone().add(new THREE.Vector3(rand(-0.5, 0.5), 0.2, rand(-0.5, 0.5))), 0x8a8f99, 1, 0.8, 0.22, 1.4, -1.5));
+      }
     }
   }
   ev_reveal({ nid, full, line }) {
