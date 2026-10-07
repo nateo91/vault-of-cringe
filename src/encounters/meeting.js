@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { G, rand, pick, shuffle, distXZ, after, hurtPlayer, playerById } from '../game.js';
 import * as D from '../dressing.js';
 import { Encounter } from './base.js';
-import { setEnv, addBox, addCyl, add, std, pointLight } from '../world.js';
+import { setEnv, addBox, addCyl, add, std, pointLight, addStars } from '../world.js';
 import { tileTex, textSprite, IMPACT } from '../textures.js';
 import { Enemy, Doge, Nyan, SusSniper, spawnEnemy, registerNetType } from '../enemies.js';
 import * as M from '../models.js';
@@ -139,7 +139,8 @@ export class EmergencyMeeting extends Encounter {
   build() {
     this.spawn.set(0, 0.1, 30); this.spawnYaw = 0;
     setEnv({ sky: 0x0b0f1c, fog: 0x0b0f1c, near: 40, far: 160, hemi: [0xbfd4ff, 0x202430, 0.8], sun: { color: 0xdde8ff, int: 1.3, pos: [20, 60, 30] }, shadowSize: 45,
-      dome: { top: 0x02030a, horizon: 0x0e2a3a, bottom: 0x02020a, sun: 0x9fd8ff, sunSize: 0.6, haze: 0.6 } });
+      dome: { top: 0x02030a, horizon: 0x0e2a3a, bottom: 0x02020a, sun: 0x9fd8ff, sunSize: 0.6, haze: 0.6, clouds: 0 } });
+    addStars(1400, 300, 0xdfe8ff);
     const ft = tileTex({ base: '#8a93a6', line: '#5d6577', n: 4, grain: 14, seed: 7 }); ft.repeat.set(10, 10);
     const wt = tileTex({ base: '#5b6478', line: '#3d4455', n: 3, seed: 8 }); wt.repeat.set(8, 1);
     const floor = std(0xffffff, { map: ft, metalness: 0.3, roughness: 0.6 });
@@ -151,20 +152,34 @@ export class EmergencyMeeting extends Encounter {
     addBox(-S - 1, 0, 0, 2, 10, S * 2 + 4, wall); addBox(S + 1, 0, 0, 2, 10, S * 2 + 4, wall);
     for (const z of [-S, S]) addBox(0, 9.6, z, S * 2, 0.3, 0.3, trim, { collide: false, shadow: false });
     // interior walls with doorways — rooms like a certain spaceship
-    for (const [x, z, w, d] of [[-26, -15, 9, 1], [26, -15, 9, 1], [-26, 15, 9, 1], [26, 15, 9, 1], [-15, -28, 1, 7], [15, -28, 1, 7], [-15, 28, 1, 7], [15, 28, 1, 7]]) addBox(x, 0, z, w, 4, d, wall);
-    // cafeteria table + the button
-    addCyl(0, 0, 0, 3.2, 1.0, std(0x9aa5b8, { metalness: 0.5 }), { seg: 24 });
+    for (const [x, z, w, d] of [[-26, -15, 9, 1], [26, -15, 9, 1], [-26, 15, 9, 1], [26, 15, 9, 1], [-15, -28, 1, 7], [15, -28, 1, 7], [-15, 28, 1, 7], [15, 28, 1, 7]]) {
+      addBox(x, 0, z, w, 4, d, wall);
+      D.barrier(x, z, w, 4, d);
+    }
+    // the hull: pilastered walls with cyan lights, windows out to space, trusses + light panels overhead
+    D.wallDress(-S, -S, S, -S, { inward: 1, h: 10, every: 10, color: 0x4a5266, accent: 0x7fe0ff });
+    D.wallDress(-S, S, S, S, { inward: -1, h: 10, every: 10, color: 0x4a5266, accent: 0x7fe0ff });
+    D.wallDress(S, -S, S, S, { inward: 1, h: 10, every: 10, color: 0x4a5266, accent: 0x7fe0ff });
+    D.wallDress(-S, -S, -S, S, { inward: -1, h: 10, every: 10, color: 0x4a5266, accent: 0x7fe0ff });
+    D.spaceWindow(-15, 5.2, -S + 0.12, 0, { w: 14, h: 5 }); D.spaceWindow(15, 5.2, -S + 0.12, 0, { w: 14, h: 5, planet: false });
+    D.spaceWindow(0, 5.2, S - 0.12, Math.PI, { w: 18, h: 5 });
+    D.ceilingTruss(-S, S, -S, S, 10.2, { every: 10, accent: 0xcfeeff });
+    // cafeteria: the emergency button under a glass dome on a big round table
+    D.cafeTable(0, 0, { r: 3.2, bench: true });
+    addCyl(0, 0, 0, 3.2, 1.0, std(0x9aa5b8, { metalness: 0.5 }), { seg: 24 }).visible = false;
     addCyl(0, 1.0, 0, 0.6, 0.35, std(0xff0000, { emissive: 0xaa0000 }), { collide: false });
+    D.glassDome(0, 1.0, 0, 0.85);
     const btnLbl = textSprite('EMERGENCY', 0.5, { font: IMPACT, weight: 'normal', color: '#ff3333' }); btnLbl.position.set(0, 2.4, 0); add(btnLbl);
-    for (const [x, z] of [[-12, -6], [12, -6], [-12, 6], [12, 6]]) addCyl(x, 0, z, 1.6, 0.9, std(0x9aa5b8, { metalness: 0.5 }), { seg: 18 });
+    for (const [x, z] of [[-12, -6], [12, -6], [-12, 6], [12, 6]]) { addCyl(x, 0, z, 1.6, 0.9, std(0x9aa5b8, { metalness: 0.5 }), { seg: 18 }).visible = false; D.cafeTable(x, z, { r: 1.6, h: 0.9, bench: true }); }
     // sniper perches (corners) with steps
     const perchMat = std(0x3d4455, { metalness: 0.5 });
     this.perches = [];
     for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
       const x = sx * 33, z = sz * 33;
-      addBox(x, 0, z, 8, 4, 8, perchMat);
-      addBox(x - sx * 5.5, 0, z, 3, 1.5, 3, perchMat);
-      addBox(x - sx * 5.5, 0, z - sz * 3.0, 3, 2.8, 3, perchMat);
+      addBox(x, 0, z, 8, 4, 8, perchMat); D.barrier(x, z, 8, 4, 8);
+      addBox(x - sx * 5.5, 0, z, 3, 1.5, 3, perchMat); D.barrier(x - sx * 5.5, z, 3, 1.5, 3);
+      addBox(x - sx * 5.5, 0, z - sz * 3.0, 3, 2.8, 3, perchMat); D.barrier(x - sx * 5.5, z - sz * 3.0, 3, 2.8, 3);
+      D.railing(x, z, 8, 8, 4);
       addBox(x, 4, z, 8, 0.15, 0.15, trim, { collide: false });
       this.perches.push(new THREE.Vector3(x, 4.05, z));
     }

@@ -339,3 +339,100 @@ export function archway(x, z, w, h, { depth = 3, color = 0x4a4d57, accent = 0xff
   put(new THREE.BoxGeometry(w + 0.4, 0.12, 0.06), glow, 0, h + 0.4, depth / 2 + 0.02).castShadow = false;
   return g;
 }
+
+// A window out to space: a framed panel showing stars, a nebula and (optionally) a ringed planet.
+// Sits just in front of a wall face; purely visual.
+function spaceTex(planet) {
+  const W = 1024, H = 384, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#02030a'); bg.addColorStop(1, '#070a1a');
+  x.fillStyle = bg; x.fillRect(0, 0, W, H);
+  // nebula: soft overlapping blobs
+  for (let i = 0; i < 26; i++) {
+    const cx = rand(0, W), cy = rand(0, H), r = rand(40, 160);
+    const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+    const col = pick(['80,40,140', '30,80,160', '160,40,110', '40,120,140']);
+    g.addColorStop(0, `rgba(${col},0.16)`); g.addColorStop(1, `rgba(${col},0)`);
+    x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2);
+  }
+  for (let i = 0; i < 900; i++) { const b = Math.random(); x.fillStyle = `rgba(255,255,255,${0.2 + b * 0.8})`; const s = b > 0.97 ? 2.2 : b > 0.85 ? 1.4 : 0.8; x.fillRect(rand(0, W), rand(0, H), s, s); }
+  if (planet) {
+    const px = W * 0.68, py = H * 0.62, pr = H * 0.42;
+    const g = x.createRadialGradient(px - pr * 0.4, py - pr * 0.4, pr * 0.1, px, py, pr);
+    g.addColorStop(0, '#f2b98a'); g.addColorStop(0.5, '#b0583a'); g.addColorStop(1, '#2a0e10');
+    x.fillStyle = g; x.beginPath(); x.arc(px, py, pr, 0, Math.PI * 2); x.fill();
+    x.globalAlpha = 0.18; for (let i = 0; i < 9; i++) { x.fillStyle = i % 2 ? '#fff0d0' : '#6a2010'; x.fillRect(px - pr, py - pr * 0.6 + i * pr * 0.14, pr * 2, pr * 0.05); } x.globalAlpha = 1;
+    x.strokeStyle = 'rgba(255,220,180,0.55)'; x.lineWidth = 6; x.beginPath(); x.ellipse(px, py, pr * 1.7, pr * 0.32, -0.2, 0, Math.PI * 2); x.stroke();
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+export function spaceWindow(x, y, z, rotY, { w = 12, h = 5, planet = true } = {}) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rotY; add(g);
+  const view = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: spaceTex(planet), fog: false, toneMapped: false }));
+  view.position.z = 0.02; g.add(view);
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshPhysicalMaterial({ color: 0x9fd8ff, metalness: 0, roughness: 0.05, transparent: true, opacity: 0.12, envMapIntensity: 1.5 }));
+  glass.position.z = 0.12; g.add(glass);
+  const frame = std(0x2a2f3a, { metalness: 0.8, roughness: 0.35 });
+  const put = (geo, px, py) => { const o = new THREE.Mesh(geo, frame); o.position.set(px, py, 0.15); o.castShadow = true; g.add(o); };
+  put(rb(w + 0.6, 0.4, 0.4, 0.06), 0, h / 2 + 0.2); put(rb(w + 0.6, 0.5, 0.5, 0.06), 0, -h / 2 - 0.25);
+  put(rb(0.4, h, 0.4, 0.06), -w / 2 - 0.1, 0); put(rb(0.4, h, 0.4, 0.06), w / 2 + 0.1, 0);
+  for (let i = 1; i < Math.round(w / 4); i++) put(rb(0.18, h, 0.25, 0.04), -w / 2 + i * w / Math.round(w / 4), 0);
+  // a cold rim of light spilling in
+  const spill = new THREE.Mesh(new THREE.PlaneGeometry(w, 3), new THREE.MeshBasicMaterial({ color: 0x3a6aa0, transparent: true, opacity: 0.12, depthWrite: false, blending: THREE.AdditiveBlending }));
+  spill.rotation.x = -Math.PI / 2; spill.position.set(0, -y + 0.03, 1.6); g.add(spill);
+}
+
+// Open roof framework: beams across the room with glowing light panels slung underneath.
+export function ceilingTruss(x1, x2, z1, z2, y, { every = 10, accent = 0xcfeeff } = {}) {
+  const steel = std(0x2e333e, { metalness: 0.8, roughness: 0.4 });
+  const light = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: accent, emissiveIntensity: 2.6 });
+  const W = x2 - x1, D = z2 - z1;
+  for (let z = z1 + every / 2; z < z2; z += every) {
+    mesh(rb(W, 0.5, 0.35, 0.05), steel, (x1 + x2) / 2, y, z);
+    mesh(rb(W, 0.12, 0.12, 0.03), steel, (x1 + x2) / 2, y - 0.9, z);
+    for (let x = x1 + 2; x < x2; x += 4) { const d = mesh(rb(0.1, 1.1, 0.1, 0.02), steel, x, y - 0.45, z); d.rotation.z = (Math.floor(x) % 8 < 4 ? 1 : -1) * 0.6; }
+    for (let x = x1 + every / 2; x < x2; x += every) { const l = mesh(rb(3.2, 0.12, 0.7, 0.04), light, x, y - 1.05, z); l.castShadow = false; }
+  }
+  for (const x of [x1 + 0.5, x2 - 0.5]) mesh(rb(0.4, 0.4, D, 0.05), steel, x, y, (z1 + z2) / 2);
+}
+
+// A round cafeteria table on a pedestal, optionally ringed by a bench.
+export function cafeTable(x, z, { r = 1.6, h = 1.0, bench = true } = {}) {
+  const top = std(0xc8d2e2, { metalness: 0.35, roughness: 0.35 }), dark = std(0x39404e, { metalness: 0.7, roughness: 0.4 });
+  mesh(new THREE.CylinderGeometry(r, r * 0.97, 0.14, 40), top, x, h - 0.07, z);
+  mesh(new THREE.TorusGeometry(r, 0.05, 6, 40), dark, x, h - 0.07, z).rotation.x = Math.PI / 2;
+  mesh(new THREE.CylinderGeometry(r * 0.18, r * 0.24, h - 0.14, 16), dark, x, (h - 0.14) / 2, z);
+  mesh(new THREE.CylinderGeometry(r * 0.5, r * 0.55, 0.08, 24), dark, x, 0.04, z);
+  if (bench) {
+    const br = r + 0.95, seat = std(0x2c6fd6, { roughness: 0.6 });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(br, 0.28, 6, 48, Math.PI * 1.6), seat);
+    ring.rotation.set(Math.PI / 2, 0, 0.3); ring.position.set(x, 0.5, z); ring.scale.set(1, 1, 0.45); ring.castShadow = true; ring.userData.static = true; add(ring);
+  }
+}
+
+// The glass dome over the emergency button.
+export function glassDome(x, y, z, r = 0.8) {
+  const g = new THREE.Mesh(new THREE.SphereGeometry(r, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshPhysicalMaterial({ color: 0xffffff, metalness: 0, roughness: 0.02, transmission: 0.0, transparent: true, opacity: 0.22, envMapIntensity: 2.2 }));
+  g.position.set(x, y, z); add(g);
+  mesh(new THREE.TorusGeometry(r, 0.04, 6, 32), std(0xb0b8c8, { metalness: 0.9, roughness: 0.25 }), x, y + 0.02, z).rotation.x = Math.PI / 2;
+}
+
+// Railings around the top edge of a platform (w x d, top at height h).
+export function railing(x, z, w, d, h, { color = 0x8a93a6 } = {}) {
+  const m = std(color, { metalness: 0.85, roughness: 0.3 });
+  const post = (px, pz) => mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.0, 8), m, px, h + 0.5, pz);
+  const _d = new THREE.Vector3(), _u = new THREE.Vector3(0, 1, 0);
+  const bar = (ax, az, bx, bz, y) => {
+    const len = Math.hypot(bx - ax, bz - az);
+    const o = mesh(new THREE.CylinderGeometry(0.035, 0.035, len, 8), m, (ax + bx) / 2, y, (az + bz) / 2);
+    o.quaternion.setFromUnitVectors(_u, _d.set(bx - ax, 0, bz - az).normalize());
+  };
+  const hw = w / 2 - 0.1, hd = d / 2 - 0.1;
+  const corners = [[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd]];
+  for (let i = 0; i < 4; i++) {
+    const [ax, az] = corners[i], [bx, bz] = corners[(i + 1) % 4];
+    const n = Math.max(1, Math.round(Math.hypot(bx - ax, bz - az) / 2));
+    for (let k = 0; k < n; k++) post(x + ax + (bx - ax) * k / n, z + az + (bz - az) * k / n);
+    bar(x + ax, z + az, x + bx, z + bz, h + 1.0); bar(x + ax, z + az, x + bx, z + bz, h + 0.55);
+  }
+}
