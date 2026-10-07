@@ -56,7 +56,7 @@ How it works:
    - A waypoint marker shows the way, and three hidden lore Ghosts are worth finding.
 
 1. **The Normie Gate** (cursed 1/5). Capture the 👍 LIKE, ▶ SUBSCRIBE and 🔔 BELL plates and hold all three at once. Stonks Acolytes walk onto your plates to un-capture them. A wizard comes from the moon.
-2. **Emergency Meeting** (cursed 2/5). Crewmates wander around doing tasks, and one of them is the impostor. Crewmates don't use vents. Shoot the wrong one and you get "bruh" plus a penalty. Every 30s the impostor kills someone, which calls a meeting and shuffles everyone. Three rounds.
+2. **Emergency Meeting** (cursed 2/5). Crewmates wander around doing tasks, and one of them is the impostor. Crewmates don't use vents. Shoot the wrong one and you get "bruh" plus a penalty. Every 30s the impostor kills someone, which calls a meeting and shuffles everyone. Three rounds. A vent that was just used flips open and keeps smoking for a few seconds, so you can catch an impostor even if you missed the moment.
 3. **The Vine Boom Chamber** (cursed 3/5). Moai Says: the four statues vine-boom in a sequence, and you shoot them back in the same order to drop Big Chungus's "simply too big" shield. Jump his stomp shockwaves and outrun his eye laser. If you take too long, Cheems bonks the whole raid.
 4. **This Is Fine** (cursed 4/5). The room is on fire and the Dog, Who Is Fine, is sipping coffee at his table:
    - The floor is a grid of tiles, and the fire spreads tile by tile. Standing on a burning tile burns you (hop on the furniture).
@@ -134,6 +134,7 @@ Your own gun stays centered.
 Both the main menu and the pause menu have:
 
 - **Graphics:** High (bloom, anti-aliasing, soft shadows), Medium (no anti-aliasing, lower resolution), or Low (no post-processing, for potato laptops).
+  On your first run the game watches your frame rate and steps down a preset if it can't hold ~45 fps (it tells you in the killfeed). Picking a preset yourself turns that off.
 - **Aim assist:** bullet magnetism plus slight aim slowdown over enemies. It's on by default. Purists can turn it off.
 
 ## Cheats / debug
