@@ -20,6 +20,7 @@ import { NormieGate } from './encounters/normie.js';
 import { EmergencyMeeting } from './encounters/meeting.js';
 import { VineBoomChamber } from './encounters/vineboom.js';
 import { ThisIsFine } from './encounters/thisisfine.js';
+import { FiringRange } from './encounters/range.js';
 import { SkibidiFinale } from './encounters/skibidi.js';
 
 const ENCOUNTERS = [TheApproach, NormieGate, EmergencyMeeting, VineBoomChamber, ThisIsFine, SkibidiFinale];
@@ -263,7 +264,12 @@ function resetAll() {
   HUD.hideBoss(); HUD.clearDebuffs(); HUD.death(false);
 }
 
+// the Firing Range lives outside the raid's encounter list
+const RANGE_INDEX = 99;
+const encClass = (i) => (i === RANGE_INDEX ? FiringRange : ENCOUNTERS[i]);
+
 const SOUNDSCAPES = {
+  FiringRange: ['courtyard', 'outdoor'],
   TheApproach: ['outdoor', 'outdoor'], NormieGate: ['courtyard', 'courtyard'], EmergencyMeeting: ['ship', 'ship'],
   VineBoomChamber: ['temple', 'temple'], ThisIsFine: ['livingroom', 'livingroom'], SkibidiFinale: ['void', 'void'],
 };
@@ -286,7 +292,7 @@ function loadEncounter(i) {
   G.state = 'loading';
   if (G.net.isHost) G.net.hostLoad(i);
   stopMusic();
-  const E = ENCOUNTERS[i];
+  const E = encClass(i);
   const L = $('#loading');
   L.querySelector('.load-name').textContent = E.title;
   L.querySelector('.load-tip').textContent = pick(TIPS);
