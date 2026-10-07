@@ -5,7 +5,7 @@ import * as D from '../dressing.js';
 import { Encounter } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight, addStars } from '../world.js';
 import { tileTex, textSprite, IMPACT } from '../textures.js';
-import { Enemy, Doge, Nyan, SusSniper, spawnEnemy, registerNetType } from '../enemies.js';
+import { Enemy, Doge, Nyan, SusSniper, Troll, spawnEnemy, registerNetType } from '../enemies.js';
 import * as M from '../models.js';
 import { CrewRig } from '../rigs.js';
 import { playCinematic } from '../cinematic.js';
@@ -265,7 +265,8 @@ export class EmergencyMeeting extends Encounter {
       if (this.addT <= 0) {
         this.addT = rand(9, 14) - this.round * 2;
         if (this.hostiles() < 5 + this.round) {
-          if (this.round >= 1 && Math.random() < 0.5) this.spawnAway(Nyan, this.addSpawns, 15, 6);
+          if (this.round >= 1 && Math.random() < 0.3 && this.count(Troll) < 1) this.spawnAway(Troll, this.addSpawns, 18);
+          else if (this.round >= 1 && Math.random() < 0.5) this.spawnAway(Nyan, this.addSpawns, 15, 6);
           else { this.spawnAway(Doge, this.addSpawns, 15); this.spawnAway(Doge, this.addSpawns, 15); }
         }
       }

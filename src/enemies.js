@@ -782,6 +782,72 @@ export class Sigma extends Enemy {
 
 // co-op: how clients rebuild each enemy type. Encounters register their own bosses/mechanic actors.
 export const NET_TYPES = {};
+// ---------------- SMUG TROLL ----------------
+// Cloaked (a faint shimmer), it circles round behind you. Close and unseen, it decloaks with a snicker
+// ("u mad?") and strikes. Turn and look at it and it panics and backs off; shooting it knocks the cloak off.
+const _fw = new THREE.Vector3();
+export class Troll extends Enemy {
+  constructor() {
+    super({ name: 'Smug Troll', hp: 170, radius: 0.45, height: 2.0, speed: 6.2, gib: 0xf0f0f0, ash: 0xd0e8ff, deathLines: ['problem?', 'got trolled', 'logged off mad', 'was the one who got mad'] });
+    this.useRig(R.trollRig());
+    this.hb(0, 1.2, 0, 0.42).hb(0, 0.6, 0, 0.3).hb(0, 2.08, 0.02, 0.28, true);
+    this.mats = []; this.mesh.traverse((o) => { if (o.material && !this.mats.includes(o.material)) { o.material.transparent = true; this.mats.push(o.material); } });
+    this.cloak = 1; this.revealT = 0; this.state = 'stalk'; this.st = 0; this.side = Math.random() < 0.5 ? -1 : 1; this.cd = 0;
+  }
+  netVis() { return [r2(this.cloak)]; }
+  applyVis(v) { this.cloak = v[0]; }
+  onHurt() { this.revealT = 1.6; }
+  onShieldHit() { this.revealT = 1.6; }
+  pose() { return { aim: this.state === 'strike' }; }
+  animate(dt) {
+    // fade to a shimmer while cloaked
+    const vis = 1 - this.cloak * 0.93, shimmer = this.cloak > 0.5 ? (Math.sin(this.t * 13) * 0.5 + 0.5) * 0.06 : 0;
+    for (const m of this.mats) { m.opacity = vis + shimmer; m.depthWrite = vis > 0.9; }
+    if (this.bar) this.bar.visible = this.bar.visible && this.cloak < 0.5;
+  }
+  // is that guardian looking at us?
+  watched(p) {
+    const yaw = p.yaw; // (avatars carry the same yaw convention as the local player)
+    _fw.set(-Math.sin(yaw), 0, -Math.cos(yaw));
+    const to = _t.set(this.pos.x - p.pos.x, 0, this.pos.z - p.pos.z); const d = to.length();
+    return d < 30 && _fw.dot(to.normalize()) > 0.82 && this.canSee;
+  }
+  think(dt) {
+    const p = this.tgt();
+    this.revealT = Math.max(0, this.revealT - dt); this.cd -= dt;
+    const want = this.revealT > 0 || this.state === 'strike' ? 0 : 1;
+    this.cloak += (want - this.cloak) * Math.min(1, dt * (want ? 2 : 8));
+    const yaw = p.yaw;
+    _fw.set(-Math.sin(yaw), 0, -Math.cos(yaw));
+    if (this.state === 'stalk') {
+      // aim for a spot behind (and a bit to the side of) the target
+      const bx = p.pos.x - _fw.x * 2.4 + _fw.z * this.side * 1.2, bz = p.pos.z - _fw.z * 2.4 - _fw.x * this.side * 1.2;
+      const d = this.steer(bx, bz, this.speed, dt, { stopDist: 0.4 });
+      if (this.watched(p) && this.cloak > 0.6) { this.state = 'flee'; this.st = rand(1.2, 1.8); fx.floatText(this.top(_t).clone(), pick(['!', 'wait no', 'not like this']), { height: 0.4 }); }
+      else if (d < 1.2 && distXZ(this.pos, p.pos) < 4 && this.cd <= 0 && p.alive) {
+        this.state = 'strike'; this.st = 0.55; this.facePlayer(dt, 30);
+        playAt(this.pos, 'troll'); fx.floatText(this.top(_t).clone(), pick(['u mad?', 'problem?', 'gottem']), { height: 0.55, color: '#ffffff' });
+      }
+    } else if (this.state === 'flee') {
+      this.st -= dt;
+      const ax = this.pos.x - p.pos.x, az = this.pos.z - p.pos.z, l = Math.hypot(ax, az) || 1;
+      this.steer(this.pos.x + ax / l * 5 + az / l * this.side * 3, this.pos.z + az / l * 5 - ax / l * this.side * 3, this.speed * 1.2, dt);
+      if (this.st <= 0) { this.state = 'stalk'; this.side *= -1; }
+    } else if (this.state === 'strike') {
+      // the lunge: close the gap during the snicker
+      this.st -= dt; this.facePlayer(dt, 20); this.steer(p.pos.x, p.pos.z, this.st < 0.3 ? 10 : 2, dt, { stopDist: 0.9 });
+      if (this.st <= 0) {
+        if (distXZ(this.pos, p.pos) < 2.6 && p.alive) {
+          hurtPlayer(p, 28, 'a Smug Troll (problem?)');
+          if (p === G.player) { p.vel.x += (p.pos.x - this.pos.x) * 4; p.vel.z += (p.pos.z - this.pos.z) * 4; p.vel.y += 3; }
+          this.doAct('fire', 0.2);
+        }
+        this.state = 'flee'; this.st = rand(2.5, 3.5); this.cd = rand(3, 5);
+      }
+    }
+  }
+}
+
 // ---------------- RICK ROLLER ----------------
 // A mirrored disco ball that rolls at you trailing music notes. Let it reach you and you're rickrolled:
 // forced to dance for a moment, gun down. Shoot it first.
@@ -845,3 +911,4 @@ export function clearEnemies() {
   G.entities.clear();
 }
 registerNetType(RickRoller);
+registerNetType(Troll);

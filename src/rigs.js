@@ -203,6 +203,48 @@ export function stonksRig() {
   return r;
 }
 // The Sigma: broad shoulders, a long open overcoat whose tails swing, a slicked-back pompadour, gold chain + watch.
+// The smug troll: a pale, too-wide head with a face drawn on (squinting eyes, an enormous toothy grin, wrinkles).
+let smugTex = null;
+function smugFace() {
+  if (smugTex) return smugTex;
+  const S = 256, c = document.createElement('canvas'); c.width = c.height = S;
+  const x = c.getContext('2d');
+  x.strokeStyle = '#111'; x.lineCap = 'round'; x.lineJoin = 'round';
+  // squinting, scheming eyes + brows
+  x.lineWidth = 7;
+  for (const s of [-1, 1]) {
+    x.beginPath(); x.ellipse(128 + s * 52, 92, 30, 13, s * -0.2, Math.PI * 1.05, Math.PI * 1.95); x.stroke();
+    x.beginPath(); x.moveTo(128 + s * 22, 68); x.quadraticCurveTo(128 + s * 52, 50, 128 + s * 84, 66); x.stroke();
+    x.fillStyle = '#111'; x.beginPath(); x.arc(128 + s * 46, 92, 6, 0, Math.PI * 2); x.fill();
+  }
+  // the grin: a huge crescent full of teeth
+  x.fillStyle = '#fff'; x.lineWidth = 6;
+  x.beginPath(); x.moveTo(36, 128); x.quadraticCurveTo(128, 250, 220, 128); x.quadraticCurveTo(128, 175, 36, 128); x.closePath(); x.fill(); x.stroke();
+  x.lineWidth = 3;
+  for (let i = 1; i < 10; i++) { const t = i / 10, px = 36 + t * 184; const yTop = 128 + Math.sin(t * Math.PI) * 47, yBot = 128 + Math.sin(t * Math.PI) * 120 * 0.5 + Math.sin(t * Math.PI) * 10; x.beginPath(); x.moveTo(px, yTop); x.lineTo(px, yBot + 8); x.stroke(); }
+  x.beginPath(); x.moveTo(50, 140); x.quadraticCurveTo(128, 205, 206, 140); x.stroke();
+  // cheek + chin wrinkles
+  x.lineWidth = 4;
+  for (const s of [-1, 1]) { x.beginPath(); x.moveTo(128 + s * 104, 110); x.quadraticCurveTo(128 + s * 118, 135, 128 + s * 102, 160); x.stroke(); }
+  x.beginPath(); x.moveTo(100, 226); x.quadraticCurveTo(128, 236, 156, 226); x.stroke();
+  smugTex = new THREE.CanvasTexture(c); smugTex.colorSpace = THREE.SRGBColorSpace;
+  return smugTex;
+}
+export function trollRig() {
+  const r = new Humanoid({ suit: 0xc9c9cc, pants: 0x8a8a92, shirt: 0xf4f4f4, tie: 0x111111, skin: 0xf2f2ee, shoes: 0x222222,
+    head: (h) => {
+      const skin = mat(0xf4f4f0, { rough: 0.5 });
+      const skull = mesh(h, SPH(0.2, 24, 18), skin, 0, 0.17, 0.02); skull.scale.set(1.35, 1.12, 1.05);
+      mesh(h, SPH(0.12, 16, 12), skin, 0, 0.04, 0.06).scale.set(1.3, 0.8, 1); // jaw
+      const face = mesh(h, new THREE.SphereGeometry(0.212, 32, 20, Math.PI * 0.12, Math.PI * 0.76, Math.PI * 0.22, Math.PI * 0.62),
+        new THREE.MeshStandardMaterial({ map: smugFace(), transparent: true, roughness: 0.5, polygonOffset: true, polygonOffsetFactor: -2 }), 0, 0.15, 0.03);
+      face.scale.set(1.36, 1.14, 1.08); face.castShadow = false;
+      for (const s of [-1, 1]) mesh(h, SPH(0.05, 10, 8), skin, s * 0.27, 0.15, 0).scale.set(0.5, 1, 0.8); // ears
+    } });
+  rimify(r.root, 0xd0e8ff, 0.3);
+  return r;
+}
+
 export function sigmaRig() {
   const gold = mat(0xd9b04a, { metal: 0.95, rough: 0.22 });
   const r = new Humanoid({ suit: 0x101012, shirt: 0x1c1c1c, tie: 0x050505, skin: 0x9a958c, shoes: 0x050505, bulk: 1.15,

@@ -84,6 +84,10 @@ Pick **🎯 Firing Range** from "Start at encounter" to practise: dummies that n
 
 A mirrored disco ball that rolls at you trailing music notes (Normie Gate, Ohio, and the range's NEVER GONNA wave). If one reaches you, you're **rickrolled**: forced to dance for 1.6 s, gun down. Shoot them before they arrive.
 
+## Smug Trolls
+
+Cloaked stalkers (just a faint shimmer) that circle around behind you. If one gets close while you're not looking, it decloaks with a snicker ("u mad?") and lunges. **Look at it** and it panics and backs off; **shoot it** and the cloak drops for a moment. They join the Emergency Meeting from round 2, and there's a PROBLEM? wave in the Firing Range.
+
 ## Elements and shields
 
 Every gun has an element: 🔥 Solar, ⚡ Arc or 🟣 Void. The icon shows next to its name on the HUD and in the Armory.
