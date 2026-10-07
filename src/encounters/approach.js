@@ -91,7 +91,8 @@ export class TheApproach extends Encounter {
     for (let i = 0; i < 18; i++) { const r = new THREE.Mesh(new THREE.DodecahedronGeometry(rand(1, 3.5), 0), rough); r.position.set(rand(-30, 30), rand(-30, -8), rand(-110, -55)); r.rotation.set(rand(0, 6), rand(0, 6), 0); add(r); }
     // 4) the plaza
     addBox(0, -2, -128, 36, 2, 44, stone);
-    for (const [x, z, w, h, d] of [[-9, -118, 4, 2, 2.5], [9, -118, 4, 2, 2.5], [-13, -134, 2.5, 2.4, 5], [13, -134, 2.5, 2.4, 5], [0, -126, 6, 1.4, 1.6]]) addBox(x, 0, z, w, h, d, rough);
+    for (const [x, z, w, h, d] of [[-9, -118, 4, 2, 2.5], [9, -118, 4, 2, 2.5], [-13, -134, 2.5, 2.4, 5], [13, -134, 2.5, 2.4, 5], [0, -126, 6, 1.4, 1.6]]) { addBox(x, 0, z, w, h, d, rough); D.barrier(x, z, w, h, d); }
+    for (const [x, z] of [[-16.5, -120], [16.5, -120], [-16.5, -138], [16.5, -138]]) D.column(x, z, { h: 9, r: 1.0, color: 0x5d646c, accent: 0x5fd8ff });
     for (const [x, z] of [[-15, -110], [15, -110], [-15, -146], [15, -146]]) D.brazier(x, z, { color: 0xff7a20 });
     D.rubble(-6, -140, { n: 7 }); D.rubble(8, -112, { n: 5 });
     // 5) the gate of the Vault
@@ -100,7 +101,11 @@ export class TheApproach extends Encounter {
     this.door = addBox(0, 0, -150, 10, 12, 1.6, std(0x55303a, { metalness: 0.6, roughness: 0.35, emissive: 0x330010 }));
     const doorRunes = new THREE.Mesh(new THREE.PlaneGeometry(8, 9), new THREE.MeshBasicMaterial({ map: emojiRunes(), transparent: true }));
     doorRunes.position.set(0, 6, -149.15); this.door.add(doorRunes); doorRunes.position.set(0, 0, 0.82);
-    const title = textSprite('VAULT OF CRINGE', 2.2, { font: IMPACT, weight: 'normal', color: '#ff4fd8' }); title.position.set(0, 16.5, -148.3); add(title);
+    const title = textSprite('VAULT OF CRINGE', 2.2, { font: IMPACT, weight: 'normal', color: '#ff4fd8' }); title.position.set(0, 19.5, -148.3); add(title);
+    // a monumental arch around the door, pilasters along the gate wall
+    D.archway(0, -148.4, 10, 12, { depth: 1.4, color: 0x454b53, accent: 0xff4fd8 });
+    D.wallDress(-18, -148.5, -7.6, -148.5, { inward: 1, h: 18, every: 5, color: 0x3f454d, accent: 0x5fd8ff });
+    D.wallDress(7.6, -148.5, 18, -148.5, { inward: 1, h: 18, every: 5, color: 0x3f454d, accent: 0x5fd8ff });
     pointLight(0, 9, -146, 0xff4fd8, 40, 26);
     D.banner(-8.5, 8, -148.3, 0, { color: 0x5a1030, emblem: '▶', text: 'SUBSCRIBE', h: 6 });
     D.banner(8.5, 8, -148.3, 0, { color: 0x5a1030, emblem: '🔔', text: 'THE BELL', h: 6 });
