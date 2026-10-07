@@ -5,6 +5,7 @@ import { makeSky } from './render.js';
 import { normalMapFor } from './textures.js';
 import { addSurfaceDetail } from './surface.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export function std(color, o = {}) {
   const { detail = true, ...mo } = o;
@@ -109,6 +110,38 @@ export function pointLight(x, y, z, color, intensity = 30, dist = 25) {
   const l = new THREE.PointLight(color, intensity, dist, 2);
   l.position.set(x, y, z);
   return add(l);
+}
+
+// Batch the static set dressing (meshes flagged userData.static) into one mesh per material, so a dressed
+// arena costs a few dozen draw calls instead of hundreds (each also gets drawn again for shadows and AO).
+export function mergeStatic() {
+  const groups = new Map();
+  for (const m of [...G.worldGroup.children]) {
+    if (!m.isMesh || m.isInstancedMesh || !m.userData.static || Array.isArray(m.material)) continue;
+    const k = m.material.uuid + (m.castShadow ? 's' : '') + (m.receiveShadow ? 'r' : '');
+    (groups.get(k) || groups.set(k, []).get(k)).push(m);
+  }
+  let saved = 0;
+  for (const list of groups.values()) {
+    if (list.length < 2) continue;
+    const geos = list.map((m) => {
+      m.updateMatrixWorld(true);
+      const g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+      for (const name of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(name)) g.deleteAttribute(name);
+      if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+      g.morphAttributes = {};
+      return g.applyMatrix4(m.matrixWorld);
+    });
+    const merged = mergeGeometries(geos, false);
+    geos.forEach((g) => g.dispose());
+    if (!merged) continue;
+    const out = new THREE.Mesh(merged, list[0].material);
+    out.castShadow = list[0].castShadow; out.receiveShadow = list[0].receiveShadow;
+    for (const m of list) { G.worldGroup.remove(m); m.geometry.dispose(); }
+    G.worldGroup.add(out);
+    saved += list.length - 1;
+  }
+  return saved;
 }
 
 // ---------- collision ----------

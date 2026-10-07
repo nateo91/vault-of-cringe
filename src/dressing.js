@@ -92,7 +92,7 @@ export function lightShaft(x, y, z, { height = 10, top = 0.6, bottom = 3, color 
 
 // ---------- props ----------
 const rb = (w, h, d, r = 0.08) => new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2, h / 2, d / 2));
-function mesh(geo, mat, x, y, z) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; add(m); return m; }
+function mesh(geo, mat, x, y, z) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; m.userData.static = true; add(m); return m; }
 
 export function lamp(x, z, { color = 0xffc070, height = 4.5, base = 0x2a2a30 } = {}) {
   const metal = std(base, { metalness: 0.8, roughness: 0.35 });
@@ -234,4 +234,108 @@ export function floatingRocks({ count = 30, rMin = 40, rMax = 90, color = 0x6a5a
   }
   let t = 0;
   animate((dt) => { t += dt; for (const r of rocks) { r.position.y += Math.sin(t * 0.4 + r.userData.bob) * 0.15 * dt; r.rotation.y += r.userData.spin * dt; } });
+}
+
+// ================================================================ architecture kit
+// Dressing for plain collider geometry: columns, wall pilasters + panels + cornices, trimmed barriers, archways.
+// None of these add collision unless stated; they wrap the boxes/cylinders the encounter already placed.
+
+// A fluted column: plinth, moulded base, fluted shaft, capital, and a glowing ring at the top.
+// Adds its own cylinder collider (same footprint as addCyl).
+export function column(x, z, { h = 9, r = 1.3, color = 0x5d606a, accent = 0xff2244, collide = true } = {}) {
+  const stone = std(color, { roughness: 0.75, metalness: 0.15 });
+  const dark = std(new THREE.Color(color).multiplyScalar(0.6).getHex(), { roughness: 0.6, metalness: 0.4 });
+  if (collide) addCyl(x, 0, z, r, h, stone).visible = false;
+  mesh(rb(r * 2.7, 0.5, r * 2.7, 0.08), dark, x, 0.25, z);
+  const base = mesh(new THREE.TorusGeometry(r * 1.08, r * 0.14, 8, 32), stone, x, 0.62, z); base.rotation.x = Math.PI / 2;
+  // shaft with 16 flutes (scalloped radius)
+  const shaft = new THREE.CylinderGeometry(r, r * 1.04, h - 1.6, 64, 1, true);
+  const pa = shaft.attributes.position;
+  for (let i = 0; i < pa.count; i++) {
+    const px = pa.getX(i), pz = pa.getZ(i), a = Math.atan2(pz, px);
+    const k = 1 - 0.07 * Math.pow(Math.max(0, Math.cos(a * 16)), 2);
+    pa.setX(i, px * k); pa.setZ(i, pz * k);
+  }
+  shaft.computeVertexNormals();
+  mesh(shaft, stone, x, 0.75 + (h - 1.6) / 2, z);
+  const neck = mesh(new THREE.TorusGeometry(r * 1.02, r * 0.1, 8, 32), stone, x, h - 0.85, z); neck.rotation.x = Math.PI / 2;
+  mesh(new THREE.CylinderGeometry(r * 1.45, r * 1.05, 0.45, 32), stone, x, h - 0.55, z);
+  mesh(rb(r * 2.6, 0.35, r * 2.6, 0.06), dark, x, h - 0.17, z);
+  if (accent != null) {
+    const glow = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: accent, emissiveIntensity: 2.2 });
+    const ring = mesh(new THREE.TorusGeometry(r * 1.47, 0.05, 6, 40), glow, x, h - 0.33, z); ring.rotation.x = Math.PI / 2; ring.castShadow = false;
+  }
+}
+
+// Pilasters + recessed panels + cornice + baseboard + little wall lamps along one wall face.
+// (x1,z1)->(x2,z2) runs along the wall's inner face; `inward` is +1/-1: which side of the line the room is on
+// (+1 = the left-hand normal (-dz, dx) of the A->B direction points into the room).
+export function wallDress(x1, z1, x2, z2, { h = 12, every = 8, inward = 1, color = 0x45484f, accent = 0xffb070, lamps = true } = {}) {
+  const A = new THREE.Vector3(x1, 0, z1), B = new THREE.Vector3(x2, 0, z2);
+  const len = A.distanceTo(B), dir = B.clone().sub(A).normalize();
+  const nrm = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(inward);
+  const rotY = Math.atan2(dir.x, dir.z) + Math.PI / 2;
+  const n = Math.max(1, Math.round(len / every)), step = len / n;
+  const pil = std(color, { roughness: 0.7, metalness: 0.2 });
+  const panel = std(new THREE.Color(color).multiplyScalar(0.72).getHex(), { roughness: 0.85 });
+  const trim = std(new THREE.Color(color).multiplyScalar(1.25).getHex(), { roughness: 0.5, metalness: 0.5 });
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotY), one = new THREE.Vector3(1, 1, 1);
+  const inst = (geo, mat, count, fill) => { const im = new THREE.InstancedMesh(geo, mat, count); im.castShadow = im.receiveShadow = true; for (let i = 0; i < count; i++) im.setMatrixAt(i, fill(i)); add(im); return im; };
+  const at = (t, out, off = 0, y = 0) => out.copy(A).addScaledVector(dir, t).addScaledVector(nrm, off).setY(y);
+  const P = new THREE.Vector3();
+  // pilasters at every bay boundary
+  inst(rb(1.3, h, 0.7, 0.06), pil, n + 1, (i) => m4.compose(at(i * step, P, 0.35, h / 2), q, one));
+  inst(rb(1.7, 0.6, 1.0, 0.06), trim, n + 1, (i) => m4.compose(at(i * step, P, 0.5, h - 0.7), q, one));
+  inst(rb(1.6, 0.8, 0.95, 0.06), trim, n + 1, (i) => m4.compose(at(i * step, P, 0.47, 0.4), q, one));
+  // a recessed panel (two, stacked) in each bay
+  const pw = step - 2.2;
+  if (pw > 0.8) {
+    inst(rb(pw, h * 0.42, 0.12, 0.04), panel, n * 2, (i) => m4.compose(at((Math.floor(i / 2) + 0.5) * step, P, 0.06, i % 2 ? h * 0.71 : h * 0.29), q, one));
+    inst(rb(pw + 0.3, 0.18, 0.2, 0.04), trim, n, (i) => m4.compose(at((i + 0.5) * step, P, 0.1, h * 0.5), q, one));
+  }
+  // cornice + baseboard the whole length
+  const cor = mesh(rb(len, 0.5, 0.9, 0.08), trim, 0, 0, 0); at(len / 2, cor.position, 0.45, h - 0.25); cor.quaternion.copy(q);
+  const bb = mesh(rb(len, 0.35, 0.35, 0.05), trim, 0, 0, 0); at(len / 2, bb.position, 0.17, 0.17); bb.quaternion.copy(q);
+  // small warm lamps on alternate pilasters
+  if (lamps) {
+    const lm = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: accent, emissiveIntensity: 3 });
+    inst(rb(0.35, 0.7, 0.2, 0.05), lm, Math.ceil((n + 1) / 2), (i) => m4.compose(at(i * 2 * step, P, 0.78, h * 0.62), q, one)).castShadow = false;
+  }
+}
+
+// Hazard stripes (yellow/black), shared
+const hazardTex = (() => {
+  const c = document.createElement('canvas'); c.width = 128; c.height = 32;
+  const x = c.getContext('2d'); x.fillStyle = '#e8b400'; x.fillRect(0, 0, 128, 32);
+  x.fillStyle = '#151515';
+  for (let i = -2; i < 10; i++) { x.beginPath(); x.moveTo(i * 16, 32); x.lineTo(i * 16 + 8, 32); x.lineTo(i * 16 + 24, 0); x.lineTo(i * 16 + 16, 0); x.fill(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; return t;
+})();
+// Dress a cover box that already exists as a collider: metal cap, kick plate, a hazard band, corner posts.
+export function barrier(x, z, w, h, d, { color = 0x55504a, y = 0 } = {}) {
+  const metal = std(0x3a3d44, { metalness: 0.75, roughness: 0.4 });
+  mesh(rb(w + 0.16, 0.16, d + 0.16, 0.05), metal, x, y + h + 0.02, z);
+  mesh(rb(w + 0.1, 0.22, d + 0.1, 0.04), std(0x222428, { roughness: 0.6, metalness: 0.4 }), x, y + 0.11, z);
+  const t = hazardTex.clone(); t.needsUpdate = true; t.repeat.set(Math.max(1, Math.round((w + d) / 1.2)), 1);
+  const band = mesh(new THREE.BoxGeometry(w + 0.04, 0.22, d + 0.04), new THREE.MeshStandardMaterial({ map: t, roughness: 0.6 }), x, y + h * 0.72, z);
+  band.castShadow = false;
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) mesh(rb(0.18, h + 0.05, 0.18, 0.04), metal, x + sx * (w / 2 + 0.02), y + h / 2, z + sz * (d / 2 + 0.02));
+}
+
+// A monumental arch around a doorway: two tall piers, a stepped lintel, glowing inset lines.
+export function archway(x, z, w, h, { depth = 3, color = 0x4a4d57, accent = 0xff2244, rotY = 0 } = {}) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; add(g);
+  const stone = std(color, { roughness: 0.7, metalness: 0.2 });
+  const dark = std(new THREE.Color(color).multiplyScalar(0.55).getHex(), { roughness: 0.6, metalness: 0.5 });
+  const glow = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: accent, emissiveIntensity: 2.5 });
+  const put = (geo, m, px, py, pz) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.castShadow = o.receiveShadow = true; g.add(o); return o; };
+  for (const s of [-1, 1]) {
+    put(rb(2.4, h + 3, depth, 0.1), stone, s * (w / 2 + 1.2), (h + 3) / 2, 0);
+    put(rb(2.8, 1, depth + 0.4, 0.1), dark, s * (w / 2 + 1.2), 0.5, 0);
+    put(new THREE.BoxGeometry(0.12, h + 1, 0.06), glow, s * (w / 2 + 0.2), (h + 1) / 2 + 0.5, depth / 2 + 0.02).castShadow = false;
+  }
+  put(rb(w + 5.6, 1.2, depth + 0.6, 0.1), dark, 0, h + 3.4, 0);
+  put(rb(w + 3.6, 0.8, depth + 0.3, 0.08), stone, 0, h + 4.4, 0);
+  put(new THREE.BoxGeometry(w + 0.4, 0.12, 0.06), glow, 0, h + 0.4, depth / 2 + 0.02).castShadow = false;
+  return g;
 }

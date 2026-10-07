@@ -44,11 +44,16 @@ export class NormieGate extends Encounter {
     // cover
     const crate = std(0x6a5a48, { roughness: 1 });
     const pill = std(0x555a66);
-    for (const [x, z, w, h, d] of [[-14, 12, 4, 2.2, 4], [14, 12, 4, 2.2, 4], [0, 2, 8, 1.4, 2], [-34, 26, 5, 2.4, 3], [34, 26, 5, 2.4, 3], [-12, -20, 3, 2.2, 6], [12, -20, 3, 2.2, 6], [-40, -2, 3, 3, 3], [40, -2, 3, 3, 3], [-22, 30, 2, 1.2, 6], [22, 30, 2, 1.2, 6]]) addBox(x, 0, z, w, h, d, crate);
-    for (const [x, z] of [[-20, 0], [20, 0], [-38, -36], [38, -36], [-6, 22], [6, 22]]) {
-      addCyl(x, 0, z, 1.3, 9, pill);
-      addBox(x, 9, z, 3, 0.4, 3, trim, { collide: false });
+    for (const [x, z, w, h, d] of [[-14, 12, 4, 2.2, 4], [14, 12, 4, 2.2, 4], [0, 2, 8, 1.4, 2], [-34, 26, 5, 2.4, 3], [34, 26, 5, 2.4, 3], [-12, -20, 3, 2.2, 6], [12, -20, 3, 2.2, 6], [-40, -2, 3, 3, 3], [40, -2, 3, 3, 3], [-22, 30, 2, 1.2, 6], [22, 30, 2, 1.2, 6]]) {
+      addBox(x, 0, z, w, h, d, crate);
+      D.barrier(x, z, w, h, d);
     }
+    for (const [x, z] of [[-20, 0], [20, 0], [-38, -36], [38, -36], [-6, 22], [6, 22]]) D.column(x, z, { h: 9, r: 1.3, color: 0x5d606a, accent: 0xff2244 });
+    // walls get pilasters, panels and a cornice; the gate gets a proper arch
+    D.wallDress(-50, -50, -9.5, -50, { inward: 1 }); D.wallDress(9.5, -50, 50, -50, { inward: 1 });
+    D.wallDress(-50, 50, 50, 50, { inward: -1 });
+    D.wallDress(50, -50, 50, 50, { inward: 1 }); D.wallDress(-50, -50, -50, 50, { inward: -1 });
+    D.archway(0, -49.6, 16, 8, { depth: 2.6, accent: 0xff2244 });
     // plates
     this.plates = PLATES.map((p) => {
       const mat = std(0x2a0a10, { emissive: 0xff2244, emissiveIntensity: 0.2 });
