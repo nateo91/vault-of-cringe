@@ -3,7 +3,7 @@ const KEY = 'voc-leaderboard-v2'; // v2: the raid gained This Is Fine, so older 
 const MAX = 25;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const CLASS_ICON = { hunter: '🔺', titan: '🛡️', warlock: '📖' };
-const MOD_ICON = { shielded: '🛡️', oneLife: '💀', speedy: '💨', glass: '🪙', bighead: '🎈' };
+const MOD_ICON = { shielded: '🛡️', oneLife: '💀', speedy: '💨', glass: '🪙', bighead: '🎈', shuffle: '🔀' };
 
 export function formatTime(sec, tenths = true) {
   if (!isFinite(sec)) return '--:--';

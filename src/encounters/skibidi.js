@@ -412,12 +412,12 @@ export class SkibidiFinale extends Encounter {
     HUD.bigText('SKIBIDI HAS BEEN FLUSHED', 'Ohio is saved. Somehow.', 5, 'meme');
     this.ghost('We did it. We actually did it. I am going to go touch grass. Forever.');
     for (const e of G.enemies) if (e.alive && e !== this.boss) e.die();
-    this.ev('outro');
+    this.ev('outro', G.isFinal === false ? 0 : 1);
     after(0.8, () => this.complete()); // game timers are frozen while the outro plays, so this lands right after it
   }
   // The raid's last shot: circle in on Skibidi burning away while the bowl flushes, then crane up over Ohio as the
   // thousand toilets go off one by one and fireworks fill the sky.
-  ev_outro() {
+  ev_outro(final = 1) {
     const V = (x, y, z) => new THREE.Vector3(x, y, z);
     const order = this.orbiters.slice().sort(() => Math.random() - 0.5);
     let nextPop = 2.4, popped = 0, swirled = false, fw = 0, rings = 0;
@@ -428,7 +428,7 @@ export class SkibidiFinale extends Encounter {
         { t: [2.6, 4.4], path: [V(4.5, 2.4, 4.5), V(3.2, 2.0, 3.0)], look: [V(0, 1.2, 0)], fov: [54, 50] },
         { t: [4.4, 7.6], path: [V(0, 6, 16), V(0, 20, 40), V(0, 30, 62)], look: [V(0, 4, 0), V(0, 12, -60)], fov: [60, 72] },
       ],
-      card: { at: 4.9, name: 'THE VAULT OF CRINGE', sub: 'RAID COMPLETE · OHIO IS SAVED (SOMEHOW)' },
+      card: final ? { at: 4.9, name: 'THE VAULT OF CRINGE', sub: 'RAID COMPLETE · OHIO IS SAVED (SOMEHOW)' } : { at: 4.9, name: 'SKIBIDI, FLUSHED', sub: 'THE RAID CONTINUES (SHUFFLE IS ON)' },
       lines: [[0.6, 'skibidi... no...', 'boss']],
       choreo: (t, dt, snap) => {
         if (snap) return;

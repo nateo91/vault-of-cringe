@@ -76,7 +76,8 @@ function init() {
   setupMenus();
   setupCoop();
   G.onEngram = () => grantLoot({ exoticChance: 0.04 }, 'ENGRAM DECRYPTED');
-  G.onLoot = (i) => { if (ENCOUNTERS[i]?.traversal) return; grantLoot({ exoticChance: [0, 0.05, 0.12, 0.2, 0.3, 0.5][i] ?? 0.1 }); if (i === ENCOUNTERS.length - 1) after(1.2, () => grantLoot({ exoticChance: 0.2 })); };
+  // loot scales with how deep into the run you are (k), and the last encounter of the run pays a bonus
+  G.onLoot = (i, k = i, last = i === ENCOUNTERS.length - 1) => { if (ENCOUNTERS[i]?.traversal) return; grantLoot({ exoticChance: [0, 0.05, 0.12, 0.2, 0.3, 0.5][k] ?? 0.1 }); if (last) after(1.2, () => grantLoot({ exoticChance: 0.2 })); };
   // skip a boss intro
   addEventListener('keydown', (e) => { if (G.cine && ['Space', 'Enter', 'KeyE', 'Escape'].includes(e.code)) G.cine.skip(); });
   addEventListener('mousedown', () => { if (G.cine) G.cine.skip(); });
@@ -258,8 +259,16 @@ function startRaid(index) {
   beginRun(index);
   loadEncounter(index);
 }
+// the run's encounter order (Shuffle mixes up the five after The Approach)
+function runOrder() { return G.run?.order || ENCOUNTERS.map((_, i) => i); }
+function nextIndex(i) { const o = runOrder(), k = o.indexOf(i); return k >= 0 && k + 1 < o.length ? o[k + 1] : -1; }
 function beginRun(index) {
   G.run = { id: Math.random().toString(36).slice(2) + Date.now().toString(36), clock: 0, splits: [], eligible: index === 0 && !G.debug, wipes: 0, startIdx: index };
+  if (G.settings.mods?.shuffle && index === 0) {
+    const rest = ENCOUNTERS.map((_, k) => k).slice(1);
+    for (let a = rest.length - 1; a > 0; a--) { const b = Math.floor(Math.random() * (a + 1)); [rest[a], rest[b]] = [rest[b], rest[a]]; }
+    G.run.order = [0, ...rest];
+  }
 }
 
 function resetAll() {
@@ -296,6 +305,7 @@ function updateMusicIntensity(dt) {
 
 function loadEncounter(i) {
   if (G.photo) togglePhoto();
+  G.isFinal = nextIndex(i) < 0; // (Shuffle: the finale isn't always last)
   G.state = 'loading';
   if (G.net.isHost) G.net.hostLoad(i);
   stopMusic();
@@ -395,16 +405,18 @@ function onEncounterComplete() {
   if (G.encounter?.traversal) {
     play('superReady');
     HUD.bigText('THE VAULT OF CRINGE', 'the raid begins', 3, 'meme');
-    after(2.5, () => loadEncounter(G.encounterIndex + 1));
+    after(2.5, () => loadEncounter(nextIndex(G.encounterIndex)));
     return;
   }
   play('fanfare');
   HUD.bigText('ENCOUNTER COMPLETE', pick(['the memes have been defeated', 'certified W', 'that was cringe. good job.']), 3.5, 'good');
-  if (G.net.isHost) G.net.emit(['loot', G.encounterIndex]);
-  local(() => G.onLoot(G.encounterIndex));
+  const k = runOrder().indexOf(G.encounterIndex), last = nextIndex(G.encounterIndex) < 0;
+  if (G.net.isHost) G.net.emit(['loot', G.encounterIndex, k, last]);
+  local(() => G.onLoot(G.encounterIndex, k, last));
   for (let i = 0; i < 4; i++) new Pickup(i % 2 ? 'special' : 'heavy', G.player.pos.clone().setY(G.player.pos.y + 2));
   after(5, () => {
-    if (G.encounterIndex + 1 < ENCOUNTERS.length) loadEncounter(G.encounterIndex + 1);
+    const next = nextIndex(G.encounterIndex);
+    if (next >= 0) loadEncounter(next);
     else { const run = finishRun(); if (G.net.isHost) G.net.hostVictory(run); victory(run); }
   });
 }

@@ -88,6 +88,7 @@ Toggle these on the main menu for extra challenge (they're remembered; the leade
 - 💨 **Caffeinated**: enemies move 30% faster
 - 🪙 **Glass Cannon**: you deal +50% damage and take double
 - 🎈 **Big Head**: enemy heads (and their crit spots) are 1.6x bigger
+- 🔀 **Shuffle**: after The Approach, the five encounters come in a random order
 
 In co-op the host's toggles decide the enemy-side ones; Glass Cannon and One Life follow each player's own menu.
 
