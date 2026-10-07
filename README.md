@@ -4,7 +4,9 @@ A Destiny 2 parody raid where every enemy is a meme and the memes get more curse
 
 ## Run it
 
-Double-click `start.bat`. It needs Python, and it opens http://localhost:8642. You can also run any static server from this folder:
+Double-click `launch.pyw` (needs Python). It serves the game with no console window, opens it in its own app window (Edge or Chrome), and stops the server when you close that window. For a desktop icon, make a shortcut to `pythonw.exe "<this folder>\launch.pyw"` and give it `icon.ico`. The app window keeps its own settings and leaderboard, separate from your normal browser.
+
+`start.bat` does the same in a plain browser tab and leaves a console open. You can also run any static server from this folder:
 
 ```
 python serve.py 8642
