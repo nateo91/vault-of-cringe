@@ -124,7 +124,7 @@ function setupMenus() {
   document.querySelectorAll('.sens').forEach((e) => (e.oninput = () => { G.settings.sens = +e.value; save(); }));
   document.querySelectorAll('.vol').forEach((e) => (e.oninput = () => { G.settings.volume = +e.value; setVolume(G.settings.volume); save(); }));
   document.querySelectorAll('.voice').forEach((e) => (e.onchange = () => { G.settings.voice = e.checked; if (!e.checked) speechSynthesis?.cancel(); save(); }));
-  document.querySelectorAll('.quality').forEach((e) => (e.onchange = () => { G.settings.quality = e.value; save(); applyQuality(); }));
+  document.querySelectorAll('.quality').forEach((e) => (e.onchange = () => { G.settings.quality = e.value; G.settings.qualityPicked = true; save(); applyQuality(); }));
   document.querySelectorAll('.aimassist').forEach((e) => (e.onchange = () => { G.settings.aimAssist = e.checked; save(); }));
   document.querySelectorAll('.music').forEach((e) => (e.onchange = () => {
     G.settings.music = e.checked; save();
@@ -448,7 +448,31 @@ function coopFrame(dt) {
 
 function frame() {
   requestAnimationFrame(frame);
-  step(Math.min(clock.getDelta(), 1 / 20));
+  const raw = clock.getDelta();
+  autoQuality(raw);
+  step(Math.min(raw, 1 / 20));
+}
+
+if (G.debug) window.autoQuality = (dt) => autoQuality(dt); // test hook
+// First-run auto quality: if real gameplay can't hold ~45 fps, step down a preset (until the player picks one).
+let aqWarm = 0, aqT = 0, aqN = 0;
+function autoQuality(dt) {
+  const st = G.settings;
+  if (st.qualityPicked || st.qualityChecked || G.debug) return;
+  if (G.state !== 'playing' || G.paused || G.cine || document.visibilityState !== 'visible' || dt > 0.5) { aqWarm = 0; aqT = 0; aqN = 0; return; }
+  if ((aqWarm += dt) < 3) return; // let shaders compile and the arena settle
+  aqT += dt; aqN++;
+  if (aqT < 5) return;
+  const ms = (aqT / aqN) * 1000;
+  aqWarm = 0; aqT = 0; aqN = 0;
+  const q = st.quality || 'high';
+  if (ms > 22 && q !== 'low') {
+    st.quality = q === 'high' ? 'medium' : 'low';
+    applyQuality();
+    document.querySelectorAll('.quality').forEach((e) => (e.value = st.quality));
+    HUD.killfeed(`Graphics set to ${st.quality.toUpperCase()} for smoother play (${Math.round(1000 / ms)} fps). Change it in the menu.`);
+  } else st.qualityChecked = true;
+  try { localStorage.setItem('voc-settings', JSON.stringify(st)); } catch (e) { /* fine */ }
 }
 // Debug helper: advance the sim manually (e.g. when the tab is in the background)
 window.simulate = (seconds, dt = 1 / 60) => { for (let t = 0; t < seconds; t += dt) step(dt, false); render(dt); };
