@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { rand, damp } from './game.js';
 import { textSprite, IMPACT } from './textures.js';
-import { addCharacterDetail } from './surface.js';
+import { addCharacterDetail, addFur } from './surface.js';
 
 // ---------------------------------------------------------------- materials
 const matCache = new Map();
@@ -308,8 +308,8 @@ export class DogeRig extends Rig {
     super();
     const tan = mat(0xd99a4e, { rough: 0.85 }), cream = mat(0xf6e6c8, { rough: 0.9 }), dark = mat(0x1a1310, { rough: 0.3 }), white = mat(0xffffff, { rough: 0.3 });
     const body = this.joint('body', null, 0, 0.66, 0);
-    mesh(body, CAP(0.27, 0.62), tan, 0, 0, -0.02, Math.PI / 2);
-    const chestFluff = mesh(body, SPH(0.24), cream, 0, -0.06, 0.3); chestFluff.scale.set(0.9, 0.95, 0.8);
+    addFur(mesh(body, CAP(0.27, 0.62), tan, 0, 0, -0.02, Math.PI / 2), { shells: 4, len: 0.03, density: 130 });
+    const chestFluff = addFur(mesh(body, SPH(0.24), cream, 0, -0.06, 0.3), { shells: 4, len: 0.04, density: 120 }); chestFluff.scale.set(0.9, 0.95, 0.8);
     mesh(body, CAP(0.17, 0.5), cream, 0, -0.14, 0.0, Math.PI / 2).scale.set(1, 1, 0.6);
     // legs: front pair and back pair, two segments each
     const legPos = { FL: [-0.15, 0.32], FR: [0.15, 0.32], BL: [-0.15, -0.33], BR: [0.15, -0.33] };
@@ -324,7 +324,7 @@ export class DogeRig extends Rig {
     const neck = this.joint('neck', body, 0, 0.18, 0.42);
     mesh(neck, CAP(0.14, 0.12), tan, 0, 0.06, -0.02, -0.5);
     const head = this.joint('head', neck, 0, 0.2, 0.08);
-    const skull = mesh(head, SPH(0.22, 20, 16), tan, 0, 0.02, 0); skull.scale.set(1.05, 0.92, 1);
+    const skull = addFur(mesh(head, SPH(0.22, 20, 16), tan, 0, 0.02, 0), { shells: 4, len: 0.02, density: 150 }); skull.scale.set(1.05, 0.92, 1);
     mesh(head, SPH(0.16, 16, 12), cream, 0, -0.07, 0.1).scale.set(1.15, 0.7, 0.9);
     mesh(head, CAP(0.085, 0.12), tan, 0, -0.01, 0.22, Math.PI / 2).scale.set(1.05, 0.9, 1);
     mesh(head, SPH(0.08, 12, 10), cream, 0, -0.06, 0.25).scale.set(1.2, 0.7, 1);

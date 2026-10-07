@@ -6,6 +6,7 @@ import { G, rand, pick, after, dampAngle, distXZ, alivePlayers, players, playerB
 import * as D from '../dressing.js';
 import { Encounter, weightedPick } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight } from '../world.js';
+import { addFur } from '../surface.js';
 import { tileTex, textSprite, emojiSprite, textTex, IMPACT } from '../textures.js';
 import { Enemy, Doge, Stonks, registerNetType } from '../enemies.js';
 import { Shockwave, Pickup } from '../combat.js';
@@ -118,11 +119,11 @@ function makeFineDog() {
   for (const [x, z] of [[-1.4, 1], [1.4, 1], [-1.4, -1.6], [1.4, -1.6]]) box(0.25, 1.7, 0.25, wood, x, 0.85, z);
   // body (the bob holds everything that breathes)
   const bob = new THREE.Group(); g.add(bob);
-  sph(1.35, fur, 0, 3.0, 0, 1, 1.25, 0.95, bob);
+  addFur(sph(1.35, fur, 0, 3.0, 0, 1, 1.25, 0.95, bob), { shells: 6, len: 0.05, density: 55 });
   sph(0.95, furLight, 0, 2.9, 0.62, 0.9, 1.1, 0.5, bob);
   for (const sx of [-1, 1]) sph(0.55, fur, sx * 0.8, 1.9, 1.0, 0.9, 0.6, 1.5, bob); // haunches
   const headJ = new THREE.Group(); headJ.position.set(0, 4.55, 0.1); bob.add(headJ);
-  sph(1.12, fur, 0, 0.45, 0, 1.05, 0.95, 1, headJ);
+  addFur(sph(1.12, fur, 0, 0.45, 0, 1.05, 0.95, 1, headJ), { shells: 6, len: 0.05, density: 60 });
   sph(0.62, furLight, 0, 0.12, 0.85, 1.1, 0.75, 1, headJ);
   sph(0.2, black, 0, 0.32, 1.45, 1.2, 0.85, 1, headJ);
   const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.04, 6, 16, Math.PI), black); mouth.position.set(0, -0.1, 1.38); mouth.rotation.z = Math.PI; headJ.add(mouth);

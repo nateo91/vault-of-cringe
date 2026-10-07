@@ -1,6 +1,7 @@
 // Low-poly meme models. Every model faces +Z.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { addFur } from './surface.js';
 import { emojiSprite, textSprite, makeSprite, cursedFaceTex, IMPACT } from './textures.js';
 
 const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.05, ...o });
@@ -171,26 +172,26 @@ export function makeChungus() {
   const gray = std(0x8d8d96, { roughness: 0.9 }), white = std(0xf0eee8, { roughness: 0.95 }), pink = std(0xf2a0b0), black = std(0x111111, { roughness: 0.2 });
   const sph = (r) => new THREE.SphereGeometry(r, 24, 18);
   const bodyJ = new THREE.Group(); bodyJ.position.y = 2.4; g.add(bodyJ);
-  const body = mesh(sph(1), gray, 0, 0, 0); body.scale.set(2.6, 2.4, 2.3); bodyJ.add(body);
-  const belly = mesh(sph(1), white, 0, -0.2, 1.45); belly.scale.set(1.9, 1.8, 0.95); bodyJ.add(belly);
+  const body = addFur(mesh(sph(1), gray, 0, 0, 0), { shells: 7, len: 0.035, density: 70 }); body.scale.set(2.6, 2.4, 2.3); bodyJ.add(body);
+  const belly = addFur(mesh(sph(1), white, 0, -0.2, 1.45), { shells: 7, len: 0.035, density: 70 }); belly.scale.set(1.9, 1.8, 0.95); bodyJ.add(belly);
   const head = new THREE.Group(); head.position.set(0, 2.8, 0.3); bodyJ.add(head);
-  head.add(mesh(sph(1.35), gray, 0, 0, 0));
-  const cheeks = mesh(sph(0.8), white, 0, -0.45, 0.85); cheeks.scale.set(1.3, 0.8, 0.8); head.add(cheeks);
+  head.add(addFur(mesh(sph(1.35), gray, 0, 0, 0), { shells: 7, len: 0.07, density: 40 }));
+  const cheeks = addFur(mesh(sph(0.8), white, 0, -0.45, 0.85), { shells: 6, len: 0.06, density: 45 }); cheeks.scale.set(1.3, 0.8, 0.8); head.add(cheeks);
   const ears = [], arms = [], feet = [];
   for (const sx of [-1, 1]) {
     // two-segment ears so they can flop
     const ear = new THREE.Group(); ear.position.set(sx * 0.6, 1.0, 0); ear.rotation.z = -sx * 0.25; head.add(ear);
-    ear.add(mesh(new THREE.CapsuleGeometry(0.36, 1.0, 6, 10), gray, 0, 0.7, 0));
+    ear.add(addFur(mesh(new THREE.CapsuleGeometry(0.36, 1.0, 6, 10), gray, 0, 0.7, 0), { shells: 5, len: 0.05, density: 45 }));
     ear.add(mesh(new THREE.CapsuleGeometry(0.2, 0.8, 6, 10), pink, 0, 0.7, 0.2));
     const tip = new THREE.Group(); tip.position.y = 1.4; ear.add(tip);
-    tip.add(mesh(new THREE.CapsuleGeometry(0.34, 1.0, 6, 10), gray, 0, 0.6, 0));
+    tip.add(addFur(mesh(new THREE.CapsuleGeometry(0.34, 1.0, 6, 10), gray, 0, 0.6, 0), { shells: 5, len: 0.05, density: 45 }));
     tip.add(mesh(new THREE.CapsuleGeometry(0.19, 0.8, 6, 10), pink, 0, 0.6, 0.2));
     ears.push({ ear, tip, sx });
     const eye = mesh(sph(0.3), white, sx * 0.45, 0.3, 1.05); head.add(eye);
     head.add(mesh(sph(0.13), black, sx * 0.45, 0.28, 1.33));
-    const foot = mesh(sph(1), gray, sx * 1.3, 0.35, 0.8); foot.scale.set(0.9, 0.4, 1.3); g.add(foot); feet.push(foot);
+    const foot = addFur(mesh(sph(1), gray, sx * 1.3, 0.35, 0.8), { shells: 5, len: 0.05, density: 60 }); foot.scale.set(0.9, 0.4, 1.3); g.add(foot); feet.push(foot);
     const arm = new THREE.Group(); arm.position.set(sx * 2.3, 0.6, 0.4); bodyJ.add(arm);
-    const a = mesh(new THREE.CapsuleGeometry(0.45, 1.4, 6, 10), gray, sx * 0.25, -0.7, 0); a.rotation.z = sx * 0.4; arm.add(a);
+    const a = addFur(mesh(new THREE.CapsuleGeometry(0.45, 1.4, 6, 10), gray, sx * 0.25, -0.7, 0), { shells: 6, len: 0.06, density: 45 }); a.rotation.z = sx * 0.4; arm.add(a);
     arm.add(mesh(sph(0.5), white, sx * 0.55, -1.45, 0.1));
     arms.push({ arm, sx });
   }

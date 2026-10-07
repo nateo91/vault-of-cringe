@@ -130,3 +130,48 @@ export function addCharacterDetail(m, { stone = false } = {}) {
   };
   return m;
 }
+
+// Shell fur: the mesh is drawn again as N shells pushed out along its normals; each shell keeps only the
+// texels where a strand reaches that high (3D hash in object space, so it rides along with the body), with
+// darker roots and lighter tips. Opaque + discard, so no sorting problems.
+const furMats = new Map();
+function furMat(base, i, n, len, density) {
+  const key = `${base.color.getHex()}|${i}|${n}|${len}|${density}`;
+  if (furMats.has(key)) return furMats.get(key);
+  const m = new THREE.MeshStandardMaterial({ color: base.color.clone(), roughness: 0.95, metalness: 0 });
+  const h = (i + 1) / n;
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vFurP;')
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+        vFurP = transformed;
+        transformed += normalize(objectNormal) * ${(len * h).toFixed(4)};
+        transformed.y -= ${(len * h * h * 0.35).toFixed(4)}; // a little droop`);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+        varying vec3 vFurP;
+        float furHash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }`)
+      .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
+        vec3 cell = floor(vFurP * ${density.toFixed(1)});
+        float strand = furHash(cell);
+        // strands taper: higher shells keep fewer, thinner hairs
+        vec3 f = fract(vFurP * ${density.toFixed(1)}) - 0.5;
+        float r = length(f.xz + f.xy * 0.5);
+        if (strand < ${h.toFixed(3)} * 0.85 + 0.1 || r > 0.5 * (1.0 - ${h.toFixed(3)} * 0.7)) discard;`)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+        diffuseColor.rgb *= ${(0.62 + h * 0.5).toFixed(3)};`);
+  };
+  m.customProgramCacheKey = () => `fur-${i}-${n}-${len}-${density}`;
+  furMats.set(key, m);
+  return m;
+}
+export function addFur(mesh, { shells = 6, len = 0.05, density = 90 } = {}) {
+  if ((G.settings.quality || 'high') === 'low') return mesh;
+  if ((G.settings.quality || 'high') === 'medium') shells = Math.max(2, Math.round(shells / 2));
+  for (let i = 0; i < shells; i++) {
+    const s = new THREE.Mesh(mesh.geometry, furMat(mesh.material, i, shells, len, density));
+    s.castShadow = false; s.userData.fur = true;
+    mesh.add(s);
+  }
+  return mesh;
+}
