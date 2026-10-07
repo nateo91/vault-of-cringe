@@ -294,14 +294,16 @@ class HotTake extends Enemy {
   }
 }
 
+const trimCeil = () => std(0xcbb894, { roughness: 0.8 });
+
 export class ThisIsFine extends Encounter {
   static title = 'THIS IS FINE';
   cursed = 4;
   build() {
     this.spawn.set(0, 0.1, 21); this.spawnYaw = 0;
-    setEnv({ sky: 0x2a1408, fog: 0x3a2214, near: 18, far: 110, hemi: [0xffd0a0, 0x301408, 0.75], sun: { color: 0xffb070, int: 1.2, pos: [20, 45, 30] }, shadowSize: 40,
-      dome: { top: 0x120804, horizon: 0x8a3a10, bottom: 0x100604, sun: 0xffa050, sunSize: 3, haze: 1.5 } });
-    this.fogBase = new THREE.Color(0x3a2214); this.fogHot = new THREE.Color(0x8a3a12);
+    setEnv({ sky: 0x2a1408, fog: 0x3a2e24, near: 18, far: 110, hemi: [0xfff0dc, 0x3a2a1a, 0.8], sun: { color: 0xfff0d8, int: 1.2, pos: [20, 45, 30] }, shadowSize: 40,
+      dome: { top: 0x120804, horizon: 0x6a4a2a, bottom: 0x100604, sun: 0xffe0b0, sunSize: 3, haze: 1.0, clouds: 0 } });
+    this.fogBase = new THREE.Color(0x3a2e24); this.fogHot = new THREE.Color(0x7a3a16);
     // a cozy cartoon room. wood floor, yellow wallpaper, it's lovely, it's fine
     const ft = tileTex({ base: '#8a5a32', line: '#5e3a1e', n: 12, seed: 41, grain: 26 }); ft.repeat.set(4, 4);
     const wt = tileTex({ base: '#d9b44a', line: '#c49a32', accent: '#e8c860', n: 6, seed: 42 }); wt.repeat.set(6, 1);
@@ -310,6 +312,14 @@ export class ThisIsFine extends Encounter {
     const W = HALF + 1, H = 13;
     addBox(0, 0, -W, W * 2 + 2, H, 2, wall); addBox(0, 0, W, W * 2 + 2, H, 2, wall);
     addBox(-W, 0, 0, 2, H, W * 2, wall); addBox(W, 0, 0, 2, H, W * 2, wall);
+    // a ceiling (it's a living room) that doesn't shade the room, with a warm lamp in the middle
+    const ceil = std(0xe8dcc0, { roughness: 0.95 });
+    addBox(0, H, 0, W * 2 + 2, 0.6, W * 2 + 2, ceil, { collide: false, shadow: false }).castShadow = false;
+    for (let i = -2; i <= 2; i++) { addBox(i * 9.5, H - 0.5, 0, 0.6, 0.5, W * 2, trimCeil(), { collide: false, shadow: false }).castShadow = false; }
+    const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.6, 1.1, 24, 1, true), std(0xf2e2b8, { roughness: 0.8, side: THREE.DoubleSide, emissive: 0xffd890, emissiveIntensity: 0.22 }));
+    shade.position.set(0, H - 2.2, -2); add(shade);
+    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.7, 6), std(0x222222)); cord.position.set(0, H - 0.85, -2); add(cord);
+    pointLight(0, H - 2.6, -2, 0xffe2b0, 60, 40);
     // baseboards + a picture rail
     const trim = std(0x6a3e1c);
     for (const [x, z, w, d] of [[0, -W + 1.05, W * 2, 0.1], [0, W - 1.05, W * 2, 0.1], [-W + 1.05, 0, 0.1, W * 2], [W - 1.05, 0, 0.1, W * 2]]) {

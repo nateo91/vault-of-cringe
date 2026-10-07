@@ -86,7 +86,7 @@ const GRADES = [
   { saturation: 1.08, contrast: 1.04, posterize: 0, tint: [1, 1, 1], aberration: 0.0006, grain: 0.03 },
   { saturation: 1.18, contrast: 1.07, posterize: 0, tint: [1, 0.99, 1.02], aberration: 0.0009, grain: 0.035 },
   { saturation: 1.45, contrast: 1.12, posterize: 0, tint: [1.03, 0.97, 1.05], aberration: 0.0015, grain: 0.045 },
-  { saturation: 1.9, contrast: 1.25, posterize: 0, tint: [1.08, 0.95, 1.0], aberration: 0.0028, grain: 0.06 },
+  { saturation: 1.45, contrast: 1.18, posterize: 0, tint: [1.03, 1.0, 0.94], aberration: 0.0026, grain: 0.06 }, // (warm rooms stay yellow, not red)
   { saturation: 2.6, contrast: 1.45, posterize: 18, tint: [1.12, 0.92, 0.98], aberration: 0.005, grain: 0.09 },
 ];
 
