@@ -4,7 +4,7 @@ A Destiny 2 parody raid where every enemy is a meme and the memes get more curse
 
 ## Run it
 
-Double-click `launch.pyw` (needs Python). It serves the game with no console window, opens it in its own app window (Edge or Chrome), and stops the server when you close that window. For a desktop icon, make a shortcut to `pythonw.exe "<this folder>\launch.pyw"` and give it `icon.ico`. The app window keeps its own settings and leaderboard, separate from your normal browser.
+Double-click `launch.pyw` (needs Python). It serves the game with no console window, opens it in its own app window (Edge or Chrome), and stops the server when you close that window. For a desktop icon, double-click `make-shortcut.bat` once. It puts a "Vault of Cringe" shortcut with the moai icon on your desktop. Shortcuts store full paths, so each person runs it on their own machine (and again if you move the folder). The app window keeps its own settings and leaderboard, separate from your normal browser.
 
 `start.bat` does the same in a plain browser tab and leaves a console open. You can also run any static server from this folder:
 
