@@ -1,10 +1,10 @@
 // Encounter 1: THE NORMIE GATE — capture Like / Subscribe / Bell plates and hold all three.
 import * as THREE from 'three';
-import { G, rand, pick, distXZ, after, players } from '../game.js';
+import { G, rand, pick, distXZ, after, players, local } from '../game.js';
 import * as D from '../dressing.js';
 import { Encounter, weightedPick } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight, addStars, removeCollider } from '../world.js';
-import { tileTex, textSprite, IMPACT, emojiSprite } from '../textures.js';
+import { tileTex, textSprite, IMPACT, emojiSprite, emojiTex } from '../textures.js';
 import { Doge, Stonks, Nyan, Wizard, spawnEnemy } from '../enemies.js';
 import { HUD } from '../hud.js';
 import { play } from '../audio.js';
@@ -62,7 +62,15 @@ export class NormieGate extends Encounter {
       const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1, 16, 1, true), beamMat); beam.position.set(p.x, 0, p.z); add(beam);
       const lbl = textSprite(p.label, 1.2, { font: IMPACT, weight: 'normal', color: '#ffffff', bg: '#cc0000', stroke: null }); lbl.position.set(p.x, 9.5, p.z); add(lbl);
       pointLight(p.x, 3, p.z, 0xff2244, 25, 14);
-      return { ...p, r: 4.2, prog: 0, captured: false, mat, beam, beamMat };
+      // a progress ring that fills around the edge, and a hologram of the icon that grows + spins as it fills
+      const ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff2244).multiplyScalar(2), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(new THREE.RingGeometry(4.35, 4.85, 96, 1, Math.PI / 2, Math.PI * 2), ringMat);
+      ring.rotation.x = -Math.PI / 2; ring.position.set(p.x, 0.04, p.z); ring.geometry.setDrawRange(0, 0); add(ring);
+      const track = new THREE.Mesh(new THREE.RingGeometry(4.35, 4.85, 96), new THREE.MeshBasicMaterial({ color: 0x14050a, transparent: true, opacity: 0.8, depthWrite: false }));
+      track.rotation.x = -Math.PI / 2; track.position.set(p.x, 0.03, p.z); add(track);
+      const holo = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.4), new THREE.MeshBasicMaterial({ map: emojiTex(p.label.split(' ')[0]), transparent: true, depthWrite: false, side: THREE.DoubleSide, opacity: 0.85 }));
+      holo.position.set(p.x, 4.5, p.z); add(holo);
+      return { ...p, r: 4.2, prog: 0, captured: false, mat, beam, beamMat, ring, ringMat, holo, wasCap: false };
     });
     // set dressing
     for (const [x, z] of [[-42, 32], [42, 32], [-42, -40], [42, -40]]) D.lamp(x, z, { color: 0xffb070 });
@@ -137,7 +145,20 @@ export class NormieGate extends Encounter {
       const on = p.alive && distXZ(p.pos, pl) < pl.r;
       pl.beam.scale.set(1, 0.1 + pl.prog * 14, 1); pl.beam.position.y = (0.1 + pl.prog * 14) / 2;
       pl.beamMat.opacity = pl.captured ? 0.55 + Math.sin(this.t * 6) * 0.15 : 0.3;
-      pl.mat.emissiveIntensity = 0.2 + pl.prog * 1.2 + (on ? Math.sin(this.t * 10) * 0.2 : 0);
+      pl.mat.emissiveIntensity = 0.12 + pl.prog * 0.35 + (on ? Math.sin(this.t * 10) * 0.08 : 0);
+      pl.ring.geometry.setDrawRange(0, Math.floor(pl.prog * 96) * 6);
+      pl.ringMat.color.set(pl.captured ? 0x5fe8ff : 0xfff0f0).multiplyScalar(pl.captured ? 2.2 : 1.6);
+      pl.beamMat.color.set(pl.captured ? 0x5fe8ff : 0xff2244); pl.mat.emissive.set(pl.captured ? 0x2fb8ff : 0xff2244);
+      const hs = 0.6 + pl.prog * 0.7 + (pl.captured ? Math.sin(this.t * 4) * 0.06 : 0);
+      pl.holo.scale.setScalar(hs);
+      pl.holo.rotation.y += dt * (0.6 + pl.prog * 2.5);
+      pl.holo.position.y = 4.5 + Math.sin(this.t * 1.7 + pl.x) * 0.25;
+      // rising sparks while someone is taking it, a pop when it flips
+      if (pl.prog > 0 && pl.prog < 1 && !pl.captured && Math.random() < dt * 8) local(() => fx.burst(new THREE.Vector3(pl.x + rand(-3.5, 3.5), 0.3, pl.z + rand(-3.5, 3.5)), 0xff5577, 1, 2, 0.08, 1.0, -4));
+      if (pl.captured !== pl.wasCap) {
+        pl.wasCap = pl.captured;
+        if (pl.captured) local(() => { fx.ringFx(new THREE.Vector3(pl.x, 0.3, pl.z), 6, 0x5fe8ff, 0.6); fx.burst(new THREE.Vector3(pl.x, 4.5, pl.z), 0x5fe8ff, 30, 7, 0.12, 0.8, 4); fx.floatEmoji(new THREE.Vector3(pl.x, 6.5, pl.z), pl.label.split(' ')[0], 2, 1.4, 2); });
+      }
     }
     if (this.phase === 'gate') {
       this.gateT += dt;
