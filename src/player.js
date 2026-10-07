@@ -1,6 +1,7 @@
 // The Guardian: movement, guns, grenades, melee and supers.
 // The viewmodel (hands + gun) lives in G.vmScene, drawn on top of the world with its own camera.
 import * as THREE from 'three';
+import { addWear, bevelBox } from './surface.js';
 import { G, clamp, damp, rand, pick, after, local } from './game.js';
 import { Input, down, hit } from './input.js';
 import { moveCollide } from './world.js';
@@ -53,11 +54,11 @@ const _f = new THREE.Vector3(), _r = new THREE.Vector3(), _v = new THREE.Vector3
 const _up = new THREE.Vector3(0, 1, 0);
 
 // ---------------------------------------------------------------- viewmodel construction
-function M(c, o = {}) { return new THREE.MeshStandardMaterial({ color: c, roughness: 0.38, metalness: 0.75, ...o }); }
+function M(c, o = {}) { return addWear(new THREE.MeshStandardMaterial({ color: c, roughness: 0.38, metalness: 0.75, ...o })); }
 function part(parent, geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) {
   const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); parent.add(m); return m;
 }
-const BX = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const BX = (w, h, d) => bevelBox(w, h, d);
 const CY = (r, l, s = 16, r2 = r) => new THREE.CylinderGeometry(r, r2, l, s);
 // A cylinder from a to b (limbs)
 function limb(parent, a, b, r, mat, r2 = r) {
@@ -178,7 +179,7 @@ function buildGun(kind) {
   }
   g.add(sight);
   const muzzle = new THREE.Object3D(); muzzle.position.set(0, kind === 'rl' ? 0.05 : 0.025, muzzleZ); g.add(muzzle);
-  const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: fxm.glowTex, color: 0xffd28a, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+  const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: fxm.flashTex, color: 0xffe2b0, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
   flash.position.copy(muzzle.position); flash.visible = false; g.add(flash);
   const flash2 = new THREE.Sprite(new THREE.SpriteMaterial({ map: fxm.glowTex, color: 0xffffff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
   flash2.position.copy(muzzle.position); flash2.visible = false; g.add(flash2);
@@ -513,10 +514,12 @@ export class Player {
   flashMuzzle(big = 1) {
     const r = this.rig;
     r.flash.visible = r.flash2.visible = true;
-    r.flash.scale.setScalar(rand(0.16, 0.24) * big); r.flash.material.rotation = rand(0, 6);
+    const fs = rand(0.2, 0.3) * big; r.flash.scale.set(fs * rand(0.85, 1.15), fs * rand(0.85, 1.15), 1); r.flash.material.rotation = rand(0, 6);
     r.flash2.scale.setScalar(rand(0.06, 0.09) * big);
     this.flashT = 0.045;
-    fxm.flashLight(this.muzzleWorld(), 0xffc070, 14 * big, 9, 0.06);
+    const mw = this.muzzleWorld();
+    fxm.flashLight(mw, 0xffc070, 14 * big, 9, 0.06);
+    if (Math.random() < 0.35) fxm.muzzleSmoke(mw.addScaledVector(this.aimDir(0), 0.6));
   }
 
   // ---------------------------------------------------------------- shooting
@@ -629,7 +632,7 @@ export class Player {
           const e = hits.get(h.enemy) || { dmg: 0, crit: false, point: h.point };
           e.dmg += dmg; e.crit = e.crit || h.crit; hits.set(h.enemy, e);
         } else if (h.dist < d.range - 0.1) {
-          fx.burst(h.point, 0xffd9a0, 4, 4, 0.04, 0.22, 10);
+          if (!d.pellets || i < 4) local(() => fxm.impact(h.point, h.normal, dir, { sparks: d.pellets ? 3 : d.kind === 'sniper' ? 12 : 6, size: d.kind === 'sniper' ? 1.4 : 1 }));
           fx.decal(h.point, h.normal, d.pellets ? 0.09 : d.kind === 'sniper' ? 0.22 : 0.14);
           if (Math.random() < 0.4) fx.debris(h.point, 0x777777, 2, 3, 0.03, 0.5);
         }

@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { Peer } from 'peerjs';
 import { G, pick, local } from './game.js';
-import { applyFx, dmgNumber } from './fx.js';
+import { applyFx, dmgNumber, impact } from './fx.js';
 import { play, playAt, say } from './audio.js';
 import { HUD } from './hud.js';
 import { Projectile, Shockwave, Pickup, applyPickup } from './combat.js';
@@ -308,7 +308,11 @@ function handleEvent(ev, from) {
     case 'proj': if (playing) Projectile.fromNet(a, a.owner === 'player'); break;
     case 'shock': if (playing) new Shockwave({ ...a, center: new THREE.Vector3(...a.center), fromNet: true }); break;
     case 'enc': if (playing) G.encounter?.['ev_' + a]?.(b); break;
-    case 'shot': if (playing) { applyFx('tracer', [a, b, c, d]); if (e) playAt(a, e); } break;
+    case 'shot': if (playing) {
+      applyFx('tracer', [a, b, c, d]); if (e) playAt(a, e);
+      const pa = new THREE.Vector3(...a), pb = new THREE.Vector3(...b);
+      impact(pb, null, pb.clone().sub(pa).normalize(), { sparks: 4 });
+    } break;
     case 'pfx': if (playing && a === 'boom') { applyFx('explosion', [b, c, d]); playAt(b, 'explosion', 1.5); } break;
     case 'hurt': G.player?.hurt(a, b); break;
     case 'pickup': applyPickup(a); break;

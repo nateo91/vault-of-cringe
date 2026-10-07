@@ -1,6 +1,8 @@
 // World-space surface detail for static scenery: breaks up flat colors with grime, roughness variation,
 // rain streaks on walls and a fine bump, so a plain box reads as concrete/stone/metal instead of plastic.
 // Patches MeshStandardMaterial via onBeforeCompile; one shared program per variant.
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { G } from './game.js';
 
 const NOISE = /* glsl */`
@@ -55,4 +57,42 @@ export function addSurfaceDetail(m, { strength = 1, bump = 1, scale = 1 } = {}) 
         }`);
   };
   return m;
+}
+
+// Weapon wear: object-space (so it sticks to the gun as it moves) fine scratches along the barrel axis,
+// handling grime, and brighter, polished edges where the bevels are (screen-space curvature).
+export function addWear(m, { scratches = 1, edges = 1 } = {}) {
+  if ((G.settings.quality || 'high') === 'low') return m;
+  const metal = m.metalness > 0.4 ? 1 : 0;
+  const key = `wear-${metal}-${scratches}-${edges}`;
+  m.customProgramCacheKey = () => key;
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vSurfPos; varying vec3 vSurfN;')
+      .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+        vSurfPos = transformed; vSurfN = objectNormal;`);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\n' + NOISE)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+        float wGrime = sd_fbm(vSurfPos * 38.0);
+        float wScr = smoothstep(0.78, 0.95, sd_n(vec3(vSurfPos.x * 900.0, vSurfPos.y * 900.0, vSurfPos.z * 14.0))) * ${(0.9 * scratches).toFixed(2)};
+        #ifdef FLAT_SHADED
+          float wCurv = 0.0;
+        #else
+          float wCurv = clamp(length(fwidth(vNormal)) * 3.0, 0.0, 1.0);
+        #endif
+        float wEdge = smoothstep(0.12, 0.5, wCurv) * ${(1.0 * edges).toFixed(2)} * (0.6 + 0.4 * wGrime);
+        diffuseColor.rgb *= 0.86 + 0.24 * wGrime;
+        ${metal ? 'diffuseColor.rgb = mix(diffuseColor.rgb, max(diffuseColor.rgb * 1.6, vec3(0.55, 0.53, 0.5)), clamp(wEdge * 0.7 + wScr * 0.5, 0.0, 1.0));'
+                : 'diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 1.45 + 0.04, clamp(wEdge * 0.5, 0.0, 1.0));'}`)
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+        roughnessFactor = clamp(roughnessFactor * (0.8 + 0.45 * wGrime) - wEdge * ${metal ? '0.22' : '0.08'} - wScr * 0.12, 0.08, 1.0);`);
+  };
+  return m;
+}
+
+// Rounded box for small hard-surface parts (guns, gear): ~15% bevel, never smaller than looks sensible
+export function bevelBox(w, h, d) {
+  const r = Math.min(w, h, d) * 0.18;
+  return (G.settings.quality || 'high') === 'low' || r < 0.0015 ? new THREE.BoxGeometry(w, h, d) : new RoundedBoxGeometry(w, h, d, 2, r);
 }

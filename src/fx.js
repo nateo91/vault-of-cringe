@@ -131,6 +131,61 @@ function _tracer(a, b, color = 0xfff1a8, width = 0.03, life = 0.07) {
   addTimed(m, life, (k, o) => { o.material.opacity = k; o.scale.x = o.scale.y = width * (0.3 + 0.7 * k); }, (o) => o.material.dispose());
 }
 
+// ---------- bullet impacts ----------
+// Sparks that ricochet off the surface + a dust puff + a brief hot glow. Local only (each machine draws its own).
+const sparkGeo = new THREE.BoxGeometry(1, 1, 1);
+const sparkMats = new Map();
+function sparkMat(color) {
+  // over-bright so the sparks bloom
+  if (!sparkMats.has(color)) sparkMats.set(color, new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(3), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+  return sparkMats.get(color);
+}
+const _rf = new THREE.Vector3(), _rd = new THREE.Vector3();
+export function impact(point, normal, dir, { sparks = 6, color = 0xffc070, dust = 0x9a9080, size = 1 } = {}) {
+  const n = normal || _rf.copy(dir).negate();
+  // reflect the bullet direction about the surface; sparks spray in a cone around it
+  const refl = _rd.copy(dir).sub(_rf.copy(n).multiplyScalar(2 * dir.dot(n))).normalize();
+  for (let i = 0; i < sparks; i++) {
+    if (parts.length >= MAX_PARTS) { const o = parts.shift(); G.fxGroup.remove(o.m); if (o.streak) o.m.material.dispose(); }
+    const m = new THREE.Mesh(sparkGeo, sparkMat(Math.random() < 0.3 ? 0xffffff : color).clone());
+    m.position.copy(point).addScaledVector(n, 0.02);
+    const v = refl.clone().add(new THREE.Vector3(rand(-0.6, 0.6), rand(-0.3, 0.7), rand(-0.6, 0.6))).normalize().multiplyScalar(rand(5, 13) * size);
+    G.fxGroup.add(m);
+    const life = rand(0.12, 0.32);
+    parts.push({ m, v, life, max: life, s: 0.022 * size, grav: 16, drag: 2.5, streak: true });
+  }
+  // dust kicked off the surface
+  smoke(point.clone().addScaledVector(n, 0.12), dust, 2, 0.32 * size, 0.7, 0.35);
+  // the hot spot: a small glow that fades fast
+  const g = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff9a40, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+  g.position.copy(point).addScaledVector(n, 0.03);
+  addTimed(g, 0.18, (k, o) => { o.scale.setScalar(0.22 * size * (0.6 + k * 0.6)); o.material.opacity = k; }, (o) => o.material.dispose());
+}
+
+// ---------- muzzle flash ----------
+// A ragged four-to-six petal star, drawn once; the viewmodel picks a random rotation + scale per shot.
+export const flashTex = (() => {
+  const S = 128, c = document.createElement('canvas'); c.width = c.height = S;
+  const x = c.getContext('2d');
+  x.translate(S / 2, S / 2);
+  x.globalCompositeOperation = 'lighter';
+  const petal = (a, len, w, alpha) => {
+    x.save(); x.rotate(a);
+    const g = x.createLinearGradient(0, 0, len, 0);
+    g.addColorStop(0, `rgba(255,255,240,${alpha})`); g.addColorStop(0.35, `rgba(255,200,110,${alpha * 0.8})`); g.addColorStop(1, 'rgba(255,120,30,0)');
+    x.fillStyle = g; x.beginPath(); x.moveTo(0, -w); x.quadraticCurveTo(len * 0.45, -w * 0.7, len, 0); x.quadraticCurveTo(len * 0.45, w * 0.7, 0, w); x.closePath(); x.fill();
+    x.restore();
+  };
+  for (let i = 0; i < 5; i++) petal(i / 5 * Math.PI * 2 + Math.random() * 0.4, S * (0.36 + Math.random() * 0.12), S * 0.07, 0.9);
+  for (let i = 0; i < 7; i++) petal(Math.random() * Math.PI * 2, S * (0.18 + Math.random() * 0.12), S * 0.05, 0.6);
+  const core = x.createRadialGradient(0, 0, 0, 0, 0, S * 0.2);
+  core.addColorStop(0, 'rgba(255,255,255,1)'); core.addColorStop(0.5, 'rgba(255,230,170,0.6)'); core.addColorStop(1, 'rgba(255,160,60,0)');
+  x.fillStyle = core; x.beginPath(); x.arc(0, 0, S * 0.2, 0, Math.PI * 2); x.fill();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
+// a little wisp of barrel smoke in the world, left behind as you move
+export function muzzleSmoke(pos) { smoke(pos, 0xb8b4ac, 1, 0.07, 0.8, 0.45); }
+
 // ---------- bullet holes ----------
 const decals = [];
 const decalGeo = new THREE.PlaneGeometry(1, 1);
@@ -282,10 +337,18 @@ export function updateFx(dt) {
   for (let i = parts.length - 1; i >= 0; i--) {
     const p = parts[i];
     p.life -= dt;
-    if (p.life <= 0) { G.fxGroup.remove(p.m); parts.splice(i, 1); continue; }
+    if (p.life <= 0) { G.fxGroup.remove(p.m); if (p.streak) p.m.material.dispose(); parts.splice(i, 1); continue; }
     p.v.y -= p.grav * dt;
     if (p.drag) p.v.multiplyScalar(1 - Math.min(1, p.drag * dt));
     p.m.position.addScaledVector(p.v, dt);
+    if (p.streak) {
+      // stretched along its velocity: reads as a hot spark trail, not a dot
+      const sp = p.v.length(), k = p.life / p.max;
+      p.m.lookAt(_v.copy(p.m.position).add(p.v));
+      p.m.scale.set(p.s * k, p.s * k, Math.max(p.s, sp * 0.035) * (0.4 + 0.6 * k));
+      p.m.material.opacity = Math.min(1, k * 1.6);
+      continue;
+    }
     p.m.scale.setScalar(p.s * Math.min(1, (p.life / p.max) * 1.5));
     if (p.spin) p.m.rotation.x += dt * 5;
   }

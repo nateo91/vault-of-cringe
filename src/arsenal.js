@@ -1,5 +1,6 @@
 // The arsenal: weapon archetypes, named guns, perks, loot rolls, the saved inventory, and new gun models.
 import * as THREE from 'three';
+import { addWear, bevelBox } from './surface.js';
 import { G, rand, pick, local } from './game.js';
 import * as fxm from './fx.js';
 import { play as rawPlay, playAt } from './audio.js';
@@ -207,9 +208,9 @@ export class PerkEngine {
 }
 
 // ---------------------------------------------------------------- models for the new guns
-function M(c, o = {}) { return new THREE.MeshStandardMaterial({ color: c, roughness: 0.38, metalness: 0.7, ...o }); }
+function M(c, o = {}) { return addWear(new THREE.MeshStandardMaterial({ color: c, roughness: 0.38, metalness: 0.7, ...o })); }
 function part(parent, geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); parent.add(m); return m; }
-const BX = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const BX = (w, h, d) => bevelBox(w, h, d);
 const CY = (r, l, s = 14, r2 = r) => new THREE.CylinderGeometry(r, r2, l, s);
 
 // Left-hand placement per model (foregrip)
