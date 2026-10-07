@@ -164,18 +164,47 @@ function memeManHead(h) {
   const nose = mesh(h, CAP(0.022, 0.05), skin, 0, 0.12, 0.17, 0.5); nose.scale.set(1, 1, 1.2);
   mesh(h, RB(0.06, 0.008, 0.01, 0.004), mat(0x6a4a3a), 0.008, 0.065, 0.16, 0, 0, 0.12);
 }
-// The 🗿, as an actual head.
+// The 🗿, as an actual head: one subdivided block, sculpted. A heavy brow, deep sockets, the long nose that
+// widens toward the bottom, pursed lips, a jutting chin, long carved ears.
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+const bump = (x, c, w) => Math.max(0, 1 - ((x - c) / w) ** 2);
+let moaiGeo = null;
+function sculptMoai() {
+  if (moaiGeo) return moaiGeo;
+  const W = 0.27, H = 0.46, D = 0.24;
+  const g = new THREE.BoxGeometry(W, H, D, 14, 22, 10);
+  const pa = g.attributes.position;
+  for (let i = 0; i < pa.count; i++) {
+    let x = pa.getX(i), y = pa.getY(i), z = pa.getZ(i);
+    const yn = (y + H / 2) / H; // 0 chin .. 1 crown
+    // a long, slightly tapered block: narrower at the chin and the crown
+    const taper = 1 - 0.18 * (yn - 0.5) ** 2 * 4 - 0.08 * (1 - yn);
+    x *= taper;
+    if (yn > 0.9) z *= 1 - (yn - 0.9) * 1.5; // the crown slopes back
+    if (z > D * 0.3) {
+      const cx = Math.abs(x) / (W / 2);
+      let dz = 0;
+      dz += 0.045 * bump(yn, 0.71, 0.06);                                           // brow ridge
+      dz -= 0.03 * bump(yn, 0.6, 0.06) * smooth(0.15, 0.3, cx) * (1 - smooth(0.75, 0.9, cx)); // eye sockets
+      const noseW = 0.18 + (0.7 - yn) * 0.25;                                      // widens downward
+      if (yn > 0.3 && yn < 0.72) dz += 0.075 * (1 - smooth(noseW * 0.6, noseW, cx)) * smooth(0.72, 0.6, yn) * (0.6 + (0.72 - yn));
+      dz += 0.025 * bump(yn, 0.2, 0.05) * (1 - cx);                                 // pursed lips
+      dz -= 0.012 * bump(yn, 0.25, 0.015) * (1 - cx);                               // the mouth line
+      dz += 0.03 * smooth(0.12, 0.0, yn) * (1 - cx * 0.6);                          // chin
+      z += dz * smooth(D * 0.3, D * 0.5, z);
+    }
+    pa.setXYZ(i, x, y, z);
+  }
+  g.computeVertexNormals();
+  return (moaiGeo = g);
+}
 export function moaiHead(h, s = 1, eyeGlow = null) {
   const stone = mat(0x86827a, { rough: 0.95, flat: true });
-  const add = (w, hh, d, x, y, z, m = stone) => mesh(h, RB(w * s, hh * s, d * s, 0.01 * s), m, x * s, y * s, z * s);
-  add(0.26, 0.42, 0.22, 0, 0.21, 0);
-  add(0.28, 0.06, 0.09, 0, 0.33, 0.09);
-  add(0.07, 0.19, 0.09, 0, 0.21, 0.13);
-  add(0.16, 0.03, 0.04, 0, 0.09, 0.11);
-  add(0.2, 0.09, 0.18, 0, 0.04, 0.03);
-  for (const x of [-1, 1]) add(0.03, 0.24, 0.06, x * 0.145, 0.24, 0);
+  const head = mesh(h, sculptMoai(), stone, 0, 0.23 * s, 0); head.scale.setScalar(s);
+  for (const x of [-1, 1]) mesh(h, RB(0.035 * s, 0.25 * s, 0.07 * s, 0.012 * s), stone, x * 0.142 * s, 0.25 * s, -0.01 * s); // ears
   const em = eyeGlow ? mat(0x220000, { emissive: eyeGlow, ei: 0.6 }) : mat(0x1a1816);
-  for (const x of [-1, 1]) add(0.07, 0.035, 0.012, x * 0.065, 0.29, 0.112, em);
+  // the eyes sit in the sockets
+  for (const x of [-1, 1]) mesh(h, RB(0.06 * s, 0.03 * s, 0.01 * s, 0.006 * s), em, x * 0.06 * s, 0.276 * s, 0.108 * s);
   return em;
 }
 function stonksGun(hand) {
@@ -186,8 +215,8 @@ function stonksGun(hand) {
 }
 function sigmaShades(h) {
   const m = mat(0x050505, { metal: 0.9, rough: 0.08 });
-  mesh(h, RB(0.3, 0.06, 0.02, 0.01), m, 0, 0.29, 0.128);
-  for (const x of [-1, 1]) mesh(h, RB(0.11, 0.07, 0.025, 0.02), m, x * 0.07, 0.28, 0.13);
+  mesh(h, RB(0.3, 0.05, 0.02, 0.01), m, 0, 0.3, 0.17);
+  for (const x of [-1, 1]) mesh(h, RB(0.11, 0.07, 0.025, 0.02), m, x * 0.07, 0.28, 0.17);
 }
 
 export function stonksRig() {
