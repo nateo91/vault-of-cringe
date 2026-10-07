@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Vault of Cringe</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Anton&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+  "peerjs": "https://cdn.jsdelivr.net/npm/peerjs@1.5.4/+esm"
+} }
+</script>
+</head>
+<body>
+<div id="game"></div>
+
+<div id="hud" class="hidden">
+  <div id="deepfry"><span class="df e1">😂</span><span class="df e2">👌</span><span class="df e3">💯</span><span class="df e4">😂</span><span class="df e5">🔥</span><div class="flare f1"></div><div class="flare f2"></div></div>
+  <div id="vignette"></div>
+  <div id="dmgnums"></div>
+
+  <div id="scope" class="hidden">
+    <div class="lens"></div>
+    <div class="reticle"><i class="h l"></i><i class="h r"></i><i class="v"></i><b></b><span class="tick t1"></span><span class="tick t2"></span><span class="tick t3"></span></div>
+    <div class="scope-txt left">GJALLARHORN'T OPTIC v6.9<br><span class="rng">RANGE --</span></div>
+    <div class="scope-txt right">🎉 WOLFPACK ARMED<br>HORN STATUS: TOOTED</div>
+  </div>
+  <div id="crosshair" class="w-hc"><i></i><i></i><i></i><i></i><b class="ring"></b><b class="dot"></b></div>
+  <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
+
+  <div id="objective"><div class="enc-name"></div><div class="obj-text"></div></div>
+
+  <div id="topright">
+    <div id="cursed"><div class="label">CURSED LEVEL</div><div class="pips"></div></div>
+    <div id="revives"></div>
+    <div id="fireteam"></div>
+  </div>
+
+  <div id="bossbar" class="hidden">
+    <div class="boss-name"></div>
+    <div class="bar"><div class="fill"></div><div class="shieldfx"></div></div>
+    <div class="boss-sub"></div>
+  </div>
+
+  <div id="bigtext"><div class="big"></div><div class="sub"></div></div>
+  <div id="killfeed"></div>
+  <div id="ghost"><span class="ghost-icon">◈</span><span class="ghost-text"></span></div>
+
+  <div id="health">
+    <div class="shield-bar"><div class="fill"></div></div>
+    <div class="hp-bar"><div class="fill"></div></div>
+  </div>
+
+  <div id="bottomleft">
+    <div id="debuffs"></div>
+    <div id="abilities">
+      <div class="super"><div class="super-fill"></div><div class="super-label">SUPER</div></div>
+      <div class="ab grenade"><div class="cd"></div><span>Q</span><small>GRENADE</small></div>
+      <div class="ab melee"><div class="cd"></div><span>V</span><small>MELEE</small></div>
+    </div>
+  </div>
+
+  <div id="weapons"></div>
+
+  <div id="waypoint" class="hidden"><div class="wp-i">◆</div><div class="wp-d"></div></div>
+  <div id="lore" class="hidden"><div class="lore-h"></div><div class="lore-t"></div><div class="lore-b"></div></div>
+  <div id="prompt" class="hidden"><div class="ptext"></div><div class="pbar"><div class="pfill"></div></div></div>
+  <div id="deathscreen" class="hidden"><div class="big">GUARDIAN DOWN</div><div class="sub"></div></div>
+</div>
+
+<div id="cine" class="hidden">
+  <div class="bar top"></div><div class="bar bottom"></div>
+  <div class="card"><div class="name"></div><div class="line"></div><div class="sub"></div></div>
+  <div class="skip">SPACE · skip</div>
+</div>
+
+<div id="menu" class="overlay">
+  <div class="menu-inner">
+    <div class="title-small">A DESTINY 2 PARODY RAID</div>
+    <h1 class="title">VAULT OF CRINGE</h1>
+    <div class="subtitle">Recommended Power: 69,420 &nbsp;·&nbsp; Fireteam: you (and your imaginary friends)</div>
+    <div class="classes">
+      <button class="cls" data-cls="hunter"><div class="cls-icon">🔺</div><div class="cls-name">HUNTER</div><div class="cls-desc">Triple jump. Cape. Dies to falling. Super: <b>Golden Gun</b> (it's just a bigger hand cannon).</div></button>
+      <button class="cls" data-cls="titan"><div class="cls-icon">🛡️</div><div class="cls-name">TITAN</div><div class="cls-desc">Eats crayons. Punches things. Super: <b>Fist of Yeet</b> — punch the floor so hard memes leave orbit.</div></button>
+      <button class="cls" data-cls="warlock"><div class="cls-icon">📖</div><div class="cls-name">WARLOCK</div><div class="cls-desc">Space wizard. Reads. Glides (hold jump). Super: <b>Nova Bomb</b> — a big purple ball.</div></button>
+    </div>
+    <div class="coop">
+      <div class="coop-title">FIRETEAM (ONLINE CO-OP)</div>
+      <div class="coop-row">
+        <input id="pname" maxlength="16" placeholder="your name">
+        <button id="hostBtn" class="btn small">HOST</button>
+        <span class="or">or</span>
+        <input id="joinCode" maxlength="5" placeholder="CODE" class="code">
+        <button id="joinBtn" class="btn small">JOIN</button>
+      </div>
+      <div id="lobby" class="hidden">
+        <div class="lobby-code"></div>
+        <div class="lobby-players"></div>
+        <div class="lobby-status"></div>
+      </div>
+    </div>
+    <div class="row">
+      <label>Start at encounter
+        <select id="startEnc">
+          <option value="0">The Approach (raid entry)</option>
+          <option value="1">1 · The Normie Gate</option>
+          <option value="2">2 · Emergency Meeting</option>
+          <option value="3">3 · The Vine Boom Chamber</option>
+          <option value="4">4 · Skibidi of a Thousand Toilets</option>
+        </select>
+      </label>
+    </div>
+    <button id="launch" class="btn">LAUNCH</button>
+    <button id="armoryBtn" class="btn ghostbtn inline">⚔ ARMORY (your loot)</button>
+    <div class="controls">
+      <b>WASD</b> move · <b>SHIFT</b> sprint · <b>SPACE</b> jump (again in air!) · <b>MOUSE</b> shoot / aim ·
+      <b>SHIFT+C</b> slide · <b>R</b> reload · <b>T</b> inspect · <b>TAB</b> armory · <b>1 2 3</b> / wheel swap · <b>Q</b> grenade · <b>V</b> melee · <b>F</b> super · <b>ESC</b> pause
+    </div>
+    <div class="settings-mini">
+      <label>Sensitivity <input type="range" class="sens" min="0.2" max="3" step="0.05" value="1"></label>
+      <label>Volume <input type="range" class="vol" min="0" max="1" step="0.05" value="0.6"></label>
+      <label><input type="checkbox" class="voice" checked> Ghost voice (TTS)</label>
+      <label><input type="checkbox" class="music" checked> Music</label>
+      <label><input type="checkbox" class="aimassist" checked> Aim assist</label>
+      <label>Graphics <select class="quality"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low (potato)</option></select></label>
+    </div>
+  </div>
+</div>
+
+<div id="armory" class="overlay hidden">
+  <div class="armory-inner">
+    <div class="arm-head"><h2>ARMORY</h2><div class="arm-sub">Click a weapon to equip it · <b>TAB</b> / <b>ESC</b> to close · loot drops from engrams and encounter clears</div></div>
+    <div class="arm-cols"></div>
+    <button id="armClose" class="btn">DONE</button>
+  </div>
+</div>
+
+<div id="pause" class="overlay hidden">
+  <div class="menu-inner small">
+    <h2>PAUSED</h2>
+    <div class="subtitle">Bungie would like to remind you that pausing is a raid feature now.</div>
+    <button id="resume" class="btn">RESUME</button>
+    <div class="settings-mini">
+      <label>Sensitivity <input type="range" class="sens" min="0.2" max="3" step="0.05" value="1"></label>
+      <label>Volume <input type="range" class="vol" min="0" max="1" step="0.05" value="0.6"></label>
+      <label><input type="checkbox" class="voice" checked> Ghost voice (TTS)</label>
+      <label><input type="checkbox" class="music" checked> Music</label>
+      <label><input type="checkbox" class="aimassist" checked> Aim assist</label>
+      <label>Graphics <select class="quality"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low (potato)</option></select></label>
+    </div>
+    <button id="pauseArmory" class="btn ghostbtn">ARMORY (TAB)</button>
+    <button id="restartEnc" class="btn ghostbtn">RESTART ENCOUNTER</button>
+    <button id="quit" class="btn ghostbtn">ABANDON RAID (go to orbit)</button>
+  </div>
+</div>
+
+<div id="loading" class="overlay hidden">
+  <div class="load-inner">
+    <div class="load-label">TRANSMATTING TO</div>
+    <div class="load-name"></div>
+    <div class="load-bar"><div class="fill"></div></div>
+    <div class="load-tip"></div>
+  </div>
+</div>
+
+<div id="wipe" class="overlay hidden">
+  <div class="menu-inner small">
+    <h2 class="wipe-title">SQUAD WIPED</h2>
+    <div class="wipe-reason"></div>
+    <div class="wipe-joke"></div>
+  </div>
+</div>
+
+<div id="victory" class="overlay hidden">
+  <div class="menu-inner">
+    <div class="title-small">VAULT OF CRINGE</div>
+    <h1 class="title">RAID COMPLETE</h1>
+    <div class="stats"></div>
+    <div class="loot"></div>
+    <button id="again" class="btn">RUN IT BACK</button>
+  </div>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
