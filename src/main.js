@@ -9,7 +9,7 @@ import { updateEnemies, clearEnemies } from './enemies.js';
 import { updateCombat, clearCombat, Pickup } from './combat.js';
 import { updateFx, clearFx } from './fx.js';
 import { clearWorld, mergeStatic } from './world.js';
-import { initRenderer, render, applyQuality, followSun, bakeEnvironment } from './render.js';
+import { initRenderer, render, applyQuality, followSun, bakeEnvironment, wipeGrade } from './render.js';
 import { updateDressing } from './dressing.js';
 import { loadInventory, rollLoot, DEFS, PERKS } from './arsenal.js';
 import { initArmory, openArmory, closeArmory, isOpen as armoryOpen } from './inventory.js';
@@ -346,6 +346,7 @@ function showWipe(reason) {
   G.stats.wipes++;
   stopMusic();
   local(() => { play('wipe'); say('squad wiped. bruh.', 'bruh'); });
+  wipeGrade(); HUD.death(false);
   const W = $('#wipe');
   W.querySelector('.wipe-reason').textContent = reason;
   W.querySelector('.wipe-joke').textContent = pick(WIPE_JOKES).replace('{n}', G.stats.wipes);

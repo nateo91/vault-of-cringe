@@ -183,6 +183,13 @@ export function setGrade(level) {
   if (bloom) bloom.strength = level >= 4 ? 0.85 : 0.55;
 }
 
+// The Darkness: drain the colour out of the world (a wipe). setGrade() on the next load restores it.
+export function wipeGrade() {
+  if (!grade) { G.renderer.domElement.style.filter = 'grayscale(0.9) brightness(0.6)'; return; }
+  const u = grade.uniforms;
+  u.saturation.value = 0.08; u.contrast.value = 1.3; u.tint.value.setRGB(0.95, 0.72, 0.72); u.vignette.value = 0.6; u.posterize.value = 0;
+}
+
 let hurtFx = 0;
 export function hurtPulse(amount) { hurtFx = Math.min(1, hurtFx + amount / 60); }
 
