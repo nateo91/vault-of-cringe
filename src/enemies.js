@@ -4,7 +4,7 @@ import { G, rand, pick, clamp, damp, dampAngle, distXZ, distToSegment, nearestPl
 import * as fx from './fx.js';
 import { play, playAt } from './audio.js';
 import { moveCollide, pointInWorld } from './world.js';
-import { los, Projectile, Pickup, raycast } from './combat.js';
+import { los, Projectile, Pickup, raycast, Shockwave } from './combat.js';
 import { HUD } from './hud.js';
 import { textSprite } from './textures.js';
 import * as M from './models.js';
@@ -131,6 +131,7 @@ export class Enemy {
     const sd = Math.max(1, Math.round(dmg * (match ? 3 : 1)));
     this.shieldHp -= sd; this.shieldFlash = 1; this.pop = 0.6; this.aggro = true;
     this.lastHitBy = info.from ?? null;
+    this.onShieldHit?.(sd);
     if (mine) fx.dmgNumber(this.top(_t), sd, 'shield el-' + this.shieldEl + (match ? ' match' : ''));
     if (Math.random() < 0.5) playAt(this.center(_t), match ? 'shieldHitMatch' : 'shieldHit');
     if (this.shieldHp <= 0) this.breakShield(info, match);
@@ -595,16 +596,68 @@ export class MoaiKnight extends Enemy {
     this.height = 3.2;
     this.hb(0, 1.2, 0, 0.8).hb(0, 0.5, 0, 0.5).hb(0, 2.45, 0.2, 0.62, true);
     this.windup = 0; this.cd = rand(2, 3.5);
+    this.chargeCd = rand(4, 7); this.chargeState = null;
   }
-  pose() { return { windup: this.windup > 0 ? 1 - this.windup / 0.6 : 0 }; }
+  pose() {
+    if (this.chargeState === 'wind') return { windup: 1 - this.chargeT / 0.8 };
+    return { windup: this.windup > 0 ? 1 - this.windup / 0.6 : 0 };
+  }
   animate(dt) {
     // heavy stone footsteps you can hear coming
     this.stepAcc = (this.stepAcc || 0) + dt * (this.animSpeed || 0);
     if (this.stepAcc > 1.6) { this.stepAcc = 0; local(() => playAt(this.pos, 'land', 0.9)); }
   }
+  // The charge: stamp + eyes flare (0.8 s), then a straight-line run. Hits hard; miss and hit a wall and it staggers.
+  charge(dt, p) {
+    if (this.chargeState === 'wind') {
+      this.chargeT -= dt;
+      this.facePlayer(dt, 6);
+      this.vel.set(0, this.vel.y, 0); this.physics(dt);
+      if (Math.random() < 0.3) fx.burst(this.pos.clone().setY(0.2), 0x9a958c, 2, 3, 0.12, 0.5, 4);
+      if (this.chargeT <= 0) {
+        this.chargeState = 'run'; this.chargeT = 1.5;
+        this.chargeDir = new THREE.Vector3(p.pos.x - this.pos.x, 0, p.pos.z - this.pos.z).normalize();
+        playAt(this.pos, 'roar'); this.hitThisCharge = false;
+      }
+      return true;
+    }
+    if (this.chargeState === 'run') {
+      this.chargeT -= dt;
+      this.vel.x = this.chargeDir.x * 15; this.vel.z = this.chargeDir.z * 15;
+      this.yaw = Math.atan2(this.chargeDir.x, this.chargeDir.z);
+      const r = moveCollide(this.pos, this.vel, dt, this.radius, this.height);
+      this.vel.y = r.ground ? 0 : this.vel.y - 25 * dt;
+      this.stepAcc = (this.stepAcc || 0) + dt * 15;
+      for (const q of [G.player, ...G.avatars.values()]) {
+        if (!q?.alive || this.hitThisCharge) continue;
+        if (distXZ(q.pos, this.pos) < this.radius + 0.9 && Math.abs(q.pos.y - this.pos.y) < 2.5) {
+          this.hitThisCharge = true;
+          hurtPlayer(q, 45, 'a Moai Knight (charged)');
+          if (q === G.player) { q.vel.x += this.chargeDir.x * 16; q.vel.z += this.chargeDir.z * 16; q.vel.y += 6; }
+          playAt(q.pos, 'bigBonk'); G.shake += 0.4;
+        }
+      }
+      if (r.wall) {
+        // straight into the wall: the stone rings, the knight is dazed
+        this.chargeState = null; this.stunT = 2.0; this.flinch = 1.2;
+        new Shockwave({ center: this.pos.clone().setY(0.1), speed: 10, maxR: 8, dmg: 20, height: 0.8, color: 0xbfb6a8, source: 'a Moai Knight hitting a wall (it was your fault)' });
+        playAt(this.pos, 'vineBoom', 0.7); fx.burst(this.center(_t), 0xbfb6a8, 18, 6, 0.15, 0.7, 8);
+        fx.floatText(this.top(_t).clone(), 'BONK', { height: 0.8, color: '#ffffff' });
+      } else if (this.chargeT <= 0) this.chargeState = null;
+      return true;
+    }
+    return false;
+  }
   think(dt) {
     const p = this.tgt();
     const d = this.distToPlayer();
+    if (this.charge(dt, p)) return;
+    this.chargeCd -= dt;
+    if (this.chargeCd <= 0 && this.windup <= 0 && d > 6 && d < 16 && this.canSee && p.alive && Math.abs(p.pos.y - this.pos.y) < 1.5) {
+      this.chargeCd = rand(7, 11); this.chargeState = 'wind'; this.chargeT = 0.8;
+      playAt(this.pos, 'land', 0.6); fx.floatText(this.top(_t).clone(), '🗿💢', { height: 0.6 });
+      return;
+    }
     if (d > 13 || !this.canSee) this.steer(p.pos.x, p.pos.z, this.speed, dt, { stopDist: 2 });
     else this.steer(this.pos.x, this.pos.z, 0, dt);
     this.facePlayer(dt, 3);
@@ -634,9 +687,30 @@ export class Wizard extends Enemy {
     const label = textSprite('i came from the moon', 0.26, { color: '#d9b8ff' }); label.position.set(0, 2.9, 0); this.mesh.add(label);
     this.hb(0, 1.0, 0, 0.6).hb(0, 1.85, 0, 0.33, true);
     this.cd = rand(2, 3); this.wander = rand(0, 6);
+    this.blinkDmg = 0; this.blinkCd = 2;
+  }
+  onHurt(d) { this.blinkDmg += d; }
+  onShieldHit(d) { this.blinkDmg += d * 0.6; }
+  // took a beating: vanish in a puff of moon-smoke and reappear somewhere else in the air
+  blink(p) {
+    const from = this.center(new THREE.Vector3());
+    let best = null;
+    for (let i = 0; i < 12 && !best; i++) {
+      const a = rand(0, Math.PI * 2), r = rand(10, 17);
+      const q = new THREE.Vector3(p.pos.x + Math.cos(a) * r, p.pos.y + rand(2.5, 5), p.pos.z + Math.sin(a) * r);
+      if (!pointInWorld(q) && !pointInWorld(_t2.copy(q).setY(q.y + 1.5)) && los(q, _t.set(p.pos.x, p.pos.y + 1.5, p.pos.z))) best = q;
+    }
+    if (!best) return;
+    fx.burst(from, 0xc68bff, 22, 5, 0.14, 0.6, -2); fx.floatEmoji(from, '🌙', 1.4, 1, 1);
+    this.pos.copy(best).setY(best.y - this.height * 0.5); this.vel.set(0, 0, 0);
+    fx.burst(this.center(_t).clone(), 0xc68bff, 22, 5, 0.14, 0.6, -2);
+    playAt(this.pos, 'superCast');
+    this.cd = Math.min(this.cd, 0.9); // and it answers right away
   }
   think(dt) {
     const p = this.tgt();
+    this.blinkCd -= dt;
+    if (this.blinkDmg > 110 && this.blinkCd <= 0) { this.blinkDmg = 0; this.blinkCd = 4; this.blink(p); }
     this.wander += dt * 0.3;
     const tx = p.pos.x + Math.cos(this.wander) * 16, tz = p.pos.z + Math.sin(this.wander) * 16;
     _t.set(tx - this.pos.x, (p.pos.y + 2.5 + Math.sin(this.t * 2) * 0.6) - this.pos.y, tz - this.pos.z);
