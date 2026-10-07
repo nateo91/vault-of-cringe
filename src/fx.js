@@ -483,6 +483,13 @@ function _spawnFx(pos) {
   flashLight(p, 0xb06cff, 18, 8, 0.5);
 }
 
+// An attack tell: a star glint at a muzzle just before an enemy fires
+function _glint(pos, color = 0xffffff) {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: flashTex, color: new THREE.Color(color).multiplyScalar(2.5), blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, transparent: true, toneMapped: false }));
+  s.position.copy(pos); s.renderOrder = 15;
+  addTimed(s, 0.32, (k, o) => { const u = Math.sin((1 - k) * Math.PI); o.scale.setScalar(0.15 + u * 0.7); o.material.rotation += 0.1; o.material.opacity = u; }, (o) => o.material.dispose());
+}
+
 // ---------- DOM damage numbers ----------
 const nums = [];
 const _v = new THREE.Vector3();
@@ -566,9 +573,10 @@ export const floatEmoji = mirrored('floatEmoji', _floatEmoji);
 export const ringFx = mirrored('ringFx', _ringFx);
 export const spawnFx = mirrored('spawnFx', _spawnFx);
 export const debrisM = mirrored('debris', debris);
+export const glint = mirrored('glint', _glint);
 // Applied on clients for mirrored fx events.
 export function applyFx(name, args) {
-  const raw = { debris, burst: _burst, explosion: _explosion, tracer: _tracer, floatText: _floatText, floatEmoji: _floatEmoji, ringFx: _ringFx, spawnFx: _spawnFx }[name];
+  const raw = { glint: _glint, debris, burst: _burst, explosion: _explosion, tracer: _tracer, floatText: _floatText, floatEmoji: _floatEmoji, ringFx: _ringFx, spawnFx: _spawnFx }[name];
   if (!raw) return;
   raw(...args.map((v) => (Array.isArray(v) && v.length === 3 && typeof v[0] === 'number' ? new THREE.Vector3(v[0], v[1], v[2]) : v)));
 }

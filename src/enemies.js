@@ -491,7 +491,9 @@ export class Stonks extends Enemy {
     if (this.crouchK > 0.5) { this.cd = Math.max(this.cd, 0.2); }
     this.facePlayer(dt);
     this.cd -= dt;
-    if (this.cd <= 0 && this.canSee && this.distToPlayer() < 50 && p.alive) { this.burst = 3; this.cd = rand(2, 3); }
+    // a glint at the barrel, then the burst (a fair warning to duck)
+    if (this.cd <= 0 && this.canSee && this.distToPlayer() < 50 && p.alive && !(this.burstDelay > 0)) { this.burstDelay = 0.32; this.cd = rand(2, 3); fx.glint(this.muzzle(0.3, 1.55, 0.75), 0x7dff9a); }
+    if (this.burstDelay > 0) { this.burstDelay -= dt; this.aimT = 0.6; if (this.burstDelay <= 0) this.burst = 3; }
     if (this.burst > 0) {
       this.burstT -= dt;
       if (this.burstT <= 0) {
