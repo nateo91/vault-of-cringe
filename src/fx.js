@@ -229,7 +229,8 @@ export function setClink(f) { clinkFn = f; }
 function clink() { clinkFn?.(); }
 
 // ---------- death: enemies burn away into ash, Destiny style ----------
-export function dissolve(obj, color = 0xff8a2a, life = 0.75) {
+const _fallAxis = new THREE.Vector3(), _fallQ = new THREE.Quaternion(), _up = new THREE.Vector3(0, 1, 0);
+export function dissolve(obj, color = 0xff8a2a, life = 0.75, { dir = null, flying = false } = {}) {
   const mats = [];
   obj.traverse((o) => {
     if (!o.material) return;
@@ -245,15 +246,27 @@ export function dissolve(obj, color = 0xff8a2a, life = 0.75) {
   const ec = new THREE.Color(color);
   const sy = obj.scale.y;
   let ashT = 0;
+  // the death throw: topple away from the shot (pivoting at the feet), slide back with a little hop
+  const q0 = obj.quaternion.clone(), p0 = obj.position.clone();
+  const d = dir ? dir.clone().setY(0) : null;
+  if (d && d.lengthSq() > 1e-4) { d.normalize(); _fallAxis.crossVectors(_up, d).normalize(); }
+  const axis = d ? _fallAxis.clone() : null, spin = rand(-1, 1);
   addTimed(obj, life, (k, o, dt) => {
     const t = 1 - k;
+    if (axis) {
+      const f = Math.min(1, t / 0.55), e = 1 - (1 - f) * (1 - f);
+      _fallQ.setFromAxisAngle(axis, e * (flying ? 2.2 : 1.35));
+      o.quaternion.copy(_fallQ).multiply(q0);
+      if (flying) o.rotateY(spin * t * 6);
+      o.position.set(p0.x + d.x * e * 0.8, p0.y + (flying ? -t * t * 3 : Math.sin(f * Math.PI) * 0.25), p0.z + d.z * e * 0.8);
+    }
     for (const m of mats) {
       m.opacity = Math.min(1, k * 1.6);
-      if (m.emissive) { m.emissive.copy(ec); m.emissiveIntensity = 0.5 + t * 4; }
+      // the burn creeps in, so you can see the body fall before it goes white-hot
+      if (m.emissive) { m.emissive.copy(ec); m.emissiveIntensity = axis ? 0.15 + Math.pow(t, 1.8) * 4.2 : 0.5 + t * 4; }
       else if (m.color && !m.map) m.color.lerp(ec, dt * 4);
     }
-    o.scale.y = sy * (1 - t * 0.25);
-    o.position.y += dt * 0.4;
+    if (!axis) { o.scale.y = sy * (1 - t * 0.25); o.position.y += dt * 0.4; }
     ashT -= dt;
     if (ashT <= 0) {
       ashT = 0.02;

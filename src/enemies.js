@@ -75,6 +75,7 @@ export class Enemy {
     this.flinch = Math.min(1.2, this.flinch + (crit ? 0.9 : 0.45));
     this.rig?.hit(crit);
     this.lastHitBy = info.from ?? null;
+    this.lastCrit = crit;
     if (mine) fx.dmgNumber(this.top(_t), dmg, crit ? 'crit' : '');
     if (crit && mine) G.stats.crits++;
     this.onHurt?.(dmg, crit, info);
@@ -85,6 +86,12 @@ export class Enemy {
   die() {
     if (!this.alive) return;
     const c = this.center(_t);
+    // a precision kill pops (the head goes first, Destiny style)
+    if (this.lastCrit && this.rank !== 'boss') {
+      const h = this.top(new THREE.Vector3()); h.y -= 0.35;
+      fx.burst(h, 0xffd23f, 10, 7, 0.06, 0.35, 4); fx.burst(h, this.gib, 8, 5, 0.1, 0.5, 8);
+      playAt(h, 'crit');
+    }
     this.dissolveOut();
     if (G.net.isHost) G.net.emit(['die', this.nid]);
     fx.burst(c, this.gib, 10, 6, 0.12, 0.7);
@@ -114,7 +121,13 @@ export class Enemy {
     this.beam?.dispose(); this.aimBeam?.dispose?.();
     G.entities.remove(this.mesh);
     this.mesh.rotation.x = 0;
-    fx.dissolve(this.mesh, this.ash, this.rank === 'boss' ? 2.2 : 0.75);
+    // fall away from whoever landed the killing blow
+    let dir = null;
+    if (this.rank !== 'boss') {
+      const k = (this.lastHitBy != null && playerById(this.lastHitBy)) || nearestPlayer(this.pos) || G.player;
+      dir = new THREE.Vector3(this.pos.x - k.pos.x, 0, this.pos.z - k.pos.z);
+    }
+    fx.dissolve(this.mesh, this.ash, this.rank === 'boss' ? 2.2 : dir ? 1.05 : 0.75, { dir, flying: this.flying });
   }
   // Silent removal (despawn, encounter reset)
   remove() {
