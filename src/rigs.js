@@ -5,11 +5,15 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { rand, damp } from './game.js';
 import { textSprite, IMPACT } from './textures.js';
+import { addCharacterDetail } from './surface.js';
 
 // ---------------------------------------------------------------- materials
 const matCache = new Map();
 export function mat(color, o = {}) {
-  return new THREE.MeshStandardMaterial({ color, roughness: o.rough ?? 0.6, metalness: o.metal ?? 0.05, emissive: o.emissive ?? 0x000000, emissiveIntensity: o.ei ?? 1, flatShading: !!o.flat });
+  const m = new THREE.MeshStandardMaterial({ color, roughness: o.rough ?? 0.6, metalness: o.metal ?? 0.05, emissive: o.emissive ?? 0x000000, emissiveIntensity: o.ei ?? 1, flatShading: !!o.flat });
+  // surface detail rides along with the model; rough flat-shaded stuff is stone
+  if (o.detail !== false) addCharacterDetail(m, { stone: !!o.flat && (o.rough ?? 0.6) > 0.9 });
+  return m;
 }
 // A soft fresnel rim so enemies read against dark arenas (D2's lighting does this for free; we cheat).
 export function rimify(root, color = 0x8fa6ff, strength = 0.35, power = 2.6) {
@@ -19,13 +23,16 @@ export function rimify(root, color = 0x8fa6ff, strength = 0.35, power = 2.6) {
       if (!m.isMeshStandardMaterial || m.userData.rim) continue;
       m.userData.rim = true;
       const c = new THREE.Color(color);
-      m.onBeforeCompile = (sh) => {
+      // stack on top of any detail shader the material already has
+      const prev = m.onBeforeCompile, prevKey = m.customProgramCacheKey();
+      m.onBeforeCompile = (sh, r) => {
+        prev.call(m, sh, r);
         sh.uniforms.rimColor = { value: c }; sh.uniforms.rimStrength = { value: strength }; sh.uniforms.rimPower = { value: power };
         sh.fragmentShader = 'uniform vec3 rimColor; uniform float rimStrength; uniform float rimPower;\n' + sh.fragmentShader.replace(
           '#include <emissivemap_fragment>',
           '#include <emissivemap_fragment>\n  float rimF = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), rimPower);\n  totalEmissiveRadiance += rimColor * rimF * rimStrength;');
       };
-      m.customProgramCacheKey = () => `rim${color}_${strength}_${power}`;
+      m.customProgramCacheKey = () => `${prevKey}|rim${color}_${strength}_${power}`;
     }
   });
   return root;
@@ -361,52 +368,144 @@ export class MoaiKnightRig extends Rig {
 }
 
 // ---------------------------------------------------------------- Wizard (came from the moon)
+// Cloth sway in the vertex shader: the further down the robe, the more it swings (y measured from the shoulders).
+function swayCloth(m, uTime, top = 1.62, len = 1.6, amp = 0.07) {
+  const prev = m.onBeforeCompile, prevKey = m.customProgramCacheKey();
+  m.onBeforeCompile = (sh, r) => {
+    prev.call(m, sh, r);
+    sh.uniforms.uClothT = uTime;
+    sh.vertexShader = 'uniform float uClothT;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      { float k = clamp((${top.toFixed(2)} - transformed.y) / ${len.toFixed(2)}, 0.0, 1.0); k *= k;
+        transformed.x += (sin(uClothT * 2.2 + transformed.y * 2.5) * 0.7 + sin(uClothT * 3.7 + transformed.z * 4.0) * 0.3) * ${amp.toFixed(3)} * k;
+        transformed.z += (sin(uClothT * 1.7 + transformed.y * 2.0 + 1.3) * 0.7 + sin(uClothT * 3.1 + transformed.x * 4.0) * 0.3) * ${amp.toFixed(3)} * k; }`);
+  };
+  m.customProgramCacheKey = () => `${prevKey}|sway${top}_${len}_${amp}`;
+  return m;
+}
+// Lathe a profile given bottom-to-top as [radius, y] pairs.
+const LATHE = (pts, seg = 32) => new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg);
+function starGeo(r = 0.05, depth = 0.01) {
+  const s = new THREE.Shape();
+  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2 + Math.PI / 2, rr = i % 2 ? r * 0.45 : r; s[i ? 'lineTo' : 'moveTo'](Math.cos(a) * rr, Math.sin(a) * rr); }
+  return new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: true, bevelThickness: depth * 0.4, bevelSize: r * 0.08, bevelSegments: 1 });
+}
+
 export class WizardRig extends Rig {
   constructor() {
     super();
-    const robe = mat(0x3d2275, { rough: 0.8, emissive: 0x14082a }), trim = mat(0xffd23f, { metal: 0.8, rough: 0.3 });
-    const skin = mat(0xe8c4a8, { rough: 0.6 }), beard = mat(0xf2f2f2, { rough: 1 });
-    const glow = mat(0xc68bff, { emissive: 0xb070ff, ei: 3 });
+    this.uTime = { value: 0 };
+    const robe = swayCloth(mat(0x3d2275, { rough: 0.85, emissive: 0x14082a }), this.uTime);
+    robe.side = THREE.DoubleSide;
+    const trimSway = swayCloth(mat(0xffd23f, { metal: 0.85, rough: 0.28 }), this.uTime);
+    const trim = mat(0xffd23f, { metal: 0.85, rough: 0.28 });
+    const sleeveM = mat(0x3d2275, { rough: 0.85, emissive: 0x14082a }); sleeveM.side = THREE.DoubleSide;
+    const skin = mat(0xe8c4a8, { rough: 0.55 }), beard = mat(0xf0f0f0, { rough: 0.95 });
+    const glow = mat(0xc68bff, { emissive: 0xb070ff, ei: 3, detail: false });
+    const wood = mat(0x4a2e16, { rough: 0.9 });
     const body = this.joint('body', null, 0, 0, 0);
-    this.robes = [];
-    for (let i = 0; i < 3; i++) {
-      const seg = this.joint('robe' + i, body, 0, 1.6 - i * 0.55, 0);
-      mesh(seg, CYL(0.25 + i * 0.12, 0.62, 14, 0.35 + i * 0.14), robe, 0, -0.3, 0);
-      if (i === 2) mesh(seg, CYL(0.62, 0.05, 14), trim, 0, -0.6, 0);
-      this.robes.push(seg);
+
+    // robe: one lathed shell from a flared, wavy hem up to narrow shoulders; folds deepen toward the floor
+    const R = (t) => 0.21 + 0.09 * Math.sin(Math.min(1, t * 3) * Math.PI / 2) + Math.pow(t, 1.6) * 0.46; // t: 0 shoulders .. 1 hem
+    const prof = [];
+    for (let i = 16; i >= 0; i--) { const t = i / 16; prof.push([R(t), 1.62 - t * 1.6]); }
+    prof.push([0.14, 1.66]);
+    const robeGeo = LATHE(prof, 56);
+    const pa = robeGeo.attributes.position;
+    const fold = (a, t) => 1 + (Math.sin(a * 9) * 0.05 + Math.sin(a * 5 + 1.3) * 0.03) * t;
+    const hemWave = (a) => Math.sin(a * 7) * 0.035 + Math.sin(a * 3 + 2) * 0.02;
+    for (let i = 0; i < pa.count; i++) {
+      const x = pa.getX(i), y = pa.getY(i), z = pa.getZ(i), a = Math.atan2(z, x), t = Math.max(0, (1.62 - y) / 1.6), f = fold(a, t);
+      pa.setXYZ(i, x * f, t > 0.97 ? y + hemWave(a) : y, z * f);
     }
-    const head = this.joint('head', body, 0, 1.85, 0);
-    mesh(head, SPH(0.17, 16, 12), skin, 0, 0, 0);
-    mesh(head, CONE(0.16, 0.5, 12), beard, 0, -0.3, 0.1, Math.PI);
-    for (const s of [-1, 1]) mesh(head, SPH(0.022, 8, 8), mat(0x6080ff, { emissive: 0x4060ff, ei: 1.5 }), s * 0.06, 0.03, 0.15);
-    const hat = this.joint('hat', head, 0, 0.1, 0);
-    mesh(hat, CYL(0.34, 0.04, 18), robe, 0, 0.0, 0);
-    mesh(hat, CONE(0.2, 0.6, 14), robe, 0, 0.3, 0);
-    for (let i = 0; i < 4; i++) mesh(hat, SPH(0.025, 6, 6), trim, Math.cos(i * 1.7) * 0.12, 0.15 + i * 0.08, Math.sin(i * 1.7) * 0.12);
+    robeGeo.computeVertexNormals();
+    mesh(body, robeGeo, robe);
+    // gold trim that follows the wavy hem (sways with the robe), a belt, a collar
+    const hemPts = [];
+    for (let i = 0; i < 64; i++) { const a = i / 64 * Math.PI * 2, r = R(1) * fold(a, 1) * 1.01; hemPts.push(new THREE.Vector3(Math.cos(a) * r, 0.02 + hemWave(a), Math.sin(a) * r)); }
+    mesh(body, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hemPts, true), 128, 0.024, 6, true), trimSway);
+    const beltT = (1.62 - 1.02) / 1.6;
+    mesh(body, new THREE.TorusGeometry(R(beltT) * 1.04, 0.03, 8, 40), trim, 0, 1.02, 0, Math.PI / 2);
+    mesh(body, starGeo(0.07, 0.02), trim, 0, 1.02, R(beltT) * 1.06);
+    mesh(body, new THREE.TorusGeometry(0.2, 0.035, 8, 32), trim, 0, 1.6, 0, Math.PI / 2);
+    // a few stars embroidered on the robe
+    for (const [a, t] of [[0.4, 0.55], [-0.6, 0.72], [2.6, 0.62], [3.6, 0.8], [1.2, 0.85]]) {
+      const r = R(t) * fold(a, t) + 0.004, y = 1.62 - t * 1.6;
+      const st = mesh(body, starGeo(0.045, 0.006), trimSway, Math.sin(a) * r, y, Math.cos(a) * r);
+      st.rotation.y = a;
+    }
+
+    // head: face, bushy brows, glowing eyes, a long wavy beard and a mustache
+    const head = this.joint('head', body, 0, 1.84, 0.02);
+    mesh(head, SPH(0.15, 24, 18), skin, 0, 0, 0).scale.set(0.95, 1.08, 1);
+    const nose = mesh(head, CAP(0.03, 0.06), skin, 0, -0.01, 0.15, 0.35); nose.scale.set(1, 1, 1.15);
+    for (const s of [-1, 1]) {
+      mesh(head, SPH(0.022, 10, 8), mat(0x6080ff, { emissive: 0x4060ff, ei: 1.8, detail: false }), s * 0.055, 0.035, 0.13);
+      const brow = mesh(head, SPH(0.05, 10, 8), beard, s * 0.062, 0.085, 0.12, 0, 0, s * 0.35); brow.scale.set(1.3, 0.45, 0.6);
+      const mus = mesh(head, CAP(0.022, 0.1), beard, s * 0.05, -0.055, 0.14, 0.2, 0, s * 1.15); mus.scale.set(1, 1, 0.8);
+    }
+    const bprof = [];
+    for (let i = 0; i <= 14; i++) { const t = i / 14; bprof.push([0.13 * Math.pow(1 - t, 0.8) * (1 + Math.sin(t * 9) * 0.06) + 0.004, -t * 0.62]); }
+    const beardGeo = LATHE(bprof.reverse(), 24);
+    const ba = beardGeo.attributes.position;
+    for (let i = 0; i < ba.count; i++) { const y = ba.getY(i), t = -y / 0.62; ba.setZ(i, ba.getZ(i) * 0.6 + Math.sin(t * 3.5) * 0.04 * t + t * 0.05); }
+    beardGeo.computeVertexNormals();
+    this.beard = mesh(head, beardGeo, beard, 0, -0.07, 0.1);
+
+    // hat: a drooping brim + a tall cone that bends over at the tip, with stars and a moon
+    const hat = this.joint('hat', head, 0, 0.1, -0.01);
+    mesh(hat, LATHE([[0.4, -0.03], [0.36, 0.0], [0.24, 0.015], [0.18, 0.02]], 40), robe);
+    const cone = LATHE(Array.from({ length: 13 }, (_, i) => { const t = i / 12; return [0.19 * (1 - t) + 0.004, t * 0.8]; }), 28);
+    const ca = cone.attributes.position;
+    for (let i = 0; i < ca.count; i++) { const y = ca.getY(i), t = y / 0.8; ca.setX(i, ca.getX(i) - Math.pow(t, 2.4) * 0.32); ca.setY(i, y - Math.pow(t, 3) * 0.08); }
+    cone.computeVertexNormals();
+    mesh(hat, cone, robe, 0, 0.01, 0);
+    mesh(hat, new THREE.TorusGeometry(0.185, 0.022, 8, 32), trim, 0, 0.04, 0, Math.PI / 2);
+    for (const [y, a, s] of [[0.22, 0.3, 0.05], [0.4, -0.9, 0.04], [0.15, 2.4, 0.045]]) {
+      const r = 0.19 * (1 - y / 0.8) + 0.005, st = mesh(hat, starGeo(s, 0.006), trim, Math.sin(a) * r - Math.pow(y / 0.8, 2.4) * 0.32, y, Math.cos(a) * r);
+      st.rotation.y = a;
+    }
+
+    // bell sleeves with hands; the left holds an orb, the right a staff
     for (const s of [-1, 1]) {
       const n = s < 0 ? 'L' : 'R';
-      const sh = this.joint('sh' + n, body, s * 0.32, 1.5, 0);
-      mesh(sh, CONE(0.13, 0.6, 10), robe, 0, -0.3, 0, Math.PI);
+      const sh = this.joint('sh' + n, body, s * 0.37, 1.52, 0);
+      mesh(sh, SPH(0.11, 14, 10), robe, 0, 0, 0);
+      const sleeve = mesh(sh, LATHE([[0.17, -0.6], [0.13, -0.45], [0.09, -0.2], [0.08, 0.0]], 24), sleeveM);
+      mesh(sleeve, new THREE.TorusGeometry(0.17, 0.018, 6, 24), trim, 0, -0.6, 0, Math.PI / 2);
       const hand = this.joint('hand' + n, sh, 0, -0.62, 0);
-      mesh(hand, SPH(0.06, 10, 8), skin, 0, 0, 0);
-      const orb = mesh(hand, SPH(0.08, 12, 10), glow, 0, -0.1, 0.05);
-      this['orb' + n] = orb;
+      mesh(hand, SPH(0.055, 12, 10), skin, 0, 0, 0).scale.set(1, 1.1, 0.8);
+      for (let f = 0; f < 4; f++) mesh(hand, CAP(0.012, 0.045), skin, -0.03 + f * 0.02, -0.06, 0.02, 0.3, 0, 0);
+      mesh(hand, CAP(0.013, 0.04), skin, s * 0.045, -0.03, 0.03, 0, 0, s * 0.8);
     }
-    // staff
+    this.orbL = mesh(this.j.handL, new THREE.IcosahedronGeometry(0.085, 2), glow, 0, -0.12, 0.06);
+    // a gnarled staff with a crystal held in three claws
     const staff = this.joint('staff', this.j.handR, 0, 0, 0.02);
-    mesh(staff, CYL(0.025, 1.6, 8), mat(0x5a3a1a, { rough: 0.9 }), 0, 0.2, 0);
-    mesh(staff, SPH(0.1, 12, 10), glow, 0, 1.05, 0);
+    const sp = [];
+    for (let i = 0; i <= 8; i++) { const t = i / 8; sp.push(new THREE.Vector3(Math.sin(t * 7) * 0.03, -0.6 + t * 1.75, Math.cos(t * 5) * 0.025)); }
+    const curve = new THREE.CatmullRomCurve3(sp);
+    mesh(staff, new THREE.TubeGeometry(curve, 48, 0.026, 8), wood);
+    for (const t of [0.25, 0.55, 0.8]) { const k = mesh(staff, SPH(0.036, 8, 6), wood, ...curve.getPoint(t).toArray()); k.scale.set(1, 0.7, 1); }
+    const top = curve.getPoint(1);
+    for (let c = 0; c < 3; c++) {
+      const a = c / 3 * Math.PI * 2;
+      const claw = new THREE.CatmullRomCurve3([top.clone(), top.clone().add(new THREE.Vector3(Math.cos(a) * 0.09, 0.08, Math.sin(a) * 0.09)), top.clone().add(new THREE.Vector3(Math.cos(a) * 0.05, 0.22, Math.sin(a) * 0.05))]);
+      mesh(staff, new THREE.TubeGeometry(claw, 12, 0.012, 5), wood);
+    }
+    const crystal = mesh(staff, new THREE.OctahedronGeometry(0.08, 0), glow, top.x, top.y + 0.13, top.z); crystal.scale.set(0.8, 1.6, 0.8);
+    this.crystal = crystal;
     rimify(this.root, 0xc68bff, 0.4);
   }
   pose(dt, s) {
     const j = this.j;
+    this.uTime.value = this.t;
     const cast = this.act('cast'); const c = cast >= 0 ? Math.sin(cast * Math.PI) : 0;
     j.body.position.y = Math.sin(this.t * 2) * 0.12;
-    this.robes.forEach((r, i) => { r.rotation.z = Math.sin(this.t * 2.2 - i * 0.7) * 0.06 * (i + 1); r.rotation.x = Math.sin(this.t * 1.7 - i * 0.6) * 0.05 * (i + 1); });
     j.shL.rotation.set(-0.3 - c * 2.4, 0, 0.3 + c * 0.4);
     j.shR.rotation.set(-0.2 - c * 1.8, 0, -0.25 - c * 0.3);
     j.head.rotation.x = -c * 0.25 + Math.sin(this.t) * 0.05;
     j.hat.rotation.z = Math.sin(this.t * 1.3) * 0.08;
+    this.beard.rotation.x = Math.sin(this.t * 1.9) * 0.06 - c * 0.15;
+    this.crystal.rotation.y += dt * 1.5;
     const pulse = 2 + Math.sin(this.t * 6) * 0.8 + c * 5;
     this.orbL.material.emissiveIntensity = pulse;
   }

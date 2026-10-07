@@ -96,3 +96,37 @@ export function bevelBox(w, h, d) {
   const r = Math.min(w, h, d) * 0.18;
   return (G.settings.quality || 'high') === 'low' || r < 0.0015 ? new THREE.BoxGeometry(w, h, d) : new RoundedBoxGeometry(w, h, d, 2, r);
 }
+
+// Characters: object-space so it rides along with the animation. Cloth/skin get a fine weave + mottling;
+// stone (flat-shaded, rough) gets real bumps and cracks.
+export function addCharacterDetail(m, { stone = false } = {}) {
+  if ((G.settings.quality || 'high') === 'low') return m;
+  const key = `char-${stone ? 1 : 0}`;
+  m.customProgramCacheKey = () => key;
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vSurfPos; varying vec3 vSurfN;')
+      .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+        vSurfPos = transformed; vSurfN = objectNormal;`);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\n' + NOISE)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+        float cMac = sd_fbm(vSurfPos * ${stone ? '5.0' : '3.0'});
+        ${stone ? `float cCrack = (1.0 - smoothstep(0.0, 0.035, abs(sd_n(vSurfPos * 6.0) - 0.5))) * smoothstep(0.35, 0.65, sd_n(vSurfPos * 2.3 + 7.0));
+        diffuseColor.rgb *= (0.8 + 0.36 * cMac) * (1.0 - cCrack * 0.35);`
+        : 'diffuseColor.rgb *= 0.9 + 0.2 * cMac;'}`)
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+        roughnessFactor = clamp(roughnessFactor * (0.85 + 0.3 * cMac), 0.05, 1.0);`)
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+        {
+          float cH = ${stone ? 'sd_fbm(vSurfPos * 9.0) + cCrack * 0.6' : 'sd_n(vSurfPos * 160.0) * 0.5 + sd_n(vSurfPos * 24.0) * 0.5'};
+          float cFade = smoothstep(${stone ? '30.0, 3.0' : '9.0, 1.5'}, length(vViewPosition)) * ${stone ? '0.012' : '0.0035'};
+          vec2 dHdxy = vec2(dFdx(cH), dFdy(cH)) * cFade;
+          vec3 sx = dFdx(-vViewPosition), sy = dFdy(-vViewPosition);
+          vec3 R1 = cross(sy, normal), R2 = cross(normal, sx);
+          float det = dot(sx, R1) * faceDirection;
+          normal = normalize(abs(det) * normal - sign(det) * (dHdxy.x * R1 + dHdxy.y * R2));
+        }`);
+  };
+  return m;
+}
