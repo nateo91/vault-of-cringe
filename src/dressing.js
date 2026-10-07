@@ -436,3 +436,38 @@ export function railing(x, z, w, d, h, { color = 0x8a93a6 } = {}) {
     bar(x + ax, z + az, x + bx, z + bz, h + 1.0); bar(x + ax, z + az, x + bx, z + bz, h + 0.55);
   }
 }
+
+// Birds (or bats) circling overhead: little bodies with flapping wings, each on its own orbit, gliding now and then.
+export function birds({ center = [0, 0, 0], count = 12, radius = [20, 45], height = [18, 30], color = 0x1a1a1f, bats = false } = {}) {
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.9, side: THREE.DoubleSide });
+  const wingGeo = new THREE.BufferGeometry();
+  wingGeo.setAttribute('position', new THREE.Float32BufferAttribute(bats ? [0, 0, 0.12, 0, 0, -0.12, 0.7, 0.05, -0.05, 0, 0, 0.12, 0.7, 0.05, -0.05, 0.45, -0.05, 0.15] : [0, 0, 0.15, 0, 0, -0.12, 0.8, 0.02, -0.18], 3));
+  wingGeo.computeVertexNormals();
+  const bodyGeo = new THREE.CapsuleGeometry(0.08, 0.3, 3, 6).rotateX(Math.PI / 2);
+  const list = [];
+  for (let i = 0; i < count; i++) {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(bodyGeo, mat));
+    const L = new THREE.Mesh(wingGeo, mat), Rw = new THREE.Mesh(wingGeo, mat); Rw.scale.x = -1;
+    g.add(L, Rw);
+    const s = rand(0.9, 1.4) * (bats ? 0.8 : 1); g.scale.setScalar(s);
+    add(g);
+    list.push({ g, L, R: Rw, r: rand(radius[0], radius[1]), h: rand(height[0], height[1]), a: rand(0, 6.28), w: rand(0.12, 0.3) * (Math.random() < 0.5 ? 1 : -1), ph: rand(0, 6), flap: bats ? rand(14, 18) : rand(7, 10), glideT: rand(0, 4) });
+  }
+  let t = 0;
+  animate((dt) => {
+    t += dt;
+    for (const b of list) {
+      b.a += b.w * dt;
+      const x = center[0] + Math.cos(b.a) * b.r, z = center[2] + Math.sin(b.a) * b.r, y = center[1] + b.h + Math.sin(t * 0.7 + b.ph) * 1.5;
+      b.g.position.set(x, y, z);
+      b.g.rotation.y = Math.atan2(-Math.sin(b.a) * Math.sign(b.w), Math.cos(b.a) * Math.sign(b.w)) ;
+      b.g.rotation.z = -Math.sign(b.w) * 0.25; // bank into the turn
+      b.glideT -= dt;
+      if (b.glideT < -2.5) b.glideT = rand(2, 5);
+      const flapping = bats || b.glideT > 0;
+      const f = flapping ? Math.sin(t * b.flap + b.ph) * 0.8 : 0.12;
+      b.L.rotation.z = f; b.R.rotation.z = -f;
+    }
+  });
+}

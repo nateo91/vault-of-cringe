@@ -82,6 +82,7 @@ export class NormieGate extends Encounter {
     for (const [x, z] of [[-44, 44], [44, 44], [-44, -2], [44, -2]]) D.crate(x, z);
     D.dust({ min: [-48, 0.3, -48], max: [48, 10, 48], color: 0xffd9a8, count: 700 });
     D.groundFog({ min: [-48, -48], max: [48, 48], color: 0xd8a888, opacity: 0.22, count: 30 });
+    D.birds({ center: [0, 0, 0], count: 10, radius: [25, 55], height: [16, 30], color: 0x5a5a66 }); // pigeons. obviously.
     this.spawners = [[-46, 40], [46, 40], [-46, 10], [46, 10], [-46, -30], [46, -30], [-25, -46], [25, -46], [0, 46]].map(([x, z]) => new THREE.Vector3(x, 0, z));
   }
   start() {

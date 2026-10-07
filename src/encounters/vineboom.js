@@ -215,6 +215,7 @@ export class VineBoomChamber extends Encounter {
     D.lightShaft(0, 26, 0, { height: 26, top: 2, bottom: 7, color: 0xd8b8ff, opacity: 0.16 });
     D.dust({ min: [-32, 0.3, -32], max: [32, 12, 32], color: 0xe0c8ff, count: 700 });
     D.groundFog({ min: [-32, -32], max: [32, 32], color: 0x8a5aa8, opacity: 0.25, count: 26 });
+    D.birds({ center: [0, 0, 0], count: 12, radius: [12, 30], height: [14, 24], color: 0x120a18, bats: true });
     this.spawners = [];
     for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + Math.PI / 8; this.spawners.push(new THREE.Vector3(Math.cos(a) * 30, 0, Math.sin(a) * 30)); }
   }

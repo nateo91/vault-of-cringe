@@ -116,6 +116,7 @@ export class TheApproach extends Encounter {
     D.groundFog({ min: [-20, -160], max: [20, 10], y: 0.4, color: 0x8fb8c8, opacity: 0.3, count: 40 });
     D.groundFog({ min: [-30, -110], max: [30, -56], y: -6, color: 0x9fc8d8, opacity: 0.45, count: 30, size: [18, 30] }); // mist down in the chasm
     D.lightShaft(0, 30, -128, { height: 30, top: 3, bottom: 9, color: 0xcff4ff, opacity: 0.12 });
+    D.birds({ center: [0, 0, -80], count: 14, radius: [18, 50], height: [10, 26], color: 0x22262c });
     // the ship that dropped you off
     this.ship = makeJumpship(); this.ship.position.set(0, 3.5, 6); add(this.ship);
     // lore Ghosts
