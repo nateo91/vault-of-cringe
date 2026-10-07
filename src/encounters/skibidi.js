@@ -116,6 +116,31 @@ export class SkibidiFinale extends Encounter {
       add(t); this.orbiters.push(t);
     }
     pointLight(0, 14, 0, 0xff4fd8, 80, 50);
+    // it floats: craggy rock under the slab and the islands
+    const crag = std(0x4a3a58, { roughness: 1, flatShading: true });
+    const underside = (x, z, r, h, top) => {
+      const g = new THREE.ConeGeometry(r, h, 11, 4);
+      const pa = g.attributes.position;
+      for (let i = 0; i < pa.count; i++) { const y = pa.getY(i); if (y < h / 2 - 0.01) pa.setXYZ(i, pa.getX(i) * rand(0.8, 1.15), y + rand(-0.6, 0.6), pa.getZ(i) * rand(0.8, 1.15)); }
+      g.computeVertexNormals();
+      const m = new THREE.Mesh(g, crag); m.rotation.x = Math.PI; m.position.set(x, top - h / 2, z); m.receiveShadow = true; add(m);
+    };
+    underside(0, 0, 43, 34, -3);
+    for (const q of this.islands) underside(q.x, q.z, 7.5, 10, -1);
+    // the plumbing of Ohio: chrome sewer pipes arching off the edges and down into the void
+    const chrome = std(0xd8dde6, { metalness: 1, roughness: 0.18, detail: false });
+    for (const [x, z, dx, dz] of [[-30, -18, -1, 0], [30, 18, 1, 0], [18, -30, 0, -1], [-18, 30, 0, 1], [30, -24, 1, 0], [-24, -30, 0, -1]]) {
+      const pts = [new THREE.Vector3(x - dx * 2, -0.6, z - dz * 2), new THREE.Vector3(x + dx * 5, 1.5, z + dz * 5), new THREE.Vector3(x + dx * 11, -4, z + dz * 11), new THREE.Vector3(x + dx * 13, -26, z + dz * 13)];
+      const curve = new THREE.CatmullRomCurve3(pts);
+      add(new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.9, 16), chrome));
+      for (const t of [0.12, 0.45, 0.8]) {
+        const f = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.18, 8, 24), chrome);
+        f.position.copy(curve.getPoint(t)); f.lookAt(curve.getPoint(t + 0.01)); add(f);
+      }
+    }
+    // porcelain pedestal gets a chrome rim; the raised platforms get trims (you'll be standing on them)
+    for (const [x, z, w, d] of [[0, 4.5, 9.2, 0.2], [0, -4.5, 9.2, 0.2], [4.5, 0, 0.2, 9.2], [-4.5, 0, 0.2, 9.2]]) addBox(x, 0.9, z, w, 0.18, d, chrome, { collide: false });
+    for (const [x, z] of [[-16, -16], [16, -16], [-16, 16], [16, 16]]) D.barrier(x, z, 6, 1.2, 6);
     D.floatingRocks({ count: 36, rMin: 45, rMax: 110 });
     D.dust({ min: [-30, 0.3, -30], max: [30, 14, 30], color: 0xffb8f0, count: 600 });
     D.lightShaft(0, 30, 0, { height: 30, top: 2.5, bottom: 8, color: 0xffc8f0, opacity: 0.14 });
