@@ -5,7 +5,7 @@ import * as D from '../dressing.js';
 import { Encounter } from './base.js';
 import { setEnv, addBox, add, std, addStars } from '../world.js';
 import { tileTex, textSprite, IMPACT } from '../textures.js';
-import { Enemy, Doge, Stonks, MoaiKnight, Wizard, Sigma, spawnEnemy, registerNetType } from '../enemies.js';
+import { Enemy, Doge, Stonks, MoaiKnight, Wizard, Sigma, RickRoller, spawnEnemy, registerNetType } from '../enemies.js';
 import { hit } from '../input.js';
 import { play } from '../audio.js';
 import { HUD } from '../hud.js';
@@ -49,6 +49,7 @@ const WAVES = [
   { name: 'STONKS IN COVER', spawn: [[Stonks, 4]] },
   { name: 'MOAI ESCORT', spawn: [[MoaiKnight, 1], [Doge, 3]] },
   { name: 'MOON + MOG', spawn: [[Wizard, 1], [Sigma, 2]] },
+  { name: 'NEVER GONNA', spawn: [[RickRoller, 5]] },
   { name: 'EVERYTHING', spawn: [[Doge, 4], [Stonks, 2], [MoaiKnight, 1], [Sigma, 1]] },
 ];
 

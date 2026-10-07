@@ -5,7 +5,7 @@ import * as D from '../dressing.js';
 import { Encounter, weightedPick } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight, addStars, removeCollider } from '../world.js';
 import { tileTex, textSprite, IMPACT, emojiSprite, emojiTex } from '../textures.js';
-import { Doge, Stonks, Nyan, Wizard, spawnEnemy } from '../enemies.js';
+import { Doge, Stonks, Nyan, Wizard, RickRoller, spawnEnemy } from '../enemies.js';
 import { HUD } from '../hud.js';
 import { play } from '../audio.js';
 import * as fx from '../fx.js';
@@ -125,7 +125,7 @@ export class NormieGate extends Encounter {
         this.spawnT = rand(1.8, 3.2);
         const n = Math.random() < 0.4 ? 2 : 1;
         for (let i = 0; i < n; i++) {
-          const T = weightedPick([[Doge, 5], [Stonks, 4], [Nyan, cap >= 1 ? 2 : 0]]);
+          const T = weightedPick([[Doge, 5], [Stonks, 4], [Nyan, cap >= 1 ? 2 : 0], [RickRoller, this.count(RickRoller) < 1 ? 1 : 0]]);
           const e = this.spawnAway(T, this.spawners, 22);
           // Stonks love to unsubscribe your plates
           if (e instanceof Stonks && Math.random() < 0.55) {

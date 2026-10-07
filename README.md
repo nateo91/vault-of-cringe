@@ -80,6 +80,10 @@ You get 3 revives per encounter. Run out and the squad wipes, which restarts the
 
 Pick **🎯 Firing Range** from "Start at encounter" to practise: dummies that never die (one per shield element, a strafing one, two at 50 m) with a live DPS meter. Press **G** to send a practice wave of real enemies (Doge pack, Stonks in cover, a Moai escort, Wizard + Sigmas, everything) and race your clear time. No loot drops here.
 
+## Rick Rollers
+
+A mirrored disco ball that rolls at you trailing music notes (Normie Gate, Ohio, and the range's NEVER GONNA wave). If one reaches you, you're **rickrolled**: forced to dance for 1.6 s, gun down. Shoot them before they arrive.
+
 ## Elements and shields
 
 Every gun has an element: 🔥 Solar, ⚡ Arc or 🟣 Void. The icon shows next to its name on the HUD and in the Armory.

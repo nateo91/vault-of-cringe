@@ -934,12 +934,22 @@ export class Player {
   }
   // Emotes: B dances, N sits. The camera swings out to third person so you can see yourself; moving, jumping
   // or shooting cancels. Teammates see it on your avatar (it rides in the pose you send them).
+  // got rickrolled: you dance, whether you like it or not
+  rickroll() {
+    if (!this.alive) return;
+    this.rickT = 1.6; this.emote = EMOTES.dance; this.emoteT = 0;
+    lhud('bigText', 'RICKROLLED', 'never gonna let you live this down', 1.6, 'meme');
+    play('rick');
+  }
   updateEmote(dt, cam) {
+    if (this.rickT > 0) { this.rickT -= dt; this.emote = this.alive ? EMOTES.dance : 0; if (this.rickT <= 0) this.emote = 0; }
+    else {
     if (hit('KeyB')) this.emote = this.emote === EMOTES.dance ? 0 : EMOTES.dance;
     if (hit('KeyN')) this.emote = this.emote === EMOTES.sit ? 0 : EMOTES.sit;
     if (hit('KeyJ')) { this.emote = this.emote === EMOTES.dab ? 0 : EMOTES.dab; this.emoteT = 0; }
     if (hit('KeyK')) this.emote = this.emote === EMOTES.L ? 0 : EMOTES.L;
     if (this.emote && (down('KeyW') || down('KeyA') || down('KeyS') || down('KeyD') || down('Space') || Input.left || Input.right || !this.alive || this.superActive || this.carry)) this.emote = 0;
+    }
     if (this.emote && !this.selfBody) { this.selfBody = buildGuardian(this.cls); this.selfBody.userData.cls = this.cls; G.avatarGroup.add(this.selfBody); }
     if (this.selfBody && this.selfBody.userData.cls !== this.cls) { G.avatarGroup.remove(this.selfBody); this.selfBody = null; }
     this.emoteK = damp(this.emoteK || 0, this.emote ? 1 : 0, 6, dt);

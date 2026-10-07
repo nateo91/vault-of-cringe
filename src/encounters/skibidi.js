@@ -5,7 +5,7 @@ import * as D from '../dressing.js';
 import { Encounter, weightedPick } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight, addStars } from '../world.js';
 import { tileTex, textSprite, IMPACT } from '../textures.js';
-import { Enemy, Doge, Sigma, Stonks, Nyan, registerNetType } from '../enemies.js';
+import { Enemy, Doge, Sigma, Stonks, Nyan, RickRoller, registerNetType } from '../enemies.js';
 import { Projectile, Shockwave, Pickup, los } from '../combat.js';
 import * as M from '../models.js';
 import { rimify } from '../rigs.js';
@@ -328,7 +328,7 @@ export class SkibidiFinale extends Encounter {
     if (this.addT <= 0 && this.phase !== 'final') {
       this.addT = rand(5, 8);
       if (this.hostiles((e) => !(e instanceof Sigma) && e !== b && !(e instanceof MiniToilet)) < 5) {
-        const T = weightedPick([[Doge, 4], [Stonks, 2], [Nyan, 2]]);
+        const T = weightedPick([[Doge, 4], [Stonks, 2], [Nyan, 2], [RickRoller, this.count(RickRoller) < 2 ? 1.5 : 0]]);
         this.spawnAway(T, this.spawners, 14, T === Nyan ? 6 : null);
       }
     }

@@ -782,6 +782,46 @@ export class Sigma extends Enemy {
 
 // co-op: how clients rebuild each enemy type. Encounters register their own bosses/mechanic actors.
 export const NET_TYPES = {};
+// ---------------- RICK ROLLER ----------------
+// A mirrored disco ball that rolls at you trailing music notes. Let it reach you and you're rickrolled:
+// forced to dance for a moment, gun down. Shoot it first.
+export class RickRoller extends Enemy {
+  constructor() {
+    super({ name: 'Rick Roller', hp: 110, radius: 0.7, height: 1.4, speed: rand(6.5, 7.5), gib: 0xd8e4ff, ash: 0xffffff, deathLines: ['was let down', 'gave you up', 'deserted you', 'ran around'] });
+    this.model = new THREE.Group(); this.mesh.add(this.model);
+    const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.7, 3), new THREE.MeshStandardMaterial({ color: 0xdfe6f2, metalness: 1, roughness: 0.08, flatShading: true }));
+    ball.position.y = 0.7; ball.castShadow = true; this.model.add(ball); this.ball = ball;
+    // a little sparkle on random facets
+    const glint = new THREE.Sprite(new THREE.SpriteMaterial({ map: fx.glowTex, color: 0xffffff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+    glint.scale.setScalar(0.5); this.model.add(glint); this.glint = glint;
+    this.light = new THREE.PointLight(0xff4fd8, 6, 7, 2); this.light.position.y = 0.8; this.model.add(this.light);
+    this.hb(0, 0.7, 0, 0.72).hb(0, 1.15, 0, 0.3, true);
+    this.noteT = 0; this.roll = new THREE.Quaternion();
+  }
+  animate(dt) {
+    // roll with the ground speed, flash colours like a dancefloor
+    const v = this.vel, sp = Math.hypot(v.x, v.z);
+    if (sp > 0.1) { _t.set(v.z, 0, -v.x).normalize(); this.ball.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(_t, sp * dt / 0.7)); }
+    else this.ball.rotation.y += dt * 1.5;
+    const hue = (this.t * 0.6) % 1;
+    this.light.color.setHSL(hue, 1, 0.6); this.light.intensity = 5 + Math.sin(this.t * 16) * 2;
+    this.glint.position.set(Math.sin(this.t * 7) * 0.45, 0.7 + Math.cos(this.t * 5) * 0.45, 0.55);
+    this.glint.material.opacity = 0.5 + Math.sin(this.t * 23) * 0.5;
+    if ((this.noteT -= dt) <= 0) { this.noteT = rand(0.3, 0.6); local(() => fx.floatText(this.top(_t).clone(), pick(['♪', '♫', '♬']), { height: 0.4, color: '#' + new THREE.Color().setHSL(hue, 1, 0.65).getHexString(), life: 1 })); }
+  }
+  think(dt) {
+    const p = this.tgt();
+    const d = this.steer(p.pos.x, p.pos.z, this.speed, dt, { stopDist: 0.2, accel: 3 });
+    if (d < 1.4 && p.alive && Math.abs(p.pos.y - this.pos.y) < 1.8) {
+      // gotcha
+      if (p === G.player) G.player.rickroll(); else G.net.sendTo(p.id, ['rick']);
+      hurtPlayer(p, 8, 'a Rick Roller (never gonna live this down)');
+      fx.burst(this.center(_t).clone(), 0xff4fd8, 30, 7, 0.1, 0.8, 6); fx.burst(this.center(_t).clone(), 0x7fd7ff, 20, 6, 0.1, 0.8, 6);
+      this.drops = false; this.die();
+    }
+  }
+}
+
 export function registerNetType(Cls, make = () => new Cls()) { NET_TYPES[Cls.name] = make; }
 [Doge, Stonks, Nyan, SusSniper, MoaiKnight, Wizard, Sigma].forEach((C) => registerNetType(C));
 
@@ -804,3 +844,4 @@ export function clearEnemies() {
   G.enemies.length = 0;
   G.entities.clear();
 }
+registerNetType(RickRoller);
