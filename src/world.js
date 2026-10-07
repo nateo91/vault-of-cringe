@@ -3,13 +3,18 @@ import * as THREE from 'three';
 import { G } from './game.js';
 import { makeSky } from './render.js';
 import { normalMapFor } from './textures.js';
+import { addSurfaceDetail } from './surface.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 export function std(color, o = {}) {
-  const m = new THREE.MeshStandardMaterial({ color, roughness: 0.8, metalness: 0.1, ...o });
+  const { detail = true, ...mo } = o;
+  const m = new THREE.MeshStandardMaterial({ color, roughness: 0.8, metalness: 0.1, ...mo });
   // tiled surfaces get a matching normal map so grout lines and grime catch the light
   if (o.map && o.normalMap === undefined && o.map.image?.getContext) {
     m.normalMap = normalMapFor(o.map); m.normalScale.set(0.8, 0.8);
   }
+  // static scenery gets world-space grime/roughness/bump (moving things pass detail: false so it doesn't swim)
+  if (detail) addSurfaceDetail(m, detail === true ? {} : detail);
   return m;
 }
 
@@ -27,8 +32,13 @@ export function clearWorld() {
   G.worldAnims = [];
 }
 
+// small bevels so edges catch a highlight instead of looking like perfect CG boxes
+const boxGeo = (w, h, d) => {
+  const r = Math.min(0.07, Math.min(w, h, d) * 0.22);
+  return r < 0.012 || (G.settings.quality || 'high') === 'low' ? new THREE.BoxGeometry(w, h, d) : new RoundedBoxGeometry(w, h, d, 2, r);
+};
 export function addBox(x, y, z, w, h, d, mat, { collide = true, shadow = true } = {}) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  const m = new THREE.Mesh(boxGeo(w, h, d), mat);
   m.position.set(x, y + h / 2, z);
   m.castShadow = shadow; m.receiveShadow = true;
   G.worldGroup.add(m);
@@ -66,7 +76,7 @@ export function setEnv({ sky = 0x101018, fog = sky, near = 40, far = 180, hemi =
     top: dome.top ?? skyC.clone().multiplyScalar(0.55).getHex(),
     horizon: dome.horizon ?? fogC.clone().lerp(new THREE.Color(sun.color), 0.12).getHex(),
     bottom: dome.bottom ?? skyC.clone().multiplyScalar(0.25).getHex(),
-    sun: dome.sun ?? sun.color, sunDir: sunDir.toArray(), sunSize: dome.sunSize ?? 1, haze: dome.haze ?? 1,
+    sun: dome.sun ?? sun.color, sunDir: sunDir.toArray(), sunSize: dome.sunSize ?? 1, haze: dome.haze ?? 1, clouds: dome.clouds ?? 0.6,
   }));
   G.scene.fog = new THREE.Fog(fog, near, far);
   add(new THREE.HemisphereLight(hemi[0], hemi[1], hemi[2] * 0.75));

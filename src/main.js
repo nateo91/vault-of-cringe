@@ -9,7 +9,7 @@ import { updateEnemies, clearEnemies } from './enemies.js';
 import { updateCombat, clearCombat, Pickup } from './combat.js';
 import { updateFx, clearFx } from './fx.js';
 import { clearWorld } from './world.js';
-import { initRenderer, render, applyQuality, followSun } from './render.js';
+import { initRenderer, render, applyQuality, followSun, bakeEnvironment } from './render.js';
 import { updateDressing } from './dressing.js';
 import { loadInventory, rollLoot, DEFS, PERKS } from './arsenal.js';
 import { initArmory, openArmory, closeArmory, isOpen as armoryOpen } from './inventory.js';
@@ -273,6 +273,7 @@ function loadEncounter(i) {
     G.cursed = enc.cursed;
     G.nextNid = 1; // build() creates the same static actors with the same ids everywhere
     enc.build();
+    bakeEnvironment();
     const spawn = enc.spawn.clone();
     if (G.net.active) { spawn.x += (Math.random() - 0.5) * 6; spawn.z += Math.random() * 3; }
     G.player.reset(spawn, enc.spawnYaw);

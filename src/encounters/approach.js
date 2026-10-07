@@ -23,11 +23,11 @@ const LORE = [
 // A jumpship, roughly. Pointy, glowy, definitely not to scale.
 function makeJumpship() {
   const g = new THREE.Group();
-  const hull = std(0x9aa0aa, { metalness: 0.55, roughness: 0.5 }), dark = std(0x23262e, { metalness: 0.6, roughness: 0.4 });
+  const hull = std(0x9aa0aa, { metalness: 0.55, roughness: 0.5, detail: false }), dark = std(0x23262e, { metalness: 0.6, roughness: 0.4, detail: false });
   const glow = new THREE.MeshStandardMaterial({ color: 0x66ccff, emissive: 0x44aaff, emissiveIntensity: 4 });
   const body = new THREE.Mesh(new THREE.ConeGeometry(1.2, 7, 6), hull); body.rotation.x = -Math.PI / 2; g.add(body);
   const back = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.1, 2.2, 6), dark); back.rotation.x = Math.PI / 2; back.position.z = 4.4; g.add(back);
-  const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.75, 12, 8), std(0x112233, { metalness: 1, roughness: 0.05 })); cockpit.scale.set(1, 0.6, 1.6); cockpit.position.set(0, 0.7, 0.6); g.add(cockpit);
+  const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.75, 12, 8), std(0x112233, { metalness: 1, roughness: 0.05, detail: false })); cockpit.scale.set(1, 0.6, 1.6); cockpit.position.set(0, 0.7, 0.6); g.add(cockpit);
   for (const s of [-1, 1]) {
     const wing = new THREE.Mesh(new THREE.BoxGeometry(5, 0.15, 2.4), hull); wing.position.set(s * 2.8, -0.1, 2.6); wing.rotation.set(0, s * 0.35, s * -0.12); g.add(wing);
     const tip = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.2, 1.4), dark); tip.position.set(s * 5.2, 0.4, 3.4); g.add(tip);
@@ -52,6 +52,7 @@ export class TheApproach extends Encounter {
     addStars(1800, 330, 0xd8f0ff, 1.4);
     const st = tileTex({ base: '#4a5258', line: '#30363b', accent: '#5fd8ff', n: 4, seed: 31 }); st.repeat.set(3, 10);
     const stone = std(0xffffff, { map: st });
+    const stoneMoving = std(0xffffff, { map: st, detail: false }); // world-space detail would swim on moving platforms
     const rough = std(0x5a6066, { roughness: 1, flatShading: true });
     const trim = std(0x111111, { emissive: 0x5fd8ff, emissiveIntensity: 1.6 });
     // 1) landing pad
@@ -73,7 +74,7 @@ export class TheApproach extends Encounter {
     // 3) the chasm: platforms over the void (some bob, some slide)
     this.platforms = [];
     const plat = (x, y, z, w, d, motion) => {
-      const m = addBox(x, y - 0.6, z, w, 0.6, d, stone);
+      const m = addBox(x, y - 0.6, z, w, 0.6, d, motion ? stoneMoving : stone);
       const edge = addBox(x, y - 0.65, z, w + 0.1, 0.08, d + 0.1, trim, { collide: false });
       this.platforms.push({ m, edge, box: m.userData.box, base: V(x, y - 0.6, z), w, h: 0.6, d, motion, last: V(x, y - 0.6, z) });
     };

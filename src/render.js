@@ -24,7 +24,7 @@ class SoftAOPass extends GTAOPass {
 }
 
 let composer = null, bloom = null, grade = null, smaa = null, vmPass = null, mainPass = null;
-let envTex = null;
+let envTex = null, pmrem = null, arenaEnv = null;
 
 const GradeShader = {
   uniforms: {
@@ -89,7 +89,7 @@ export function initRenderer(container) {
   G.vmKey = key;
 
   // image-based lighting so metal actually looks like metal
-  const pmrem = new THREE.PMREMGenerator(r);
+  pmrem = new THREE.PMREMGenerator(r);
   envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   G.scene.environment = envTex; G.scene.environmentIntensity = 0.45;
   G.vmScene.environment = envTex; G.vmScene.environmentIntensity = 0.9;
@@ -170,36 +170,68 @@ export function render(dt) {
   composer.render(dt);
 }
 
+// Capture the arena itself (sky, walls, lights) into the reflection/ambient map, so metal reflects
+// the actual place and shadows pick up its colours instead of a generic grey studio.
+export function bakeEnvironment(height = 2.5) {
+  if (!pmrem) return;
+  const hide = [G.entities, G.fxGroup, G.avatarGroup].filter(Boolean);
+  const vis = hide.map((o) => o.visible);
+  hide.forEach((o) => { o.visible = false; });
+  // fromScene renders from the origin; drop the world so the probe sits at head height
+  G.worldGroup.position.y = -height; G.worldGroup.updateMatrixWorld(true);
+  G.scene.environment = envTex;
+  const rt = pmrem.fromScene(G.scene, 0.025, 0.1, 600);
+  G.worldGroup.position.y = 0; G.worldGroup.updateMatrixWorld(true);
+  hide.forEach((o, i) => { o.visible = vis[i]; });
+  arenaEnv?.dispose();
+  arenaEnv = rt;
+  G.scene.environment = rt.texture; G.scene.environmentIntensity = 0.75;
+  G.vmScene.environment = rt.texture; G.vmScene.environmentIntensity = 1.1;
+}
+
 // ---------- sky ----------
 const SkyShader = {
   vertexShader: /* glsl */`varying vec3 vDir; void main(){ vDir = normalize(position); vec4 p = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * p; gl_Position.z = gl_Position.w; }`,
   fragmentShader: /* glsl */`
-    uniform vec3 top, horizon, bottom, sunColor, sunDir; uniform float sunSize, haze;
+    uniform vec3 top, horizon, bottom, sunColor, sunDir; uniform float sunSize, haze, clouds, time;
     varying vec3 vDir;
+    float hh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(hh(i), hh(i + vec2(1, 0)), f.x), mix(hh(i + vec2(0, 1)), hh(i + vec2(1, 1)), f.x), f.y); }
+    float fbm(vec2 p) { float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { s += a * vn(p); p = p * 2.07 + 3.1; a *= 0.5; } return s; }
     void main(){
       vec3 d = normalize(vDir);
       float h = d.y;
       vec3 c = h > 0.0 ? mix(horizon, top, pow(clamp(h, 0.0, 1.0), 0.55)) : mix(horizon, bottom, pow(clamp(-h, 0.0, 1.0), 0.4));
       float s = max(dot(d, normalize(sunDir)), 0.0);
       c += sunColor * (pow(s, 900.0 / sunSize) * 6.0 + pow(s, 12.0) * 0.35 * haze + pow(s, 3.0) * 0.12 * haze);
+      if (clouds > 0.0 && h > 0.0) {
+        // a cloud layer projected onto a flat ceiling: thick near the horizon, lit from the sun side
+        vec2 uv = d.xz / (h + 0.12) * 1.4 + vec2(time * 0.006, time * 0.002);
+        float n = fbm(uv), n2 = fbm(uv * 2.3 + 5.0);
+        float cov = smoothstep(0.62 - clouds * 0.22, 0.95, n) * smoothstep(0.0, 0.2, h);
+        float lit = clamp(0.55 + (n - n2) * 1.6, 0.0, 1.0);
+        vec3 cc = mix(horizon * 0.55 + top * 0.2, horizon * 1.1 + sunColor * 0.35 * (0.4 + pow(s, 4.0)), lit);
+        c = mix(c, cc, cov * 0.85);
+      }
       gl_FragColor = vec4(c, 1.0);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
     }`,
 };
 // A gradient dome with a sun. Colors are in linear-ish space; they get tone mapped.
-export function makeSky({ top = 0x0b1030, horizon = 0x3a4a80, bottom = 0x07070c, sun = 0xffe2b0, sunDir = [0.4, 0.35, -0.6], sunSize = 1, haze = 1 } = {}) {
+export function makeSky({ top = 0x0b1030, horizon = 0x3a4a80, bottom = 0x07070c, sun = 0xffe2b0, sunDir = [0.4, 0.35, -0.6], sunSize = 1, haze = 1, clouds = 0.6 } = {}) {
   const mat = new THREE.ShaderMaterial({
     uniforms: {
       top: { value: new THREE.Color(top) }, horizon: { value: new THREE.Color(horizon) }, bottom: { value: new THREE.Color(bottom) },
-      sunColor: { value: new THREE.Color(sun) }, sunDir: { value: new THREE.Vector3(...sunDir).normalize() }, sunSize: { value: sunSize }, haze: { value: haze },
+      sunColor: { value: new THREE.Color(sun) }, sunDir: { value: new THREE.Vector3(...sunDir).normalize() }, sunSize: { value: sunSize }, haze: { value: haze }, clouds: { value: clouds }, time: { value: 0 },
     },
     vertexShader: SkyShader.vertexShader, fragmentShader: SkyShader.fragmentShader,
     side: THREE.BackSide, depthWrite: false, fog: false,
   });
   const m = new THREE.Mesh(new THREE.SphereGeometry(1000, 32, 16), mat);
   m.renderOrder = -10; m.frustumCulled = false;
-  m.onBeforeRender = (r, s, cam) => m.position.copy(cam.position);
+  m.onBeforeRender = (r, s, cam) => { m.position.copy(cam.position); mat.uniforms.time.value = G.time; };
   return m;
 }
 

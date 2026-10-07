@@ -108,8 +108,8 @@ function makeFireField() {
 // ---------- the boss ----------
 function makeFineDog() {
   const g = new THREE.Group();
-  const fur = std(0xe0a83e, { roughness: 0.85 }), furLight = std(0xf3d08a, { roughness: 0.85 }), ear = std(0x7a4a1c, { roughness: 0.9 });
-  const black = std(0x15120f, { roughness: 0.5 }), white = std(0xffffff, { roughness: 0.3 }), wood = std(0x7a4b28, { roughness: 0.8 });
+  const fur = std(0xe0a83e, { detail: false, roughness: 0.85 }), furLight = std(0xf3d08a, { detail: false, roughness: 0.85 }), ear = std(0x7a4a1c, { detail: false, roughness: 0.9 });
+  const black = std(0x15120f, { detail: false, roughness: 0.5 }), white = std(0xffffff, { detail: false, roughness: 0.3 }), wood = std(0x7a4b28, { detail: false, roughness: 0.8 });
   const sph = (r, m, x, y, z, sx = 1, sy = 1, sz = 1, parent = g) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 18), m); o.position.set(x, y, z); o.scale.set(sx, sy, sz); o.castShadow = true; parent.add(o); return o; };
   // chair
   const chair = new THREE.Group(); g.add(chair);
@@ -138,13 +138,13 @@ function makeFineDog() {
   const hat = new THREE.Group(); hat.position.set(0, 1.42, -0.05); hat.rotation.x = -0.08; headJ.add(hat);
   const dome = new THREE.Mesh(new THREE.SphereGeometry(0.72, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), black); dome.scale.y = 0.95; hat.add(dome);
   const brim = new THREE.Mesh(new THREE.CylinderGeometry(1.08, 1.08, 0.07, 28), black); hat.add(brim);
-  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.73, 0.73, 0.16, 28, 1, true), std(0x5a3a22)); band.position.y = 0.1; hat.add(band);
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.73, 0.73, 0.16, 28, 1, true), std(0x5a3a22, { detail: false })); band.position.y = 0.1; hat.add(band);
   // arm + coffee mug
   const armJ = new THREE.Group(); armJ.position.set(0.95, 3.85, 0.35); bob.add(armJ);
   const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 1.1, 6, 12), fur); arm.position.set(0, -0.55, 0.3); arm.rotation.x = -0.5; armJ.add(arm);
   const mug = new THREE.Group(); mug.position.set(-0.1, -1.0, 1.0); armJ.add(mug);
   const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.3, 0.62, 20), white); mug.add(cup);
-  const coffee = new THREE.Mesh(new THREE.CircleGeometry(0.3, 20).rotateX(-Math.PI / 2), std(0x3b2010)); coffee.position.y = 0.3; mug.add(coffee);
+  const coffee = new THREE.Mesh(new THREE.CircleGeometry(0.3, 20).rotateX(-Math.PI / 2), std(0x3b2010, { detail: false })); coffee.position.y = 0.3; mug.add(coffee);
   const handle = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.05, 8, 16), white); handle.position.set(0.36, 0, 0); mug.add(handle);
   const armL = new THREE.Group(); armL.position.set(-0.95, 3.85, 0.35); bob.add(armL);
   const al = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 1.1, 6, 12), fur); al.position.set(0, -0.6, 0.35); al.rotation.x = -0.6; armL.add(al);
@@ -667,13 +667,13 @@ export class ThisIsFine extends Encounter {
 
 function makeExtinguisher() {
   const g = new THREE.Group();
-  const red = std(0xd01818, { roughness: 0.35, metalness: 0.3 }), black = std(0x181818, { roughness: 0.5 }), steel = std(0xbbbbbb, { metalness: 0.8, roughness: 0.3 });
+  const red = std(0xd01818, { detail: false, roughness: 0.35, metalness: 0.3 }), black = std(0x181818, { detail: false, roughness: 0.5 }), steel = std(0xbbbbbb, { detail: false, metalness: 0.8, roughness: 0.3 });
   const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 1.0, 8, 16), red); body.position.y = 0; g.add(body);
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.2, 12), steel); neck.position.y = 0.72; g.add(neck);
   const lever = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.5), black); lever.position.set(0, 0.86, 0.12); lever.rotation.x = -0.2; g.add(lever);
   const hose = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.04, 6, 16, Math.PI * 1.2), black); hose.position.set(0.2, 0.45, 0); hose.rotation.set(0, Math.PI / 2, 0.3); g.add(hose);
   const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.09, 0.3, 10), black); nozzle.position.set(0.2, 0.75, 0.3); nozzle.rotation.x = 1.2; g.add(nozzle);
-  const label = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.3), std(0xffffff)); label.position.set(0, 0.05, 0.285); g.add(label);
+  const label = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.3), std(0xffffff, { detail: false })); label.position.set(0, 0.05, 0.285); g.add(label);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return g;
 }
