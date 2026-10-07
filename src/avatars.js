@@ -78,8 +78,8 @@ export function buildGuardian(cls) {
   return g;
 }
 
-// Emotes (1 = dance, 2 = sit), applied to a guardian body built above.
-export const EMOTES = { dance: 1, sit: 2 };
+// Emotes (1 = dance, 2 = sit, 3 = dab, 4 = take the L), applied to a guardian body built above.
+export const EMOTES = { dance: 1, sit: 2, dab: 3, L: 4 };
 export function poseEmote(body, emote, t) {
   const u = body.userData;
   body.position.set(0, 0, 0); body.rotation.set(0, 0, 0);
@@ -99,6 +99,22 @@ export function poseEmote(body, emote, t) {
     u.legs[0].rotation.x = -1.5; u.legs[1].rotation.x = -1.5;
     u.shL.rotation.x = -0.9; u.arm.rotation.x = 0.4; u.gun.visible = false;
     body.rotation.x = Math.sin(t * 0.8) * 0.03;
+  } else if (emote === 3) {
+    // the dab: snap into it, hold it
+    const k = Math.min(1, t * 6);
+    body.rotation.set(0.25 * k, 0.3 * k, 0.12 * k);
+    u.shL.rotation.set(-0.5 * k, 0, -2.4 * k);
+    u.arm.rotation.set(-0.45 * k, 1.35 * k, 0.15 * k); // forearm across the face
+    u.gun.visible = false;
+    body.position.y = Math.sin(t * 2) * 0.01;
+  } else if (emote === 4) {
+    // take the L: hand on the forehead, hop side to side
+    const s = Math.sin(t * 6);
+    body.position.set(s * 0.12, Math.abs(Math.cos(t * 6)) * 0.08, 0);
+    body.rotation.z = -s * 0.08;
+    u.shL.rotation.set(-2.7, 0.2, -0.25);
+    u.legs[0].rotation.x = Math.max(0, s) * -0.6; u.legs[1].rotation.x = Math.max(0, -s) * -0.6;
+    u.arm.rotation.x = 0.5; u.gun.visible = false;
   }
 }
 

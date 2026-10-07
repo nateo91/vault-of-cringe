@@ -934,6 +934,8 @@ export class Player {
   updateEmote(dt, cam) {
     if (hit('KeyB')) this.emote = this.emote === EMOTES.dance ? 0 : EMOTES.dance;
     if (hit('KeyN')) this.emote = this.emote === EMOTES.sit ? 0 : EMOTES.sit;
+    if (hit('KeyJ')) { this.emote = this.emote === EMOTES.dab ? 0 : EMOTES.dab; this.emoteT = 0; }
+    if (hit('KeyK')) this.emote = this.emote === EMOTES.L ? 0 : EMOTES.L;
     if (this.emote && (down('KeyW') || down('KeyA') || down('KeyS') || down('KeyD') || down('Space') || Input.left || Input.right || !this.alive || this.superActive || this.carry)) this.emote = 0;
     if (this.emote && !this.selfBody) { this.selfBody = buildGuardian(this.cls); this.selfBody.userData.cls = this.cls; G.avatarGroup.add(this.selfBody); }
     if (this.selfBody && this.selfBody.userData.cls !== this.cls) { G.avatarGroup.remove(this.selfBody); this.selfBody = null; }
