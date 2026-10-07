@@ -412,8 +412,48 @@ export class SkibidiFinale extends Encounter {
     HUD.bigText('SKIBIDI HAS BEEN FLUSHED', 'Ohio is saved. Somehow.', 5, 'meme');
     this.ghost('We did it. We actually did it. I am going to go touch grass. Forever.');
     for (const e of G.enemies) if (e.alive && e !== this.boss) e.die();
-    for (const o of this.orbiters) fx.explosion(o.position, 10, 0xffffff);
-    after(4, () => this.complete());
+    this.ev('outro');
+    after(0.8, () => this.complete()); // game timers are frozen while the outro plays, so this lands right after it
+  }
+  // The raid's last shot: circle in on Skibidi burning away while the bowl flushes, then crane up over Ohio as the
+  // thousand toilets go off one by one and fireworks fill the sky.
+  ev_outro() {
+    const V = (x, y, z) => new THREE.Vector3(x, y, z);
+    const order = this.orbiters.slice().sort(() => Math.random() - 0.5);
+    let nextPop = 2.4, popped = 0, swirled = false, fw = 0, rings = 0;
+    playCinematic({
+      duration: 7.6, sting: 'fanfare', grade: 4,
+      shots: [
+        { t: [0, 2.6], path: [V(10, 5, 9), V(2, 6, 12), V(-8, 6.5, 8)], look: [V(0, 5, 0)], fov: [48, 44] },
+        { t: [2.6, 4.4], path: [V(4.5, 2.4, 4.5), V(3.2, 2.0, 3.0)], look: [V(0, 1.2, 0)], fov: [54, 50] },
+        { t: [4.4, 7.6], path: [V(0, 6, 16), V(0, 20, 40), V(0, 30, 62)], look: [V(0, 4, 0), V(0, 12, -60)], fov: [60, 72] },
+      ],
+      card: { at: 4.9, name: 'THE VAULT OF CRINGE', sub: 'RAID COMPLETE · OHIO IS SAVED (SOMEHOW)' },
+      lines: [[0.6, 'skibidi... no...', 'boss']],
+      choreo: (t, dt, snap) => {
+        if (snap) return;
+        // the flush: a blue whirlpool opens in the bowl
+        if (t > 2.2 && !swirled) { swirled = true; local(() => play('flush')); }
+        while (t > 2.2 + rings * 0.25 && rings < 6) { const i = rings++; local(() => fx.ringFx(V(0, 1.3, 0), 3.2 - i * 0.4, 0x3fa9ff, 0.5)); }
+        if (t > 2.2 && t < 4.6 && Math.random() < dt * 30) {
+          const a = t * 9 + Math.random() * 6, r = 2.6 * (1 - ((t * 2) % 1));
+          local(() => fx.burst(V(Math.cos(a) * r, 1.3, Math.sin(a) * r), 0x7fd0ff, 1, 1.5, 0.12, 0.5, -2));
+        }
+        // the thousand toilets go off, one by one
+        while (t > nextPop && popped < order.length) {
+          const o = order[popped++]; nextPop += 4.6 / order.length;
+          local(() => { fx.explosion(o.position.clone(), 6, pick([0xffffff, 0xff4fd8, 0x3fa9ff, 0xffd23f])); });
+          o.visible = false;
+        }
+        // fireworks over Ohio
+        if (t > 4.6 && (fw -= dt) <= 0) {
+          fw = rand(0.15, 0.35);
+          const at = V(rand(-40, 40), rand(12, 30), rand(-90, -30)), col = pick([0xff4fd8, 0x3fa9ff, 0xffd23f, 0x7dff9a, 0xffffff]);
+          local(() => { fx.burst(at, col, 40, 14, 0.2, 1.4, 4); fx.burst(at, 0xffffff, 10, 6, 0.1, 0.5, 2); });
+          if (Math.random() < 0.5) local(() => playAt(at, 'explosion', 0.4));
+        }
+      },
+    });
   }
   cleanup() { HUD.clearDebuff('brain'); document.getElementById('game').style.animation = ''; }
 }
