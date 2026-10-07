@@ -371,9 +371,28 @@ export class Doge extends Enemy {
   }
   think(dt) {
     const p = this.tgt();
-    const d = this.steer(p.pos.x, p.pos.z, this.speed, dt, { stopDist: 1.1 });
+    // pack hunting: from range, each doge curves out to its own side so they arrive from different angles
+    if (this.flank === undefined) { this.flank = (Math.random() < 0.5 ? -1 : 1) * rand(0.5, 1.1); this.lungeCd = rand(1, 3); this.lungeT = 0; }
+    const dist = distXZ(this.pos, p.pos);
+    let tx = p.pos.x, tz = p.pos.z;
+    if (dist > 7) {
+      const a = Math.atan2(this.pos.z - p.pos.z, this.pos.x - p.pos.x) + this.flank * Math.min(1, (dist - 7) / 10);
+      const r = Math.max(5, dist * 0.6);
+      tx = p.pos.x + Math.cos(a) * r; tz = p.pos.z + Math.sin(a) * r;
+    }
+    // close in, then leap
+    this.lungeCd -= dt;
+    if (this.lungeT > 0) { this.lungeT -= dt; this.physics(dt); }
+    else this.steer(tx, tz, this.speed, dt, { stopDist: 1.1 });
+    if (dist < 5.5 && dist > 2.2 && this.onGround && this.lungeCd <= 0 && p.alive && this.canSee) {
+      const k = 1 / (dist || 1);
+      this.vel.set((p.pos.x - this.pos.x) * k * 13, 5.5, (p.pos.z - this.pos.z) * k * 13);
+      this.lungeT = 0.45; this.lungeCd = rand(2.5, 4.5);
+      this.yaw = Math.atan2(p.pos.x - this.pos.x, p.pos.z - this.pos.z);
+      this.doAct('bite', 0.4); playAt(this.pos, 'bark');
+    }
     this.cd -= dt;
-    if (d < 1.9 && Math.abs(p.pos.y - this.pos.y) < 1.6 && this.cd <= 0 && p.alive) {
+    if (dist < 1.9 && Math.abs(p.pos.y - this.pos.y) < 1.6 && this.cd <= 0 && p.alive) {
       hurtPlayer(p, 12, 'a Doge Thrall (such bite)'); this.cd = 0.9; playAt(this.pos, 'bark'); this.doAct('bite', 0.3);
       this.vel.x += (p.pos.x - this.pos.x) * 3; this.vel.z += (p.pos.z - this.pos.z) * 3;
     }
