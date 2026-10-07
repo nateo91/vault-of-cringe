@@ -1,5 +1,6 @@
 // Low-poly meme models. Every model faces +Z.
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { emojiSprite, textSprite, makeSprite, cursedFaceTex, IMPACT } from './textures.js';
 
 const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.05, ...o });
@@ -203,16 +204,31 @@ export function makeChungus() {
 
 function makeToiletParts(s = 1) {
   const g = new THREE.Group();
-  const porcelain = std(0xf4f4f4, { roughness: 0.25, metalness: 0.1 });
-  g.add(mesh(new THREE.CylinderGeometry(1.6 * s, 2.1 * s, 2 * s, 20), porcelain, 0, 1 * s, 0));
-  g.add(mesh(new THREE.CylinderGeometry(3.2 * s, 1.8 * s, 2.2 * s, 28), porcelain, 0, 3.1 * s, 0));
-  const water = mesh(new THREE.CircleGeometry(2.9 * s, 28), std(0x3fa9ff, { emissive: 0x0a3a88, roughness: 0.1 }), 0, 4.15 * s, 0);
-  water.rotation.x = -Math.PI / 2; g.add(water);
-  const seat = mesh(new THREE.TorusGeometry(2.95 * s, 0.32 * s, 8, 32), porcelain, 0, 4.25 * s, 0);
-  seat.rotation.x = Math.PI / 2; g.add(seat);
-  g.add(mesh(B(5 * s, 4 * s, 1.6 * s), porcelain, 0, 5 * s, -3.4 * s));
-  g.add(mesh(B(5.2 * s, 0.3 * s, 1.8 * s), porcelain, 0, 7.15 * s, -3.4 * s));
-  g.add(mesh(B(0.8 * s, 0.2 * s, 0.2 * s), std(0xcccccc, { metalness: 0.9, roughness: 0.2 }), 2 * s, 6.5 * s, -2.5 * s));
+  const porcelain = std(0xf4f4f4, { roughness: 0.18, metalness: 0.05, side: THREE.DoubleSide });
+  const chrome = std(0xd8dde6, { metalness: 1, roughness: 0.15 });
+  const V2 = (r, y) => new THREE.Vector2(r * s, y * s);
+  // the bowl: a pedestal flaring into an oval bowl with a rolled rim, then the inner surface going back down
+  const bowl = new THREE.LatheGeometry([
+    V2(1.25, 0), V2(1.32, 0.12), V2(1.05, 0.45), V2(0.98, 1.1), V2(1.35, 1.6), V2(2.2, 2.35), V2(2.85, 3.2),
+    V2(3.15, 3.85), V2(3.22, 4.08), V2(3.08, 4.2), V2(2.82, 4.12), V2(2.45, 3.7), V2(1.6, 3.15), V2(0.7, 2.9), V2(0.01, 2.85),
+  ], 40);
+  const b = mesh(bowl, porcelain); b.scale.z = 1.18; g.add(b);
+  const water = mesh(new THREE.CircleGeometry(2.05 * s, 32), std(0x3fa9ff, { emissive: 0x0a3a88, roughness: 0.05, metalness: 0.2 }), 0, 3.45 * s, 0);
+  water.rotation.x = -Math.PI / 2; water.scale.y = 1.18; g.add(water);
+  // the seat, and the lid standing open behind it
+  const seat = mesh(new THREE.TorusGeometry(2.88 * s, 0.26 * s, 10, 40), porcelain, 0, 4.32 * s, 0);
+  seat.rotation.x = Math.PI / 2; seat.scale.y = 1.18; seat.scale.z = 0.7; g.add(seat);
+  const lidG = new THREE.Group(); lidG.position.set(0, 4.45 * s, -3.15 * s); lidG.rotation.x = -0.18; g.add(lidG);
+  const lid = mesh(new THREE.CylinderGeometry(3.0 * s, 3.0 * s, 0.22 * s, 40), porcelain, 0, 3.2 * s, 0); lid.rotation.x = Math.PI / 2; lid.scale.x = 1; lid.scale.z = 1.12; lidG.add(lid);
+  // the tank: rounded, with a capped lid, a chrome flush handle and the pipe down to the bowl
+  const RB = (w, h, d, r) => new RoundedBoxGeometry(w * s, h * s, d * s, 3, r * s);
+  g.add(mesh(RB(5.0, 3.6, 1.7, 0.35), porcelain, 0, 5.75 * s, -3.75 * s));
+  g.add(mesh(RB(5.4, 0.42, 2.0, 0.18), porcelain, 0, 7.72 * s, -3.75 * s));
+  const handleBase = mesh(new THREE.CylinderGeometry(0.22 * s, 0.22 * s, 0.12 * s, 16), chrome, 1.7 * s, 7.1 * s, -2.87 * s); handleBase.rotation.x = Math.PI / 2; g.add(handleBase);
+  const lever = mesh(RB(0.9, 0.16, 0.16, 0.06), chrome, 2.05 * s, 7.1 * s, -2.78 * s); lever.rotation.z = -0.25; g.add(lever);
+  g.add(mesh(new THREE.CylinderGeometry(0.35 * s, 0.35 * s, 1.2 * s, 16), porcelain, 0, 3.9 * s, -3.15 * s));
+  // bolt caps on the base
+  for (const sx of [-1, 1]) g.add(mesh(new THREE.SphereGeometry(0.16 * s, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), porcelain, sx * 1.15 * s, 0.05 * s, 0.25 * s));
   return g;
 }
 // Skibidi's head: bulging eyes that track you, a jaw that sings, brows that never come down.
