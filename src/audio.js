@@ -160,9 +160,17 @@ function out(node, rev) {
   if (r > 0) { const g = ctx.createGain(); g.gain.value = r; node.connect(g); g.connect(reverbIn); }
 }
 
-function noise({ dur = 0.2, freq = 1000, freqEnd, q = 1, type = 'lowpass', gain = 0.5, attack = 0.002, rev = 0, delay = 0 }) {
+// Per-shot humanising: while a gun sound is built, every filter/pitch is nudged by the same small random factor.
+let jit = 1;
+// out() with an optional stereo position (for wide room tails on your own gun)
+function outPan(node, rev, pan) {
+  if (!pan) return out(node, rev);
+  const p = ctx.createStereoPanner(); p.pan.value = pan; node.connect(p); out(p, rev);
+}
+function noise({ dur = 0.2, freq = 1000, freqEnd, q = 1, type = 'lowpass', gain = 0.5, attack = 0.002, rev = 0, delay = 0, pan = 0 }) {
   if (!ctx) return;
   const t = ctx.currentTime + delay;
+  freq *= jit; if (freqEnd) freqEnd *= jit;
   const src = ctx.createBufferSource(); src.buffer = noiseBuf;
   const f = ctx.createBiquadFilter(); f.type = type; f.Q.value = q;
   f.frequency.setValueAtTime(freq, t);
@@ -170,13 +178,14 @@ function noise({ dur = 0.2, freq = 1000, freqEnd, q = 1, type = 'lowpass', gain 
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + attack);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  src.connect(f); f.connect(g); out(g, rev);
+  src.connect(f); f.connect(g); outPan(g, rev, pan);
   src.start(t, Math.random() * 1.5); src.stop(t + dur + 0.05);
 }
 
-function tone({ type = 'sine', freq = 440, freqEnd, dur = 0.2, gain = 0.3, attack = 0.004, rev = 0, delay = 0, dist = false, detune = 0 }) {
+function tone({ type = 'sine', freq = 440, freqEnd, dur = 0.2, gain = 0.3, attack = 0.004, rev = 0, delay = 0, dist = false, detune = 0, pan = 0 }) {
   if (!ctx) return;
   const t = ctx.currentTime + delay;
+  freq *= jit; if (freqEnd) freqEnd *= jit;
   const o = ctx.createOscillator(); o.type = type; o.detune.value = detune;
   o.frequency.setValueAtTime(freq, t);
   if (freqEnd) o.frequency.exponentialRampToValueAtTime(freqEnd, t + dur);
@@ -185,7 +194,7 @@ function tone({ type = 'sine', freq = 440, freqEnd, dur = 0.2, gain = 0.3, attac
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   let n = o;
   if (dist) { const ws = ctx.createWaveShaper(); ws.curve = distCurve; o.connect(ws); n = ws; }
-  n.connect(g); out(g, rev);
+  n.connect(g); outPan(g, rev, pan);
   o.start(t); o.stop(t + dur + 0.05);
 }
 
@@ -197,21 +206,36 @@ export const sfxs = {
     noise({ dur: 0.32, freq: 3200, freqEnd: 260, gain: 1.0, rev: 0.35 });
     tone({ freq: 95, freqEnd: 38, dur: 0.22, gain: 0.75 });
     tone({ type: 'square', freq: 160, freqEnd: 60, dur: 0.06, gain: 0.25 });
-    noise({ dur: 0.9, freq: 900, freqEnd: 120, gain: 0.18, delay: 0.04, rev: 0.6 });
+    noise({ dur: 0.9, freq: 900, freqEnd: 120, gain: 0.12, delay: 0.04, rev: 0.6, pan: -0.55 });
+    noise({ dur: 0.9, freq: 820, freqEnd: 110, gain: 0.12, delay: 0.06, rev: 0.6, pan: 0.55 });
+    noise({ dur: 0.03, freq: 3200, q: 8, type: 'bandpass', gain: 0.12, delay: 0.09 }); // hammer back
   },
   sg() {
     noise({ dur: 0.06, freq: 4500, type: 'highpass', gain: 1.0 });
     noise({ dur: 0.5, freq: 2200, freqEnd: 140, gain: 1.2, rev: 0.4 });
     tone({ freq: 70, freqEnd: 28, dur: 0.32, gain: 0.95 });
-    noise({ dur: 1.1, freq: 700, freqEnd: 90, gain: 0.22, delay: 0.05, rev: 0.7 });
+    noise({ dur: 1.1, freq: 700, freqEnd: 90, gain: 0.15, delay: 0.05, rev: 0.7, pan: -0.6 });
+    noise({ dur: 1.1, freq: 640, freqEnd: 85, gain: 0.15, delay: 0.07, rev: 0.7, pan: 0.6 });
   },
-  ar() { noise({ dur: 0.04, freq: 6500, type: 'highpass', gain: 0.6 }); noise({ dur: 0.16, freq: 2800, freqEnd: 400, gain: 0.6, rev: 0.2 }); tone({ freq: 120, freqEnd: 50, dur: 0.08, gain: 0.35 }); },
+  ar() {
+    noise({ dur: 0.04, freq: 6500, type: 'highpass', gain: 0.6 }); noise({ dur: 0.16, freq: 2800, freqEnd: 400, gain: 0.6, rev: 0.2 }); tone({ freq: 120, freqEnd: 50, dur: 0.08, gain: 0.35 });
+    noise({ dur: 0.02, freq: 4200, q: 6, type: 'bandpass', gain: 0.08, delay: 0.045 }); // bolt cycling
+    noise({ dur: 0.35, freq: 900, freqEnd: 200, gain: 0.05, delay: 0.03, rev: 0.4, pan: Math.random() < 0.5 ? -0.5 : 0.5 });
+  },
   pr() { noise({ dur: 0.04, freq: 5500, type: 'highpass', gain: 0.6 }); noise({ dur: 0.2, freq: 2400, freqEnd: 300, gain: 0.7, rev: 0.25 }); tone({ type: 'square', freq: 240, freqEnd: 90, dur: 0.06, gain: 0.12 }); },
-  sr() { noise({ dur: 0.05, freq: 7000, type: 'highpass', gain: 0.8 }); noise({ dur: 0.35, freq: 3600, freqEnd: 300, gain: 0.9, rev: 0.4 }); tone({ freq: 140, freqEnd: 45, dur: 0.14, gain: 0.5 }); },
+  sr() {
+    noise({ dur: 0.05, freq: 7000, type: 'highpass', gain: 0.8 }); noise({ dur: 0.35, freq: 3600, freqEnd: 300, gain: 0.9, rev: 0.4 }); tone({ freq: 140, freqEnd: 45, dur: 0.14, gain: 0.5 });
+    noise({ dur: 0.6, freq: 1100, freqEnd: 150, gain: 0.08, delay: 0.05, rev: 0.6, pan: -0.5 }); noise({ dur: 0.6, freq: 1000, freqEnd: 140, gain: 0.08, delay: 0.07, rev: 0.6, pan: 0.5 });
+    noise({ dur: 0.025, freq: 3600, q: 7, type: 'bandpass', gain: 0.1, delay: 0.12 }); // action
+  },
   sn() { noise({ dur: 0.07, freq: 8000, type: 'highpass', gain: 1.1 }); noise({ dur: 0.6, freq: 3000, freqEnd: 160, gain: 1.2, rev: 0.6 }); tone({ freq: 80, freqEnd: 28, dur: 0.45, gain: 1.0, dist: true }); noise({ dur: 1.6, freq: 800, freqEnd: 100, gain: 0.25, delay: 0.08, rev: 0.9 }); noise({ dur: 0.06, freq: 2600, type: 'bandpass', q: 6, gain: 0.35, delay: 0.5 }); },
   frCharge() { tone({ type: 'sawtooth', freq: 180, freqEnd: 1400, dur: 0.55, gain: 0.08 }); tone({ type: 'sine', freq: 400, freqEnd: 2600, dur: 0.55, gain: 0.07 }); },
   fr() { for (let i = 0; i < 7; i++) { tone({ type: 'square', freq: 900 - i * 60, freqEnd: 200, dur: 0.06, gain: 0.08, delay: i * 0.035 }); noise({ dur: 0.05, freq: 3000, type: 'bandpass', q: 2, gain: 0.35, delay: i * 0.035 }); } tone({ freq: 90, freqEnd: 40, dur: 0.3, gain: 0.5, dist: true, rev: 0.4 }); },
-  mg() { noise({ dur: 0.05, freq: 5000, type: 'highpass', gain: 0.7 }); noise({ dur: 0.22, freq: 2000, freqEnd: 250, gain: 0.9, rev: 0.3 }); tone({ freq: 85, freqEnd: 35, dur: 0.14, gain: 0.7 }); },
+  mg() {
+    noise({ dur: 0.05, freq: 5000, type: 'highpass', gain: 0.7 }); noise({ dur: 0.22, freq: 2000, freqEnd: 250, gain: 0.9, rev: 0.3 }); tone({ freq: 85, freqEnd: 35, dur: 0.14, gain: 0.7 });
+    noise({ dur: 0.02, freq: 2600, q: 5, type: 'bandpass', gain: 0.1, delay: 0.05 }); // belt link
+    noise({ dur: 0.5, freq: 800, freqEnd: 150, gain: 0.07, delay: 0.03, rev: 0.5, pan: Math.random() < 0.5 ? -0.55 : 0.55 });
+  },
   gl() { tone({ freq: 150, freqEnd: 60, dur: 0.18, gain: 0.8 }); noise({ dur: 0.25, freq: 900, freqEnd: 200, type: 'bandpass', q: 0.8, gain: 0.7 }); noise({ dur: 0.06, freq: 3000, type: 'bandpass', q: 5, gain: 0.3, delay: 0.3 }); },
   // the boss-intro stinger: a low brass-ish swell, a hit, and a long tail
   bossSting() {
@@ -299,7 +323,13 @@ export const sfxs = {
   chime(i = 0) { const f = [523, 659, 784, 988][i % 4]; tone({ type: 'triangle', freq: f, dur: 0.3, gain: 0.15, rev: 0.4 }); },
 };
 
-export function play(name, ...args) { share(['snd', name, args]); if (ctx && sfxs[name]) sfxs[name](...args); }
+const GUNS = new Set(['hc', 'sg', 'ar', 'pr', 'sr', 'sn', 'fr', 'mg', 'gl', 'rl', 'enemyShot']);
+function run(name, args) {
+  if (!GUNS.has(name)) return sfxs[name](...args);
+  jit = 0.94 + Math.random() * 0.12;
+  try { sfxs[name](...args); } finally { jit = 1; }
+}
+export function play(name, ...args) { share(['snd', name, args]); if (ctx && sfxs[name]) run(name, args); }
 
 // ---------- 3D sound ----------
 // A sound that happens somewhere in the world: panned with HRTF (front/back/up/down), quieter with distance,
@@ -320,7 +350,7 @@ export function playAt(pos, name, ...args) {
   air.connect(panner); panner.connect(sfx);
   const pd = dest, pr = revScale;
   dest = air; revScale = 1 + Math.min(2.5, d / 25);
-  try { sfxs[name](...args); } finally { dest = pd; revScale = pr; }
+  try { run(name, args); } finally { dest = pd; revScale = pr; }
   setTimeout(() => { air.disconnect(); panner.disconnect(); }, 3500);
 }
 // Called every frame with the camera: the listener is your head.
