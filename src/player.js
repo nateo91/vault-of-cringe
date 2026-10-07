@@ -675,9 +675,10 @@ export class Player {
     G.shake += 0.02 * vm;
   }
   applyHits(hits, w = null) {
-    let anyCrit = false, kill = false, any = false;
+    let anyCrit = false, kill = false, any = false, shieldEl = null;
     for (const [e, h] of hits) {
       const wasAlive = e.alive, hpBefore = e.hp;
+      if (e.shieldHp > 0) shieldEl = e.shieldEl;
       const dmg = w ? h.dmg * this.perks.dmgMult(w, e, h.crit) : h.dmg;
       const dealt = e.takeDamage(dmg, h.crit, { hitscan: true, element: w?.def.element, point: h.point });
       if (dealt > 0) { any = true; G.stats.hits++; if (w) this.perks.onHit(w, e, h.crit); }
@@ -687,7 +688,7 @@ export class Player {
       if (killed) { kill = true; if (w) this.perks.onKill(w, e, h.crit, e.center()); }
       fx.burst(h.point, h.crit ? 0xffd23f : 0xffb070, h.crit ? 7 : 4, 4, 0.05, 0.25, 6);
     }
-    if (any || kill) { HUD.hitmarker(anyCrit, kill); play(anyCrit ? 'crit' : 'hit'); if (kill) play('kill'); }
+    if (any || kill) { HUD.hitmarker(anyCrit, kill, shieldEl); play(anyCrit ? 'crit' : 'hit'); if (kill) play('kill'); }
   }
   ejectShell(color) {
     const p = this.vmToWorld(this.rig.sight);

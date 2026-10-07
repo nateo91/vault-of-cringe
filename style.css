@@ -23,7 +23,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060a; col
 #hitmarker i:nth-child(3) { top: 13px; left: 0; width: 9px; height: 2px; }
 #hitmarker i:nth-child(4) { top: 13px; right: 0; width: 9px; height: 2px; }
 #hitmarker.crit i { background: #ffd23f; }
-#hitmarker.kill i { background: #ff4d4d; }
+#hitmarker.kill i { background: #ff4d4d; box-shadow: 0 0 6px rgba(255,60,60,.8); }
+#hitmarker.kill.crit i:nth-child(odd) { background: #ffd23f; }
+#hitmarker.shield.el-solar i { background: #ff9a3a; } #hitmarker.shield.el-arc i { background: #8fe0ff; } #hitmarker.shield.el-void i { background: #c08cff; }
+#hitmarker.go { animation: hmPop .12s ease-out; }
+#hitmarker.kill.go { animation: hmKill .28s ease-out; }
+@keyframes hmPop { 0% { transform: translate(-50%, -50%) rotate(45deg) scale(1.45); } 100% { transform: translate(-50%, -50%) rotate(45deg) scale(1); } }
+@keyframes hmKill { 0% { transform: translate(-50%, -50%) rotate(45deg) scale(0.8); } 40% { transform: translate(-50%, -50%) rotate(45deg) scale(1.5); } 100% { transform: translate(-50%, -50%) rotate(45deg) scale(1.3); opacity: .2; } }
 
 #objective { position: absolute; left: 36px; top: 30px; max-width: 380px; }
 #objective .enc-name { font-weight: 700; letter-spacing: .18em; font-size: 15px; color: var(--gold); }

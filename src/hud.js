@@ -70,11 +70,15 @@ export const HUD = {
     setTimeout(() => d.classList.add('fade'), 3500);
     setTimeout(() => d.remove(), 4200);
   },
-  hitmarker(crit, kill) {
-    els.hit.className = kill ? 'kill' : crit ? 'crit' : '';
+  // shield hits glow in the shield's element; crits are gold; kills burst red (gold-red for a precision kill)
+  hitmarker(crit, kill, shieldEl = null) {
+    const cls = kill ? (crit ? 'kill crit' : 'kill') : shieldEl ? 'shield el-' + shieldEl : crit ? 'crit' : '';
+    els.hit.className = cls;
+    void els.hit.offsetWidth; // restart the pop animation
+    els.hit.className = cls + ' go';
     els.hit.style.opacity = 1;
     clearTimeout(hitTimer);
-    hitTimer = setTimeout(() => (els.hit.style.opacity = 0), 110);
+    hitTimer = setTimeout(() => (els.hit.style.opacity = 0), kill ? 280 : 120);
   },
   damageFlash(amount) {
     els.vignette.style.transition = 'none';
