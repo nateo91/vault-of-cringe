@@ -121,15 +121,16 @@ export class Humanoid extends Rig {
     const p = this.phase;
     this.aimK = damp(this.aimK, s.aim ? 1 : 0, 10, dt);
     this.mewK = damp(this.mewK, s.mew ? 1 : 0, 8, dt);
+    const cr = s.crouch || 0; // ducking behind cover
     const fl = Math.sin(Math.min(1, this.flinch) * Math.PI * 0.5);
     // legs
-    j.hipL.rotation.x = -Math.sin(p) * 0.55 * k; j.hipR.rotation.x = Math.sin(p) * 0.55 * k;
-    j.kneeL.rotation.x = Math.max(0, Math.sin(p + 1.4)) * 0.85 * k; j.kneeR.rotation.x = Math.max(0, -Math.sin(p + 1.4)) * 0.85 * k;
-    j.hips.position.y = 0.98 + Math.abs(Math.sin(p)) * 0.035 * k + Math.sin(this.t * 1.7) * 0.005;
+    j.hipL.rotation.x = -Math.sin(p) * 0.55 * k * (1 - cr) - cr * 1.25; j.hipR.rotation.x = Math.sin(p) * 0.55 * k * (1 - cr) - cr * 1.0;
+    j.kneeL.rotation.x = Math.max(0, Math.sin(p + 1.4)) * 0.85 * k * (1 - cr) + cr * 2.1; j.kneeR.rotation.x = Math.max(0, -Math.sin(p + 1.4)) * 0.85 * k * (1 - cr) + cr * 1.8;
+    j.hips.position.y = 0.98 - cr * 0.48 + Math.abs(Math.sin(p)) * 0.035 * k + Math.sin(this.t * 1.7) * 0.005;
     j.hips.rotation.y = Math.sin(p) * 0.06 * k;
     // torso: counter-twist, breathe, lean into a run, flinch back
     j.spine.rotation.y = -Math.sin(p) * 0.1 * k;
-    j.spine.rotation.x = 0.08 * k - fl * 0.35;
+    j.spine.rotation.x = 0.08 * k - fl * 0.35 + cr * 0.35;
     j.spine.rotation.z = fl * 0.12 * this.flinchSide;
     j.chest.scale.setScalar(1 + Math.sin(this.t * 1.7) * 0.012);
     j.head.rotation.x = -fl * 0.45 - this.mewK * 0.35 + (s.lookDown || 0);

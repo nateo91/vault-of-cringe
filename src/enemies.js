@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { G, rand, pick, clamp, damp, dampAngle, distXZ, distToSegment, nearestPlayer, hurtPlayer, playerById, local } from './game.js';
 import * as fx from './fx.js';
 import { play, playAt } from './audio.js';
-import { moveCollide } from './world.js';
+import { moveCollide, pointInWorld } from './world.js';
 import { los, Projectile, Pickup, raycast } from './combat.js';
 import { HUD } from './hud.js';
 import { textSprite } from './textures.js';
@@ -210,7 +210,7 @@ export class Enemy {
     const ps = this.pose?.();
     return [this.nid, this.netType, this.netArgs, r2(this.pos.x), r2(this.pos.y), r2(this.pos.z), r2(this.yaw), Math.ceil(this.hp), this.maxHp,
       (this.immune ? 1 : 0) | (this.untargetable ? 2 : 0) | (this.hostile ? 4 : 0), this.netVis?.() ?? 0, this.rank,
-      this.actN || 0, this.actName || 0, this.actDur || 0, ps ? [ps.aim ? 1 : 0, ps.mew ? 1 : 0, ps.task ? 1 : 0, r2(ps.windup || 0)] : 0];
+      this.actN || 0, this.actName || 0, this.actDur || 0, ps ? [ps.aim ? 1 : 0, ps.mew ? 1 : 0, ps.task ? 1 : 0, r2(ps.windup || 0), r2(ps.crouch || 0)] : 0];
   }
   applyRow(a) {
     if (!this.netPos) { this.netPos = new THREE.Vector3(a[3], a[4], a[5]); this.pos.copy(this.netPos); this.yaw = a[6]; }
@@ -220,7 +220,7 @@ export class Enemy {
     if (a[10]) this.applyVis?.(a[10]);
     if (this.actSeen !== undefined && a[12] !== this.actSeen && a[13]) this.rig?.play(a[13], a[14]);
     this.actSeen = a[12];
-    if (a[15]) this.netPose = { aim: !!a[15][0], mew: !!a[15][1], task: !!a[15][2], windup: a[15][3] };
+    if (a[15]) this.netPose = { aim: !!a[15][0], mew: !!a[15][1], task: !!a[15][2], windup: a[15][3], crouch: a[15][4] || 0 };
   }
 
   // --- helpers ---
@@ -310,14 +310,62 @@ export class Stonks extends Enemy {
     super({ name: 'Stonks Acolyte', hp: 140, radius: 0.45, height: 2.0, speed: 4.5, gib: 0x22dd55, deathLines: [': NOT STONKS 📉', 'sold the dip', 'got margin called'] });
     this.useRig(R.stonksRig());
     this.hb(0, 1.2, 0, 0.45).hb(0, 0.6, 0, 0.3).hb(0, 1.93, 0.02, 0.24, true);
+    this.hbBase = this.hitboxes.map((h) => h.off.y);
     this.strafe = Math.random() < 0.5 ? 1 : -1; this.strafeT = rand(1, 3); this.burst = 0; this.burstT = 0;
+    this.cover = null; this.coverT = rand(1.5, 4); this.crouchK = 0; this.peekT = 0;
   }
-  pose() { return { aim: this.burst > 0 || this.aimT > 0 }; }
+  pose() { return { aim: this.burst > 0 || this.aimT > 0, crouch: this.crouchK }; }
+  // crouching lowers the hitboxes too (clients use the synced pose), so cover actually covers
+  animate() {
+    const c = G.net.isClient ? (this.netPose?.crouch || 0) : this.crouchK;
+    this.hitboxes.forEach((h, i) => { h.off.y = this.hbBase[i] - c * (i === 1 ? 0.25 : 0.5); });
+    this.height = 2.0 - c * 0.5;
+  }
+  // A waist-to-chest-high box near us, with us on the far side of it from the target.
+  findCover() {
+    const t = this.tgt().pos;
+    let best = null, bs = Infinity;
+    for (const b of G.colliders) {
+      const h = b.max.y - b.min.y;
+      if (b.min.y > 0.3 || h < 1.1 || h > 3.2 || b.noRay) continue;
+      const cx = (b.min.x + b.max.x) / 2, cz = (b.min.z + b.max.z) / 2;
+      if (Math.hypot(cx - this.pos.x, cz - this.pos.z) > 20) continue;
+      let dx = cx - t.x, dz = cz - t.z; const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
+      const ex = (b.max.x - b.min.x) / 2 + 0.85, ez = (b.max.z - b.min.z) / 2 + 0.85;
+      const k = Math.min(ex / Math.max(Math.abs(dx), 1e-3), ez / Math.max(Math.abs(dz), 1e-3));
+      const px = cx + dx * k, pz = cz + dz * k;
+      const dT = Math.hypot(px - t.x, pz - t.z);
+      if (dT < 8 || dT > 32) continue;
+      if (pointInWorld(_t.set(px, 0.9, pz)) || pointInWorld(_t.set(px, 0.2, pz))) continue;
+      if (G.enemies.some((e) => e !== this && e.alive && e.cover && Math.hypot(e.cover.x - px, e.cover.z - pz) < 1.6)) continue;
+      const score = Math.hypot(px - this.pos.x, pz - this.pos.z) + Math.abs(dT - 16) * 0.5;
+      if (score < bs) { bs = score; best = new THREE.Vector3(px, 0, pz); }
+    }
+    return best;
+  }
+  // does the box still sit between us (crouched) and the target?
+  coverHolds() {
+    const t = this.tgt().pos;
+    return !los(_t.set(this.pos.x, this.pos.y + 0.9, this.pos.z), _t2.set(t.x, t.y + 1.2, t.z));
+  }
   think(dt) {
     const p = this.tgt();
     this.aimT = Math.max(0, (this.aimT || 0) - dt);
+    let crouch = 0;
     if (this.goal) {
+      this.cover = null;
       this.steer(this.goal.x, this.goal.z, this.speed, dt, { stopDist: 0.6 });
+    } else if (this.cover) {
+      const d = this.steer(this.cover.x, this.cover.z, this.speed * 1.25, dt, { stopDist: 0.35 });
+      this.coverLife -= dt;
+      if (d < 0.8) {
+        // in cover: duck, then pop up to shoot, repeat
+        this.peekT -= dt;
+        if (this.peekT <= 0) { this.peeking = !this.peeking; this.peekT = this.peeking ? rand(1.4, 2.2) : rand(1.0, 2.0); if (this.peeking) this.cd = Math.min(this.cd, 0.25); }
+        crouch = this.peeking || this.burst > 0 ? 0 : 1;
+        // flanked, or been here a while: move
+        if (this.coverLife <= 0 || (!this.peeking && !this.coverHolds() && this.distToPlayer() < 30)) { this.cover = null; this.coverT = rand(3, 6); }
+      } else if (this.coverLife < -4) { this.cover = null; this.coverT = rand(2, 4); }
     } else {
       const d = this.distToPlayer();
       this.strafeT -= dt;
@@ -327,7 +375,16 @@ export class Stonks extends Enemy {
       if (d > 24 || !this.canSee) { tx = p.pos.x; tz = p.pos.z; }
       else if (d < 11) { tx = this.pos.x - dx * 4; tz = this.pos.z - dz * 4; }
       this.steer(tx, tz, this.speed, dt, { stopDist: 0.3 });
+      // look for something to hide behind every few seconds
+      this.coverT -= dt;
+      if (this.coverT <= 0) {
+        this.coverT = rand(2.5, 5);
+        if (Math.random() < 0.75) { const c = this.findCover(); if (c) { this.cover = c; this.coverLife = rand(9, 15); this.peeking = false; this.peekT = rand(0.6, 1.4); } }
+      }
     }
+    this.crouchK = damp(this.crouchK, crouch, 9, dt);
+    // ducked down: hold fire
+    if (this.crouchK > 0.5) { this.cd = Math.max(this.cd, 0.2); }
     this.facePlayer(dt);
     this.cd -= dt;
     if (this.cd <= 0 && this.canSee && this.distToPlayer() < 50 && p.alive) { this.burst = 3; this.cd = rand(2, 3); }
