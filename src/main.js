@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { G, pick, after, updateTimers, alivePlayers, local } from './game.js';
 import { Input, initInput, lockPointer, endFrame, down } from './input.js';
-import { initAudio, play, say, setVolume, startMusic, stopMusic, updateListener } from './audio.js';
+import { initAudio, play, say, setVolume, startMusic, stopMusic, updateListener, setRoom, setAmbience, setMusicIntensity } from './audio.js';
 import { HUD } from './hud.js';
 import { Player } from './player.js';
 import { updateEnemies, clearEnemies } from './enemies.js';
@@ -251,6 +251,25 @@ function resetAll() {
   HUD.hideBoss(); HUD.clearDebuffs(); HUD.death(false);
 }
 
+const SOUNDSCAPES = {
+  TheApproach: ['outdoor', 'outdoor'], NormieGate: ['courtyard', 'courtyard'], EmergencyMeeting: ['ship', 'ship'],
+  VineBoomChamber: ['temple', 'temple'], ThisIsFine: ['livingroom', 'livingroom'], SkibidiFinale: ['void', 'void'],
+};
+// how hard the music should go: enemies near you, a boss you can actually hurt
+let musicT = 0;
+function updateMusicIntensity(dt) {
+  if ((musicT -= dt) > 0) return;
+  musicT = 0.5;
+  const p = G.player;
+  let near = 0, boss = null;
+  for (const e of G.enemies) {
+    if (!e.alive || !e.hostile) continue;
+    if (e.rank === 'boss') boss = e;
+    else if (e.pos.distanceTo(p.pos) < 35) near++;
+  }
+  setMusicIntensity(0.28 + Math.min(0.45, near * 0.09) + (boss ? (boss.immune ? 0.15 : 0.4) : 0) + (G.cursed >= 4 ? 0.1 : 0));
+}
+
 function loadEncounter(i) {
   G.state = 'loading';
   if (G.net.isHost) G.net.hostLoad(i);
@@ -274,6 +293,9 @@ function loadEncounter(i) {
     G.nextNid = 1; // build() creates the same static actors with the same ids everywhere
     enc.build();
     bakeEnvironment();
+    // each arena sounds like itself: its own reverb + background
+    const snd = SOUNDSCAPES[E.name] || ['hall', null];
+    setRoom(snd[0]); setAmbience(snd[1]);
     const spawn = enc.spawn.clone();
     if (G.net.active) { spawn.x += (Math.random() - 0.5) * 6; spawn.z += Math.random() * 3; }
     G.player.reset(spawn, enc.spawnYaw);
@@ -432,6 +454,7 @@ window.simulate = (seconds, dt = 1 / 60) => { for (let t = 0; t < seconds; t += 
 
 function step(dt, doRender = true) {
   // the raid clock: counts while playing (cutscenes included), stops while paused or loading
+  if (G.state === 'playing' && !G.paused) updateMusicIntensity(dt);
   if (G.state === 'playing' && !G.paused && G.run && !G.net.isClient) {
     G.run.clock += dt;
     if (G.godMode) G.run.eligible = false; // nice try

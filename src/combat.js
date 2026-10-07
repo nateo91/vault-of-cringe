@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { G, rand, pick, local, nearestPlayer, playerById } from './game.js';
 import * as fx from './fx.js';
-import { play, playAt } from './audio.js';
+import { play, playAt, concuss } from './audio.js';
 import { moveCollide } from './world.js';
 import { textSprite, emojiSprite } from './textures.js';
 
@@ -56,7 +56,12 @@ export function los(a, b) {
 const _c = new THREE.Vector3();
 export function explode(pos, radius, dmg, { owner = 'player', color = 0xff8a2a, source = 'an explosion', knock = 1, big = 1, silent = false, localFx = false, ghost = false } = {}) {
   // projectile explosions are simulated on every machine, so their cosmetics stay local
-  const cosmetic = () => { fx.explosion(pos, radius, color); if (!silent) playAt(pos, 'explosion', big); };
+  const cosmetic = () => {
+    fx.explosion(pos, radius, color); if (!silent) playAt(pos, 'explosion', big);
+    // close enough to feel it: muffled ears + ringing (local only, every machine judges its own camera)
+    const d = G.camera.position.distanceTo(pos), r = radius * 2.2 + 2;
+    if (d < r && big >= 0.7) concuss(Math.min(1, (1 - d / r) * 1.3 * big));
+  };
   if (localFx) local(cosmetic); else cosmetic();
   G.shake += 0.25 * big * (ghost ? 0.4 : 1);
   if (ghost) return; // a teammate's rocket: their machine deals the damage
