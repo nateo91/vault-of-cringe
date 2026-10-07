@@ -75,6 +75,10 @@ Big Chungus, the Dog and Skibidi get cinematic boss intros on your first attempt
 
 You get 3 revives per encounter. Run out and the squad wipes, which restarts the encounter. You can start from any encounter in the main menu to practice.
 
+## Firing Range
+
+Pick **🎯 Firing Range** from "Start at encounter" to practise: dummies that never die (one per shield element, a strafing one, two at 50 m) with a live DPS meter. Press **G** to send a practice wave of real enemies (Doge pack, Stonks in cover, a Moai escort, Wizard + Sigmas, everything) and race your clear time. No loot drops here.
+
 ## Elements and shields
 
 Every gun has an element: 🔥 Solar, ⚡ Arc or 🟣 Void. The icon shows next to its name on the HUD and in the Armory.

@@ -5,7 +5,9 @@ import * as D from '../dressing.js';
 import { Encounter } from './base.js';
 import { setEnv, addBox, add, std, addStars } from '../world.js';
 import { tileTex, textSprite, IMPACT } from '../textures.js';
-import { Enemy, registerNetType } from '../enemies.js';
+import { Enemy, Doge, Stonks, MoaiKnight, Wizard, Sigma, spawnEnemy, registerNetType } from '../enemies.js';
+import { hit } from '../input.js';
+import { play } from '../audio.js';
 import { HUD } from '../hud.js';
 import * as fx from '../fx.js';
 
@@ -42,6 +44,14 @@ class TargetDummy extends Enemy {
   animate() { this.model.rotation.z = Math.sin(this.t * 7) * Math.min(1, this.flinch) * 0.25; }
 }
 
+const WAVES = [
+  { name: 'DOGE PACK', spawn: [[Doge, 6]] },
+  { name: 'STONKS IN COVER', spawn: [[Stonks, 4]] },
+  { name: 'MOAI ESCORT', spawn: [[MoaiKnight, 1], [Doge, 3]] },
+  { name: 'MOON + MOG', spawn: [[Wizard, 1], [Sigma, 2]] },
+  { name: 'EVERYTHING', spawn: [[Doge, 4], [Stonks, 2], [MoaiKnight, 1], [Sigma, 1]] },
+];
+
 export class FiringRange extends Encounter {
   static title = 'THE FIRING RANGE';
   static practice = true;
@@ -77,16 +87,43 @@ export class FiringRange extends Encounter {
       put(0, -3, { label: 'STRAFING', mover: true }), put(-14, -28, { label: '50 m' }), put(14, -28, { label: '50 m', major: true }),
     ];
     HUD.objective(FiringRange.title, 'Practice. The dummies never die.');
+    this.wave = 0; this.waveEnemies = []; this.waveT = 0; this.bestClear = {};
     this.ghost('The Firing Range. Try your weapons, your grenades, your elements. They can take it.');
   }
+  // practice waves: real enemies down the far end of the range (G to send the next one)
+  sendWave() {
+    const W = WAVES[this.wave % WAVES.length];
+    this.waveName = W.name; this.waveIdx = this.wave % WAVES.length; this.wave++;
+    let k = 0;
+    this.waveEnemies = [];
+    for (const [T, n] of W.spawn) for (let i = 0; i < n; i++, k++) this.waveEnemies.push(spawnEnemy(T, -18 + (k % 8) * 5, -44 - (k % 2) * 4, T === Wizard ? 4 : null));
+    for (const e of this.waveEnemies) e.drops = false; // practice: no loot farming
+    this.waveT = 0; this.waveDone = false;
+    play('alarm'); HUD.bigText(`WAVE: ${W.name}`, 'incoming', 1.6, 'warn');
+  }
   update(dt) {
+    if (hit('KeyG') && !this.waveEnemies.some((e) => e.alive)) this.sendWave();
+    let waveLine = 'Press [G] to send a practice wave.';
+    if (this.waveEnemies.length) {
+      const left = this.waveEnemies.filter((e) => e.alive).length;
+      if (left) { this.waveT += dt; waveLine = `${this.waveName}: ${left} left · ${this.waveT.toFixed(1)}s`; }
+      else {
+        if (!this.waveDone) {
+          this.waveDone = true;
+          const best = this.bestClear[this.waveIdx];
+          if (!best || this.waveT < best) this.bestClear[this.waveIdx] = this.waveT;
+          play('fanfare'); HUD.bigText('WAVE CLEARED', `${this.waveT.toFixed(1)} s`, 1.8, 'good');
+        }
+        waveLine = `${this.waveName} cleared in ${this.waveT.toFixed(1)}s (best ${this.bestClear[this.waveIdx].toFixed(1)}s). [G] next wave.`;
+      }
+    }
     // a DPS meter over the last 5 s, and the best burst so far
     const now = G.time;
     let sum = 0, total = 0;
     for (const d of this.dummies) { d.log = d.log.filter(([t]) => now - t < 30); for (const [t, v] of d.log) { total += v; if (now - t < 5) sum += v; } }
     const dps = Math.round(sum / 5);
     this.best = Math.max(this.best || 0, dps);
-    HUD.objective(null, `DPS (5 s): ${dps}\nBest: ${this.best}\nDamage (30 s): ${total}\nShields regrow after 2.5 s without damage.`);
+    HUD.objective(null, `DPS (5 s): ${dps}\nBest: ${this.best}\nDamage (30 s): ${total}\nShields regrow after 2.5 s without damage.\n${waveLine}`);
   }
 }
 registerNetType(TargetDummy, (o) => new TargetDummy(G.encounter, o || {}));
