@@ -135,33 +135,38 @@ export function addCharacterDetail(m, { stone = false } = {}) {
 // texels where a strand reaches that high (3D hash in object space, so it rides along with the body), with
 // darker roots and lighter tips. Opaque + discard, so no sorting problems.
 const furMats = new Map();
+// (all shells share ONE shader program: height/length/density are uniforms, so a furry enemy appearing
+// doesn't stall the game compiling a program per shell)
 function furMat(base, i, n, len, density) {
   const key = `${base.color.getHex()}|${i}|${n}|${len}|${density}`;
   if (furMats.has(key)) return furMats.get(key);
   const m = new THREE.MeshStandardMaterial({ color: base.color.clone(), roughness: 0.95, metalness: 0 });
   const h = (i + 1) / n;
+  const U = { uFurH: { value: h }, uFurLen: { value: len }, uFurDen: { value: density } };
   m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, U);
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vFurP;')
+      .replace('#include <common>', `#include <common>
+        varying vec3 vFurP; uniform float uFurH, uFurLen;`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
         vFurP = transformed;
-        transformed += normalize(objectNormal) * ${(len * h).toFixed(4)};
-        transformed.y -= ${(len * h * h * 0.35).toFixed(4)}; // a little droop`);
+        transformed += normalize(objectNormal) * uFurLen * uFurH;
+        transformed.y -= uFurLen * uFurH * uFurH * 0.35; // a little droop`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
-        varying vec3 vFurP;
+        varying vec3 vFurP; uniform float uFurH, uFurDen;
         float furHash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }`)
       .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
-        vec3 cell = floor(vFurP * ${density.toFixed(1)});
+        vec3 cell = floor(vFurP * uFurDen);
         float strand = furHash(cell);
         // strands taper: higher shells keep fewer, thinner hairs
-        vec3 f = fract(vFurP * ${density.toFixed(1)}) - 0.5;
+        vec3 f = fract(vFurP * uFurDen) - 0.5;
         float r = length(f.xz + f.xy * 0.5);
-        if (strand < ${h.toFixed(3)} * 0.85 + 0.1 || r > 0.5 * (1.0 - ${h.toFixed(3)} * 0.7)) discard;`)
+        if (strand < uFurH * 0.85 + 0.1 || r > 0.5 * (1.0 - uFurH * 0.7)) discard;`)
       .replace('#include <map_fragment>', `#include <map_fragment>
-        diffuseColor.rgb *= ${(0.62 + h * 0.5).toFixed(3)};`);
+        diffuseColor.rgb *= 0.62 + uFurH * 0.5;`);
   };
-  m.customProgramCacheKey = () => `fur-${i}-${n}-${len}-${density}`;
+  m.customProgramCacheKey = () => 'fur';
   furMats.set(key, m);
   return m;
 }

@@ -143,6 +143,7 @@ export class SkibidiFinale extends Encounter {
     for (const [x, z, w, d] of [[0, 4.5, 9.2, 0.2], [0, -4.5, 9.2, 0.2], [4.5, 0, 0.2, 9.2], [-4.5, 0, 0.2, 9.2]]) addBox(x, 0.9, z, w, 0.18, d, chrome, { collide: false });
     for (const [x, z] of [[-16, -16], [16, -16], [-16, 16], [16, 16]]) D.barrier(x, z, 6, 1.2, 6);
     D.floatingRocks({ count: 36, rMin: 45, rMax: 110 });
+    D.weather('ash', { color: 0xffb8ec, count: 900, speed: 1.1, wind: [0.6, 0.3], opacity: 0.7 }); // Ohio's pink ash
     D.dust({ min: [-30, 0.3, -30], max: [30, 14, 30], color: 0xffb8f0, count: 600 });
     D.lightShaft(0, 30, 0, { height: 30, top: 2.5, bottom: 8, color: 0xffc8f0, opacity: 0.14 });
     for (const [x, z] of [[-29, -29], [29, -29], [-29, 29], [29, 29]]) D.lamp(x, z, { color: 0xff4fd8, height: 5 });

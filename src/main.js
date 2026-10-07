@@ -285,7 +285,7 @@ const encClass = (i) => (i === RANGE_INDEX ? FiringRange : ENCOUNTERS[i]);
 
 const SOUNDSCAPES = {
   FiringRange: ['courtyard', 'outdoor'],
-  TheApproach: ['outdoor', 'outdoor'], NormieGate: ['courtyard', 'courtyard'], EmergencyMeeting: ['ship', 'ship'],
+  TheApproach: ['outdoor', 'storm'], NormieGate: ['courtyard', 'courtyard'], EmergencyMeeting: ['ship', 'ship'],
   VineBoomChamber: ['temple', 'temple'], ThisIsFine: ['livingroom', 'livingroom'], SkibidiFinale: ['void', 'void'],
 };
 // how hard the music should go: enemies near you, a boss you can actually hurt

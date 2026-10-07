@@ -107,7 +107,13 @@ export function setAmbience(kind) {
     gg.gain.setValueAtTime(g, when); gg.gain.exponentialRampToValueAtTime(0.0001, when + dur);
     chain(s, bf, gg, out); s.start(when, Math.random()); s.stop(when + dur + 0.02);
   };
-  if (kind === 'outdoor') { wind(0.09, 320); every(6, 14, (w) => blip(w, { f: 90, q: 0.7, dur: 1.4, g: 0.05, type: 'lowpass' })); }
+  if (kind === 'storm') {
+    wind(0.08, 300);
+    // rain: a steady hiss + the patter of drops on stone
+    const hiss = gain(0.07); chain(src(1.2), filt('highpass', 3500, 0.5), hiss, out); lfo(0.3, 0.015, hiss.gain, 0.07);
+    const body = gain(0.05); chain(src(0.8), filt('bandpass', 1200, 0.6), body, out);
+    every(0.02, 0.08, (w) => blip(w, { f: 2500 + Math.random() * 3000, q: 3, dur: 0.01, g: 0.015 + Math.random() * 0.02 }));
+  } else if (kind === 'outdoor') { wind(0.09, 320); every(6, 14, (w) => blip(w, { f: 90, q: 0.7, dur: 1.4, g: 0.05, type: 'lowpass' })); }
   else if (kind === 'courtyard') { wind(0.06, 450); every(3, 8, (w) => blip(w, { f: 3200, q: 6, dur: 0.05, g: 0.02 })); }
   else if (kind === 'ship') {
     // engine hum, air recyclers, the odd console beep
@@ -337,6 +343,11 @@ export const sfxs = {
   fanfare() { [392, 523, 659, 784, 659, 784, 1046].forEach((f, i) => tone({ type: 'square', freq: f, dur: 0.22, gain: 0.07, delay: i * 0.12, rev: 0.3 })); },
   wipe() { [392, 370, 349, 330].forEach((f, i) => tone({ type: 'sawtooth', freq: f, freqEnd: f * 0.97, dur: i === 3 ? 1.2 : 0.4, gain: 0.12, delay: i * 0.42, rev: 0.4 })); },
   sus() { tone({ type: 'square', freq: 300, freqEnd: 900, dur: 0.15, gain: 0.08 }); tone({ type: 'square', freq: 900, freqEnd: 300, dur: 0.15, gain: 0.08, delay: 0.16 }); },
+  thunder() {
+    noise({ dur: 0.25, freq: 3000, freqEnd: 400, gain: 0.5, rev: 0.6 });
+    noise({ dur: 4.0, freq: 220, freqEnd: 50, type: 'lowpass', gain: 0.9, attack: 0.15, rev: 0.8 });
+    tone({ freq: 48, freqEnd: 30, dur: 3.5, gain: 0.35, attack: 0.3 });
+  },
   troll() { [0, 0.11, 0.22, 0.33].forEach((d, i) => { tone({ type: 'sawtooth', freq: 300 - i * 18, freqEnd: 220 - i * 10, dur: 0.09, gain: 0.07, delay: d, rev: 0.2 }); noise({ dur: 0.06, freq: 1800, q: 3, type: 'bandpass', gain: 0.1, delay: d }); }); },
   rick() { [[523, 659, 784], [587, 740, 880], [659, 831, 988]].forEach((ch, i) => ch.forEach((f) => tone({ type: 'square', freq: f, dur: 0.16, gain: 0.05, delay: i * 0.18, rev: 0.3 }))); noise({ dur: 0.05, freq: 7000, type: 'highpass', gain: 0.2, delay: 0.54 }); },
   sip() { noise({ dur: 0.5, freq: 900, freqEnd: 500, q: 4, type: 'bandpass', gain: 0.25 }); tone({ freq: 220, freqEnd: 180, dur: 0.1, gain: 0.08, delay: 0.55 }); },

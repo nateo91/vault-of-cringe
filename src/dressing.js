@@ -2,7 +2,8 @@
 // Anything animated registers in G.worldAnims (cleared with the world).
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { G, rand, pick } from './game.js';
+import { G, rand, pick, local } from './game.js';
+import { play } from './audio.js';
 import { add, addBox, addCyl, std, pointLight } from './world.js';
 import { textTex, emojiTex, IMPACT } from './textures.js';
 import { glowTex } from './fx.js';
@@ -471,3 +472,82 @@ export function birds({ center = [0, 0, 0], count = 12, radius = [20, 45], heigh
     }
   });
 }
+
+// ---------------- weather ----------------
+// Precipitation that follows the camera (so it's "everywhere" for the price of a box around you).
+// kind 'rain': fast streaks (line segments) with splashes; 'ash'/'snow': slow drifting flakes (points).
+export function weather(kind = 'rain', { count = 2600, box = [36, 22, 36], color = 0xaec4e0, wind = [2, 0], speed = 22, opacity = 0.45 } = {}) {
+  const [bx, by, bz] = box;
+  const pos = new Float32Array(count * 3), rnd = new Float32Array(count);
+  for (let i = 0; i < count; i++) { pos[i * 3] = (Math.random() - 0.5) * bx; pos[i * 3 + 1] = Math.random() * by; pos[i * 3 + 2] = (Math.random() - 0.5) * bz; rnd[i] = Math.random(); }
+  let obj, geo;
+  if (kind === 'rain') {
+    const seg = new Float32Array(count * 6);
+    geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(seg, 3));
+    obj = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false, fog: true }));
+  } else {
+    geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+    obj = new THREE.Points(geo, new THREE.PointsMaterial({ color, size: kind === 'ash' ? 0.09 : 0.07, transparent: true, opacity, depthWrite: false, map: glowTex, blending: kind === 'ash' ? THREE.NormalBlending : THREE.AdditiveBlending }));
+  }
+  obj.frustumCulled = false; add(obj);
+  let splashT = 0, t = 0;
+  animate((dt) => {
+    t += dt;
+    const cam = G.camera.position, a = geo.attributes.position.array;
+    for (let i = 0; i < count; i++) {
+      let x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2];
+      if (kind === 'rain') { y -= speed * dt * (0.8 + rnd[i] * 0.4); x += wind[0] * dt; z += wind[1] * dt; }
+      else { y -= speed * dt * (0.5 + rnd[i]); x += (wind[0] + Math.sin(t * 0.7 + rnd[i] * 20) * 0.8) * dt; z += (wind[1] + Math.cos(t * 0.6 + rnd[i] * 17) * 0.8) * dt; }
+      if (y < 0) y += by;
+      x = ((x + bx / 2) % bx + bx) % bx - bx / 2; z = ((z + bz / 2) % bz + bz) % bz - bz / 2;
+      pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+      const wx = cam.x + x, wy = cam.y - by * 0.35 + y, wz = cam.z + z;
+      if (kind === 'rain') {
+        const len = 0.55 + rnd[i] * 0.4;
+        a[i * 6] = wx; a[i * 6 + 1] = wy; a[i * 6 + 2] = wz;
+        a[i * 6 + 3] = wx - wind[0] * 0.03; a[i * 6 + 4] = wy + len; a[i * 6 + 5] = wz - wind[1] * 0.03;
+      } else { a[i * 3] = wx; a[i * 3 + 1] = wy; a[i * 3 + 2] = wz; }
+    }
+    geo.attributes.position.needsUpdate = true;
+    // splashes around your feet
+    if (kind === 'rain' && (splashT -= dt) <= 0) {
+      splashT = 0.03;
+      const sx = cam.x + (Math.random() - 0.5) * 18, sz = cam.z + (Math.random() - 0.5) * 18;
+      const gy = groundAt(sx, sz, cam.y + 2);
+      if (gy > -50) splashFx(sx, gy, sz, color);
+    }
+  });
+  return obj;
+}
+// a tiny ring + droplets where rain lands (pooled; no allocations per splash)
+const splashPool = [];
+function splashFx(x, y, z, color) {
+  let s = splashPool.find((q) => q.t <= 0);
+  if (!s) {
+    if (splashPool.length > 40) return;
+    const m = new THREE.Mesh(new THREE.RingGeometry(0.05, 0.08, 12), new THREE.MeshBasicMaterial({ color, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+    m.rotation.x = -Math.PI / 2; add(m);
+    s = { m, t: 0 }; splashPool.push(s);
+    animate((dt) => { if (s.t <= 0) { s.m.visible = false; return; } s.t -= dt; const k = 1 - s.t / 0.35; s.m.visible = true; s.m.scale.setScalar(1 + k * 3); s.m.material.opacity = (1 - k) * 0.5; });
+  }
+  s.t = 0.35; s.m.position.set(x, y + 0.03, z);
+}
+function groundAt(x, z, from) {
+  let best = -99;
+  for (const b of G.colliders) if (x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z && b.max.y <= from && b.max.y > best) best = b.max.y;
+  return best;
+}
+// Lightning: the sky and the world flash, then thunder rolls in a beat later
+export function lightning({ every = [8, 18], color = 0xcfe0ff } = {}) {
+  const l = new THREE.DirectionalLight(color, 0); l.position.set(20, 60, -30); add(l);
+  let next = rand(every[0] * 0.5, every[1] * 0.5), flash = 0, pending = null;
+  animate((dt) => {
+    next -= dt;
+    if (next <= 0) { next = rand(every[0], every[1]); flash = 1; pending = rand(0.4, 1.8); }
+    if (pending !== null && (pending -= dt) <= 0) { pending = null; if (G.state === 'playing') thunder(); }
+    flash = Math.max(0, flash - dt * 3.5);
+    const f = flash > 0.6 ? 1 : flash > 0.4 ? 0.2 : flash; // a double flicker
+    l.intensity = f * 3.5;
+  });
+}
+const thunder = () => local(() => play('thunder'));
