@@ -33,16 +33,40 @@ const GradeShader = {
     vignette: { value: 0.32 }, grain: { value: 0.035 }, aberration: { value: 0.0006 },
     hurt: { value: 0 }, saturation: { value: 1.08 }, contrast: { value: 1.04 }, posterize: { value: 0 },
     tint: { value: new THREE.Color(1, 1, 1) }, lift: { value: 0.0 },
+    sunPos: { value: new THREE.Vector2(0.5, 0.5) }, sunVis: { value: 0 }, sunColor: { value: new THREE.Color(1, 0.9, 0.7) }, aspect: { value: 1.6 },
   },
   vertexShader: /* glsl */`varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */`
     uniform sampler2D tDiffuse; uniform float time, vignette, grain, aberration, hurt, saturation, contrast, posterize, lift; uniform vec3 tint;
+    uniform vec2 sunPos; uniform float sunVis, aspect; uniform vec3 sunColor;
+    // lens flare: a halo, an anamorphic streak, and ghosts strung along the line through the screen centre
+    vec3 flare(vec2 uv) {
+      if (sunVis < 0.01) return vec3(0.0);
+      vec2 a = vec2(aspect, 1.0);
+      vec2 d = (uv - sunPos) * a;
+      float r = length(d);
+      vec3 c = sunColor * (exp(-r * 9.0) * 0.35 + exp(-r * 2.5) * 0.06);
+      c += sunColor * exp(-abs(d.y) * 160.0) * exp(-abs(d.x) * 2.2) * 0.25;
+      vec2 axis = vec2(0.5) - sunPos;
+      for (int i = 0; i < 5; i++) {
+        float k = float(i) * 0.38 + 0.35;
+        vec2 g = (uv - (sunPos + axis * k * 2.0)) * a;
+        float size = 0.02 + 0.03 * fract(k * 7.13);
+        float disc = smoothstep(size, size * 0.6, length(g));
+        vec3 tintG = mix(vec3(0.4, 0.7, 1.0), vec3(1.0, 0.5, 0.8), fract(k * 3.7));
+        c += tintG * disc * 0.13;
+      }
+      float ring = exp(-pow((length((uv - (sunPos + axis * 2.0)) * a) - 0.18) * 40.0, 2.0));
+      c += vec3(0.6, 0.8, 1.0) * ring * 0.07;
+      return c * sunVis;
+    }
     varying vec2 vUv;
     float rand(vec2 c){ return fract(sin(dot(c, vec2(12.9898, 78.233))) * 43758.5453); }
     void main(){
       vec2 d = vUv - 0.5;
       float ab = aberration + hurt * 0.006;
       vec3 c = vec3(texture2D(tDiffuse, vUv + d * ab).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - d * ab).b);
+      c += flare(vUv);
       float l = dot(c, vec3(0.299, 0.587, 0.114));
       c = mix(vec3(l), c, saturation);
       c = (c - 0.5) * contrast + 0.5 + lift;
@@ -171,7 +195,7 @@ export function render(dt) {
     r.autoClear = true;
     return;
   }
-  if (grade) { grade.uniforms.time.value = performance.now() / 1000; grade.uniforms.hurt.value = hurtFx; }
+  if (grade) { grade.uniforms.time.value = performance.now() / 1000; grade.uniforms.hurt.value = hurtFx; updateFlare(dt); }
   if (dof) {
     dof.enabled = !!G.cine;
     if (G.cine) dof.uniforms.focus.value = damp(dof.uniforms.focus.value, G.cine.focus || 6, 8, dt);
@@ -196,6 +220,29 @@ export function bakeEnvironment(height = 2.5) {
   arenaEnv = rt;
   G.scene.environment = rt.texture; G.scene.environmentIntensity = 0.75;
   G.vmScene.environment = rt.texture; G.vmScene.environmentIntensity = 1.1;
+}
+
+// Where's the sun on screen, and can we see it? (fades when a wall or pillar is in the way)
+const _sp = new THREE.Vector3(), _sd = new THREE.Vector3(), _ray = new THREE.Ray(), _hit = new THREE.Vector3();
+let sunVis = 0;
+function updateFlare(dt) {
+  const u = grade.uniforms, sun = G.sun;
+  let target = 0;
+  if (sun && G.state === 'playing' && !G.paused && G.flares !== false) {
+    _sd.copy(sun.userData.offset).normalize();
+    _sp.copy(G.camera.position).addScaledVector(_sd, 100).project(G.camera);
+    if (_sp.z < 1 && Math.abs(_sp.x) < 1.25 && Math.abs(_sp.y) < 1.25) {
+      u.sunPos.value.set(_sp.x * 0.5 + 0.5, _sp.y * 0.5 + 0.5);
+      _ray.set(G.camera.position, _sd);
+      let blocked = false;
+      for (const b of G.colliders) if (_ray.intersectBox(b, _hit)) { blocked = true; break; }
+      if (!blocked) target = (1 - Math.max(0, Math.hypot(_sp.x, _sp.y) - 0.8) * 1.5) * (G.player?.scoped ? 0.3 : 1);
+    }
+    u.sunColor.value.copy(sun.color);
+  }
+  sunVis = damp(sunVis, Math.max(0, Math.min(1, target)), 7, dt);
+  u.sunVis.value = sunVis;
+  u.aspect.value = innerWidth / innerHeight;
 }
 
 // ---------- sky ----------
