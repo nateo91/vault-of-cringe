@@ -142,7 +142,7 @@ function updateLobby() {
 // Host tells everyone to (re)load an encounter / that the squad wiped / that the raid is done.
 Net.hostLoad = (i) => Net.broadcast({ t: 'load', i });
 Net.hostWipe = (reason) => Net.broadcast({ t: 'wipe', reason });
-Net.hostVictory = () => Net.broadcast({ t: 'victory' });
+Net.hostVictory = (run) => Net.broadcast({ t: 'victory', run });
 
 function myState() {
   const p = G.player;
@@ -156,7 +156,7 @@ function buildSnap() {
   const pk = G.pickups.filter((p) => p.alive).map((p) => [p.nid, p.kind, r2(p.pos.x), r2(p.pos.y), r2(p.pos.z)]);
   const pl = [['host', myState()]];
   for (const [id, p] of Net.peers) if (p.state) pl.push([id, p.state]);
-  return { t: 'snap', i: G.encounterIndex, en, pk, pl, es: G.encounter?.netState?.() ?? 0, hud: Net.hud };
+  return { t: 'snap', i: G.encounterIndex, en, pk, pl, es: G.encounter?.netState?.() ?? 0, hud: Net.hud, rc: G.run ? [Math.round(G.run.clock * 10) / 10, G.run.eligible ? 1 : 0] : 0 };
 }
 
 function hostTick() {
@@ -202,7 +202,7 @@ function onClientData(msg) {
     case 'lobby': Net.lobby = msg.players; Net.onLobby?.(msg.players); break;
     case 'load': Net.onLoad?.(msg.i); break;
     case 'wipe': Net.onWipe?.(msg.reason); break;
-    case 'victory': Net.onVictory?.(); break;
+    case 'victory': Net.onVictory?.(msg.run); break;
     case 'evs': for (const ev of msg.ev) handleEvent(ev); break;
     case 'snap': applySnap(msg); break;
   }
@@ -253,6 +253,7 @@ function applySnap(s) {
     av.setState(st);
   }
   for (const [id, av] of G.avatars) if (!pseen.has(id)) { av.dispose(); G.avatars.delete(id); }
+  G.runView = s.rc || null; // the host's raid clock, for the HUD timer
   // shared HUD state
   for (const k in s.hud) {
     const v = JSON.stringify(s.hud[k]);

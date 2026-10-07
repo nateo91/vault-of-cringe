@@ -90,6 +90,18 @@ The perk pool has D2 classics and meme perks:
 - **Memes:** Stonks, Ratio, Vine Boom, Touch Grass, Rizz.
 - **Exotic signature perks:** Wolfpack Rounds, Memento Potato, 360 No Scope.
 
+## Leaderboard
+
+Every run has a clock in the objective panel (it doesn't count while the game is paused). A clear counts for the **🏆 Leaderboard** on the main menu if you:
+- start from **The Approach**, and
+- never turn on god mode or debug mode.
+
+Runs that start at a later encounter, or that use cheats, show up as **PRACTICE**.
+
+- The board stores your top 25 clears, with splits for each encounter, a "best segments" column and a sum-of-best time.
+- In co-op, the host's clock is the official time, and the clear is saved for everyone in the fireteam.
+- Boards are saved in each player's own browser. Hit **📋 COPY RESULT** on the victory screen and paste it in the group chat to settle disputes.
+
 ## Sound
 
 World sounds are 3D (headphones recommended):
@@ -108,7 +120,7 @@ Both the main menu and the pause menu have:
 
 ## Cheats / debug
 
-- Open the console during a run and type `G.godMode = true`.
+- Open the console during a run and type `G.godMode = true`. That run won't count for the leaderboard.
 - `?debug` in the URL skips pause-on-unfocus and adds console helpers (`startAt(n)`, `drive(seconds, fn)`, `autoShoot`).
 
 ## Code map
@@ -119,6 +131,7 @@ Both the main menu and the pause menu have:
 - `src/player.js`: movement, firing, abilities, supers, viewmodel animation
 - `src/arsenal.js`: weapon definitions, perks + perk engine, loot rolls, saved inventory, new gun models
 - `src/inventory.js`: the Armory screen
+- `src/leaderboard.js`: clear times, splits, and the leaderboard screen
 - `src/enemies.js`: enemy base class + roster (Doge, Stonks, Nyan, Sus Sniper, Moai Knight, Wizard, Sigma)
 - `src/encounters/*.js`: one file per encounter, including its boss and mechanics (`approach.js` is the walk-in)
 - `src/rigs.js`: jointed, animated enemy models (rig system, walk cycles, attack poses, rim lighting)

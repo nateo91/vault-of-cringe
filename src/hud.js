@@ -7,6 +7,7 @@ import { PERKS, DEFS } from './arsenal.js';
 import * as THREE from 'three';
 const _wp = new THREE.Vector3();
 const $ = (s) => document.querySelector(s);
+const fmtClock = (t) => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
 let els = {};
 let ghostTimer = 0, bigTimer = 0, hitTimer = 0;
 const last = {};
@@ -26,7 +27,7 @@ export const HUD = {
       weapons: $('#weapons'), killfeed: $('#killfeed'), hit: $('#hitmarker'), cross: $('#crosshair'), scope: $('#scope'), scopeRng: $('#scope .rng'),
       vignette: $('#vignette'), pips: $('#cursed .pips'), revives: $('#revives'), debuffs: $('#debuffs'),
       prompt: $('#prompt'), promptText: $('#prompt .ptext'), promptFill: $('#prompt .pfill'), fireteam: $('#fireteam'),
-      wp: $('#waypoint'), wpDist: $('#waypoint .wp-d'),
+      wp: $('#waypoint'), wpDist: $('#waypoint .wp-d'), timer: $('#raidtimer'),
       death: $('#deathscreen'), deathSub: $('#deathscreen .sub'), deepfry: $('#deepfry'),
     };
   },
@@ -140,6 +141,9 @@ export const HUD = {
     els.gren.classList.toggle('ready', p.grenadeCd <= 0);
     set('mc', els.meleeCd, 'height', (p.meleeCd / p.meleeMax * 100) + '%');
     els.melee.classList.toggle('ready', p.meleeCd <= 0);
+    // raid timer (the host's clock in co-op)
+    const rc = G.net.isClient ? G.runView : G.run && [G.run.clock, G.run.eligible ? 1 : 0];
+    if (rc) { text('rt', els.timer, (rc[1] ? '⏱ ' : '⏱ PRACTICE · ') + fmtClock(rc[0])); els.timer.classList.toggle('practice', !rc[1]); }
     // objective waypoint: a diamond that sticks to the screen edge when off-screen
     if (G.waypoint && p.alive) {
       _wp.copy(G.waypoint).project(G.camera);

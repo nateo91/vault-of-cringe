@@ -13,6 +13,7 @@ import { initRenderer, render, applyQuality, followSun } from './render.js';
 import { updateDressing } from './dressing.js';
 import { loadInventory, rollLoot, DEFS, PERKS } from './arsenal.js';
 import { initArmory, openArmory, closeArmory, isOpen as armoryOpen } from './inventory.js';
+import { recordRun, formatTime, renderBoard, clearBoard, shareText } from './leaderboard.js';
 import { hostGame, joinGame, netUpdate, resetClientWorld, leave, clean } from './net.js';
 import { TheApproach } from './encounters/approach.js';
 import { NormieGate } from './encounters/normie.js';
@@ -138,9 +139,12 @@ function setupMenus() {
   $('#restartEnc').onclick = () => { $('#pause').classList.add('hidden'); G.paused = false; G.player.revives = 3; loadEncounter(G.encounterIndex); lockPointer(canvas); };
   $('#quit').onclick = () => { leave(); location.reload(); };
   $('#armoryBtn').onclick = () => openArmory();
+  $('#boardBtn').onclick = () => { renderBoard($('#leaderboard')); $('#leaderboard').classList.remove('hidden'); };
+  $('#boardClose').onclick = () => $('#leaderboard').classList.add('hidden');
+  $('#boardClear').onclick = () => { if (confirm('Delete every saved clear on this browser?')) { clearBoard(); renderBoard($('#leaderboard')); } };
   $('#pauseArmory').onclick = () => { $('#pause').classList.add('hidden'); openArmory(); };
   $('#again').onclick = () => {
-    if (G.net.isHost) { $('#victory').classList.add('hidden'); G.stats.start = performance.now(); loadEncounter(0); lockPointer(canvas); }
+    if (G.net.isHost) { $('#victory').classList.add('hidden'); G.stats.start = performance.now(); G.runLoot = []; beginRun(0); loadEncounter(0); lockPointer(canvas); }
     else if (!G.net.isClient) location.reload();
   };
   canvas.addEventListener('click', () => { if (G.state === 'playing' && !Input.locked) lockPointer(canvas); });
@@ -185,7 +189,7 @@ function setupCoop() {
     loadEncounter(i);
   };
   G.net.onWipe = (reason) => showWipe(reason);
-  G.net.onVictory = () => victory();
+  G.net.onVictory = (run) => victory(run);
   G.net.onHostLost = () => {
     G.state = 'wipe';
     $('#wipe .wipe-title').textContent = 'HOST LEFT';
@@ -231,7 +235,11 @@ function createPlayer() {
 function startRaid(index) {
   $('#menu').classList.add('hidden');
   createPlayer();
+  beginRun(index);
   loadEncounter(index);
+}
+function beginRun(index) {
+  G.run = { id: Math.random().toString(36).slice(2) + Date.now().toString(36), clock: 0, splits: [], eligible: index === 0 && !G.debug, wipes: 0, startIdx: index };
 }
 
 function resetAll() {
@@ -320,6 +328,7 @@ function showWipe(reason) {
 }
 function wipe(reason) {
   if (G.state !== 'playing' || G.net.isClient) return;
+  if (G.run) G.run.wipes++;
   if (G.net.isHost) G.net.hostWipe(reason);
   showWipe(reason);
   setTimeout(() => {
@@ -330,6 +339,7 @@ function wipe(reason) {
 }
 
 function onEncounterComplete() {
+  if (G.run) G.run.splits.push({ name: ENCOUNTERS[G.encounterIndex].title, t: +G.run.clock.toFixed(2) });
   if (G.encounter?.traversal) {
     play('superReady');
     HUD.bigText('THE VAULT OF CRINGE', 'the raid begins', 3, 'meme');
@@ -343,12 +353,32 @@ function onEncounterComplete() {
   for (let i = 0; i < 4; i++) new Pickup(i % 2 ? 'special' : 'heavy', G.player.pos.clone().setY(G.player.pos.y + 2));
   after(5, () => {
     if (G.encounterIndex + 1 < ENCOUNTERS.length) loadEncounter(G.encounterIndex + 1);
-    else { if (G.net.isHost) G.net.hostVictory(); victory(); }
+    else { const run = finishRun(); if (G.net.isHost) G.net.hostVictory(run); victory(run); }
   });
 }
 
-function victory() {
+// Package the clear: time, splits, who was in the fireteam.
+function finishRun() {
+  const r = G.run;
+  if (!r) return null;
+  const team = [{ name: G.net.active ? G.net.name : (localStorage.getItem('voc-name') || 'Guardian'), cls: G.player.cls }, ...[...G.avatars.values()].map((a) => ({ name: a.name, cls: a.cls }))];
+  return { id: r.id, time: +r.clock.toFixed(2), date: Date.now(), team, wipes: r.wipes, kills: G.stats.kills, splits: r.splits, eligible: r.eligible };
+}
+
+function victory(run = null) {
   G.state = 'victory';
+  // the leaderboard
+  const L = $('#victory .clear');
+  if (run && run.eligible) {
+    const res = recordRun(run);
+    L.innerHTML = `<div class="ct-label">CLEAR TIME</div><div class="ct-time">${formatTime(run.time)}</div>`
+      + (res.pb ? '<div class="ct-pb">⚡ NEW PERSONAL BEST ⚡</div>' : res.rank ? `<div class="ct-rank">#${res.rank} on your board</div>` : '<div class="ct-rank">not in your top 25. skill issue.</div>')
+      + `<div class="ct-splits">${run.splits.map((s, i) => `<span>${s.name.replace(/^THE /, '')} <b>${formatTime(s.t - (i ? run.splits[i - 1].t : 0), false)}</b></span>`).join('')}</div>`
+      + '<button class="btn ghostbtn inline" id="copyRun">📋 COPY RESULT</button>';
+    $('#copyRun').onclick = (e) => { navigator.clipboard?.writeText(shareText(run)); e.target.textContent = '✅ COPIED — paste it in the group chat'; };
+  } else if (run) {
+    L.innerHTML = `<div class="ct-label">PRACTICE RUN · ${formatTime(run.time)}</div><div class="ct-rank">${G.debug || run.startIdx !== 0 ? 'Start from The Approach' : 'No cheats'} to put a time on the leaderboard.</div>`;
+  } else L.innerHTML = '';
   stopMusic();
   local(() => { play('fanfare'); play('airhorn'); say('raid complete. you are now terminally online.', 'ghost'); });
   document.exitPointerLock?.();
@@ -357,7 +387,7 @@ function victory() {
   const acc = s.shots ? Math.round((s.hits / s.shots) * 100) : 0;
   const V = $('#victory');
   V.querySelector('.stats').innerHTML = [
-    ['Time', `${mins}:${String(secs).padStart(2, '0')}`], ['Memes Deleted', s.kills], ['Crits', s.crits],
+    ['Time', run ? formatTime(run.time, false) : `${mins}:${String(secs).padStart(2, '0')}`], ['Memes Deleted', s.kills], ['Crits', s.crits],
     ['Deaths', s.deaths], ['Wipes', s.wipes], ['Bruh Moments', s.bruh], ['Accuracy', acc + '%'], ['Class', G.player.clsDef.name],
     G.net.active ? ['Fireteam', G.avatars.size + 1] : ['Title', 'Terminally Online'],
   ].map(([k, v]) => `<div>${k}<b>${v}</b></div>`).join('');
@@ -399,6 +429,11 @@ function frame() {
 window.simulate = (seconds, dt = 1 / 60) => { for (let t = 0; t < seconds; t += dt) step(dt, false); render(dt); };
 
 function step(dt, doRender = true) {
+  // the raid clock: counts while playing (cutscenes included), stops while paused or loading
+  if (G.state === 'playing' && !G.paused && G.run && !G.net.isClient) {
+    G.run.clock += dt;
+    if (G.godMode) G.run.eligible = false; // nice try
+  }
   if (G.state === 'menu') {
     const t = performance.now() / 1000;
     G.camera.position.set(Math.sin(t * 0.08) * 42, 14, Math.cos(t * 0.08) * 42);

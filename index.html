@@ -32,7 +32,7 @@
   <div id="crosshair" class="w-hc"><i></i><i></i><i></i><i></i><b class="ring"></b><b class="dot"></b></div>
   <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
 
-  <div id="objective"><div class="enc-name"></div><div class="obj-text"></div></div>
+  <div id="objective"><div class="enc-name"></div><div class="obj-text"></div><div id="raidtimer"></div></div>
 
   <div id="topright">
     <div id="cursed"><div class="label">CURSED LEVEL</div><div class="pips"></div></div>
@@ -116,6 +116,7 @@
     </div>
     <button id="launch" class="btn">LAUNCH</button>
     <button id="armoryBtn" class="btn ghostbtn inline">⚔ ARMORY (your loot)</button>
+    <button id="boardBtn" class="btn ghostbtn inline">🏆 LEADERBOARD</button>
     <div class="controls">
       <b>WASD</b> move · <b>SHIFT</b> sprint · <b>SPACE</b> jump (again in air!) · <b>MOUSE</b> shoot / aim ·
       <b>SHIFT+C</b> slide · <b>R</b> reload · <b>T</b> inspect · <b>TAB</b> armory · <b>1 2 3</b> / wheel swap · <b>Q</b> grenade · <b>V</b> melee · <b>F</b> super · <b>ESC</b> pause
@@ -136,6 +137,17 @@
     <div class="arm-head"><h2>ARMORY</h2><div class="arm-sub">Click a weapon to equip it · <b>TAB</b> / <b>ESC</b> to close · loot drops from engrams and encounter clears</div></div>
     <div class="arm-cols"></div>
     <button id="armClose" class="btn">DONE</button>
+  </div>
+</div>
+
+<div id="leaderboard" class="overlay hidden">
+  <div class="menu-inner lb-inner">
+    <div class="title-small">VAULT OF CRINGE</div>
+    <h2>🏆 RAID CLEAR TIMES</h2>
+    <div class="subtitle">Full runs from The Approach to the final flush, on this browser. Co-op clears are saved for the whole fireteam.</div>
+    <div class="lb-wrap"><div class="lb-table"></div><div class="lb-splits"></div></div>
+    <button id="boardClose" class="btn">BACK</button>
+    <button id="boardClear" class="btn ghostbtn inline">clear board</button>
   </div>
 </div>
 
@@ -179,6 +191,7 @@
   <div class="menu-inner">
     <div class="title-small">VAULT OF CRINGE</div>
     <h1 class="title">RAID COMPLETE</h1>
+    <div class="clear"></div>
     <div class="stats"></div>
     <div class="loot"></div>
     <button id="again" class="btn">RUN IT BACK</button>

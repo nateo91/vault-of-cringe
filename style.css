@@ -315,3 +315,32 @@ label { cursor: pointer; }
 #lore .lore-h { font-size: 11px; letter-spacing: .2em; color: #9fe2ff; font-weight: 700; }
 #lore .lore-t { font-size: 20px; font-weight: 700; margin: 4px 0 6px; }
 #lore .lore-b { font-size: 14px; line-height: 1.5; color: #d8e8f0; font-style: italic; }
+
+/* ---------- leaderboard ---------- */
+#raidtimer { margin-top: 8px; font-size: 15px; font-weight: 700; letter-spacing: .08em; color: #ffd23f; font-variant-numeric: tabular-nums; }
+#raidtimer.practice { color: #aab; font-weight: 600; }
+#raidtimer:empty { display: none; }
+#victory .clear { margin: 6px 0 4px; }
+#victory .ct-label { letter-spacing: .3em; font-size: 13px; font-weight: 700; color: #9fe2ff; }
+#victory .ct-time { font-family: var(--impact); font-size: 64px; color: #ffd23f; text-shadow: 0 0 24px rgba(255,210,63,.45); font-variant-numeric: tabular-nums; }
+#victory .ct-pb { font-weight: 700; letter-spacing: .25em; color: #7dff9a; animation: pulse 1s infinite; }
+#victory .ct-rank { color: #ccd; }
+#victory .ct-splits { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 8px 0; font-size: 13px; color: #bbc; }
+#victory .ct-splits b { color: #fff; }
+.lb-inner { max-width: 1000px; }
+.lb-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; text-align: left; margin: 10px 0 16px; }
+@media (max-width: 800px) { .lb-wrap { grid-template-columns: 1fr; } }
+.lb-table table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.lb-table th { font-size: 11px; letter-spacing: .2em; color: #9fe2ff; text-align: left; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,.15); }
+.lb-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,.07); }
+.lb-table tr.top td { background: rgba(255,210,63,.1); }
+.lb-table .rk { width: 36px; font-weight: 700; color: #ffd23f; }
+.lb-table .tm { font-family: var(--impact); font-size: 22px; font-variant-numeric: tabular-nums; }
+.lb-table .team span { display: inline-block; margin-right: 10px; white-space: nowrap; }
+.lb-table .dt { color: #889; font-size: 13px; }
+.lb-empty { padding: 30px; text-align: center; color: #aab; background: rgba(255,255,255,.04); }
+.lb-splits { background: rgba(255,255,255,.04); padding: 12px 14px; align-self: start; }
+.lb-sub { font-size: 11px; letter-spacing: .2em; color: #9fe2ff; font-weight: 700; margin-bottom: 6px; }
+.lb-splits .seg { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; color: #ccd; }
+.lb-splits .seg b { color: #fff; font-variant-numeric: tabular-nums; }
+.lb-splits .sob { border-top: 1px solid rgba(255,255,255,.15); margin-top: 6px; padding-top: 6px; color: #ffd23f; font-weight: 700; }
