@@ -270,6 +270,9 @@ Net.clientHit = (e, dmg, crit, info) => {
   if (e.hostile === false) return 0; // crewmates / statues: the host decides what happens
   if (e.immune || e.untargetable) { dmgNumber(e.top(), 'IMMUNE', 'immune'); return 0; }
   e.pop = 1; e.flinch = Math.min(1.2, (e.flinch || 0) + (crit ? 0.9 : 0.45));
+  let side = 0;
+  if (info.point) { const dx = info.point.x - e.pos.x, dz = info.point.z - e.pos.z; side = Math.sign(dx * Math.cos(e.yaw) - dz * Math.sin(e.yaw)) || 0; }
+  e.rig?.hit(crit, side);
   // predict the shield hit so the number shows in the shield's colour (the host does the real maths)
   if (e.shieldHp > 0) { const m = info.element === e.shieldEl; const sd = Math.round(dmg * (m ? 3 : 1)); e.shieldFlash = 1; dmgNumber(e.top(), sd, 'shield el-' + e.shieldEl + (m ? ' match' : '')); return sd; }
   const d = Math.max(1, Math.round(dmg));

@@ -675,7 +675,7 @@ export class Player {
     for (const [e, h] of hits) {
       const wasAlive = e.alive, hpBefore = e.hp;
       const dmg = w ? h.dmg * this.perks.dmgMult(w, e, h.crit) : h.dmg;
-      const dealt = e.takeDamage(dmg, h.crit, { hitscan: true, element: w?.def.element });
+      const dealt = e.takeDamage(dmg, h.crit, { hitscan: true, element: w?.def.element, point: h.point });
       if (dealt > 0) { any = true; G.stats.hits++; if (w) this.perks.onHit(w, e, h.crit); }
       anyCrit = anyCrit || (h.crit && dealt > 0);
       // on clients the proxy doesn't die locally; predict it so kill perks still feel instant

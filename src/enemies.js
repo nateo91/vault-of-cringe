@@ -97,7 +97,10 @@ export class Enemy {
     dmg = Math.max(1, Math.round(dmg));
     this.hp -= dmg; this.pop = 1; this.aggro = true;
     this.flinch = Math.min(1.2, this.flinch + (crit ? 0.9 : 0.45));
-    this.rig?.hit(crit);
+    // which side took it (in the enemy's own frame), so it twists away from the shot
+    let side = 0;
+    if (info.point) { const dx = info.point.x - this.pos.x, dz = info.point.z - this.pos.z; side = Math.sign(dx * Math.cos(this.yaw) - dz * Math.sin(this.yaw)) || 0; }
+    this.rig?.hit(crit, side);
     this.lastHitBy = info.from ?? null;
     this.lastCrit = crit;
     if (mine) fx.dmgNumber(this.top(_t), dmg, crit ? 'crit' : '');

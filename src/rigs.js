@@ -1,6 +1,6 @@
 // Jointed, procedurally animated enemy models. Every rig faces +Z with its feet at y=0.
 // rig.update(dt, { speed, aim, ... }) poses it; rig.play('attack') triggers a one-shot action;
-// rig.hit(crit) makes it flinch.
+// rig.hit(crit, side) makes it flinch (side: -1 hit on its left, +1 on its right, or random).
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { rand, damp } from './game.js';
@@ -63,7 +63,7 @@ export class Rig {
   play(name, dur = 0.4) { this.acts[name] = { t: 0, dur }; }
   // 0..1 progress of an action, or -1 if it isn't running
   act(name) { const a = this.acts[name]; return a ? Math.min(1, a.t / a.dur) : -1; }
-  hit(crit) { this.flinch = Math.min(1.2, this.flinch + (crit ? 0.9 : 0.45)); this.flinchSide = Math.random() < 0.5 ? -1 : 1; }
+  hit(crit, side) { this.flinch = Math.min(1.2, this.flinch + (crit ? 0.9 : 0.45)); this.flinchSide = side || (Math.random() < 0.5 ? -1 : 1); this.flinchCrit = crit ? 1 : Math.max(0, (this.flinchCrit || 0) - 0.5); }
   update(dt, s = {}) {
     this.t += dt;
     for (const k in this.acts) { const a = this.acts[k]; a.t += dt; if (a.t > a.dur) delete this.acts[k]; }
@@ -132,8 +132,9 @@ export class Humanoid extends Rig {
     j.spine.rotation.y = -Math.sin(p) * 0.1 * k;
     j.spine.rotation.x = 0.08 * k - fl * 0.35 + cr * 0.35;
     j.spine.rotation.z = fl * 0.12 * this.flinchSide;
+    j.spine.rotation.y += fl * 0.28 * this.flinchSide;
     j.chest.scale.setScalar(1 + Math.sin(this.t * 1.7) * 0.012);
-    j.head.rotation.x = -fl * 0.45 - this.mewK * 0.35 + (s.lookDown || 0);
+    j.head.rotation.x = -fl * (0.45 + (this.flinchCrit || 0) * 0.55) - this.mewK * 0.35 + (s.lookDown || 0);
     j.head.rotation.z = Math.sin(this.t * 0.9) * 0.04;
     // arms: swing when walking, right arm aims, mewing = finger to the jawline
     const swing = Math.sin(p) * 0.5 * k;
