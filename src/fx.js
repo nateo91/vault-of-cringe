@@ -242,6 +242,53 @@ export function implode(pos, radius = 4, color = 0x9a4dff) {
   }
 }
 
+// ---------- class grenades (visual only; the thrower's machine deals the damage) ----------
+export function grenadeField(kind, pos, life = 3) {
+  const P = pos.clone();
+  if (kind === 'solar') {
+    // a burning patch: a glowing disc, licking flames, embers
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(3.6, 40), new THREE.MeshBasicMaterial({ map: glowTex, color: new THREE.Color(0xff6a10).multiplyScalar(1.6), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+    disc.rotation.x = -Math.PI / 2; disc.position.copy(P).setY(P.y + 0.05);
+    addTimed(disc, life, (k, o) => { o.material.opacity = Math.min(1, k * 3) * (0.75 + Math.random() * 0.25); }, (o) => { o.geometry.dispose(); o.material.dispose(); });
+    let acc = 0;
+    addTimed(new THREE.Object3D(), life, (k, o, dt) => {
+      if ((acc += dt) < 0.05) return; acc = 0;
+      const a = rand(0, 6.28), r = rand(0, 3.2);
+      _burst(new THREE.Vector3(P.x + Math.cos(a) * r, P.y + 0.2, P.z + Math.sin(a) * r), Math.random() < 0.3 ? 0xffd060 : 0xff6a10, 1, 1.5, 0.18, 0.7, -5);
+    });
+    flashLight(P.clone().setY(P.y + 1), 0xff6a10, 30, 10, life);
+  } else if (kind === 'arc') {
+    // a pulse field: a crackling sphere that flares on each pulse, with lightning arcs
+    const sph = new THREE.Mesh(sphGeo, new THREE.MeshBasicMaterial({ color: new THREE.Color(0x7fd7ff).multiplyScalar(2), transparent: true, opacity: 0.15, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, wireframe: true }));
+    sph.position.copy(P).setY(P.y + 0.6);
+    let pulse = 0, pt = 0;
+    addTimed(sph, life, (k, o, dt) => {
+      pt -= dt;
+      if (pt <= 0) { pt = life / 4; pulse = 1; flashLight(P.clone().setY(P.y + 1), 0x7fd7ff, 40, 10, 0.15); _ringFx(P, 4.5, 0x7fd7ff, 0.3); }
+      pulse = Math.max(0, pulse - dt * 5);
+      o.scale.setScalar(4.5 * (0.8 + pulse * 0.25)); o.rotation.y += dt * 2; o.material.opacity = 0.08 + pulse * 0.35;
+      if (Math.random() < dt * 14) { const a = new THREE.Vector3().randomDirection().multiplyScalar(4).add(P).setY(P.y + rand(0.2, 3)); _tracer(P.clone().setY(P.y + 0.6), a, 0xbfefff, 0.03, 0.06); }
+    }, (o) => o.material.dispose());
+  } else {
+    // a vortex: a dark void core with a glowing rim, particles spiralling in
+    const core = new THREE.Mesh(sphGeo, new THREE.MeshBasicMaterial({ color: 0x14002a, transparent: true, opacity: 0.85, depthWrite: false }));
+    const rim = new THREE.Mesh(sphGeo, new THREE.MeshBasicMaterial({ color: new THREE.Color(0xb06cff).multiplyScalar(2.2), transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide, toneMapped: false }));
+    core.position.copy(P).setY(P.y + 1); rim.position.copy(core.position);
+    addTimed(core, life, (k, o) => { const s = 0.9 + Math.sin(k * 40) * 0.08; o.scale.setScalar(Math.min(1, (1 - k) * 8, k * 6) * s); }, (o) => o.material.dispose());
+    addTimed(rim, life, (k, o) => { o.scale.setScalar(Math.min(1, (1 - k) * 8, k * 6) * 1.25); }, (o) => o.material.dispose());
+    let acc = 0;
+    addTimed(new THREE.Object3D(), life, (k, o, dt) => {
+      if ((acc += dt) < 0.03) return; acc = 0;
+      if (parts.length >= MAX_PARTS) return;
+      const d = new THREE.Vector3().randomDirection(); d.y *= 0.4;
+      const s = new THREE.Sprite(glowMat(0xb06cff)); s.position.copy(core.position).addScaledVector(d, 5); s.scale.setScalar(0.2);
+      G.fxGroup.add(s);
+      parts.push({ m: s, v: d.multiplyScalar(-11), life: 0.42, max: 0.42, s: 0.2, grav: 0, drag: 0 });
+    });
+    flashLight(core.position.clone(), 0xb06cff, 25, 9, life);
+  }
+}
+
 // ---------- bullet holes ----------
 const decals = [];
 const decalGeo = new THREE.PlaneGeometry(1, 1);

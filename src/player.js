@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { addWear, bevelBox } from './surface.js';
 import { G, clamp, damp, rand, pick, after, local } from './game.js';
 import { Input, down, hit } from './input.js';
-import { moveCollide } from './world.js';
+import { moveCollide, groundY } from './world.js';
 import { raycast, explode, Projectile, los } from './combat.js';
 import * as fxm from './fx.js';
 import { play as rawPlay, say as rawSay } from './audio.js';
@@ -876,7 +876,9 @@ export class Player {
       this.grenadeCd = this.grenadeMax;
       const dir = this.aimDir(0); dir.y += 0.25;
       const pos = G.camera.position.clone().addScaledVector(dir, 0.6);
-      new Projectile({ pos, vel: dir.normalize().multiplyScalar(22), owner: 'player', dmg: 20, splash: 5.5, splashDmg: 170, gravity: 18, color: { hunter: 0xff8a2a, titan: 0x7fd7ff, warlock: 0xc58bff }[this.cls], size: 0.14, life: 2.5, trail: 0xffffff });
+      const el = { hunter: 'solar', titan: 'arc', warlock: 'void' }[this.cls];
+      new Projectile({ pos, vel: dir.normalize().multiplyScalar(22), owner: 'player', element: el, dmg: 20, splash: 4.5, splashDmg: 110, gravity: 18, color: { hunter: 0xff8a2a, titan: 0x7fd7ff, warlock: 0xc58bff }[this.cls], size: 0.14, life: 2.5, trail: 0xffffff,
+        onHit: (at) => this.grenadeField(el, at.clone()) });
       play('click');
       this.kickRV.x -= 6;
       this.perks.onGrenade();
@@ -904,6 +906,26 @@ export class Player {
     if (hit('KeyF') && this.superCharge >= 100 && !this.superActive) this.castSuper();
   }
 
+  // Class grenades leave something behind: an incendiary patch (Hunter), a pulse field (Titan), a vortex (Warlock).
+  // The thrower's machine ticks the damage; teammates get the visual.
+  grenadeField(el, at) {
+    const floorY = groundYAt(at);
+    const P = at.clone().setY(el === 'void' ? at.y : floorY);
+    fx.grenadeField(el, P, 3);
+    G.net.playerEv(['pfx', 'gren', v3(P), el]);
+    const R = el === 'solar' ? 3.6 : el === 'arc' ? 4.5 : 5;
+    const ticks = el === 'arc' ? 4 : 6, dmg = el === 'solar' ? 22 : el === 'arc' ? 45 : 28;
+    for (let i = 1; i <= ticks; i++) after(i * 3 / ticks, () => {
+      for (const e of G.enemies) {
+        if (!e.alive || e.untargetable || e.hostile === false) continue;
+        const d = e.center().distanceTo(P);
+        if (d > R + e.radius) continue;
+        e.takeDamage(dmg, false, { splash: true, element: el });
+        // the vortex drags things in (only where the enemy is simulated)
+        if (el === 'void' && !G.net.isClient && e.rank !== 'boss' && e.knockable !== false) e.vel.addScaledVector(P.clone().sub(e.center()).setY(0).normalize(), 6);
+      }
+    });
+  }
   castSuper() {
     this.superCharge = 0;
     play('superCast');
@@ -930,6 +952,7 @@ export class Player {
   }
 }
 
+function groundYAt(p) { return groundY(p.x, p.z, p.y + 0.5); }
 function jitter(dir, spread) {
   const a = Math.random() * Math.PI * 2, m = Math.sqrt(Math.random()) * spread;
   const right = new THREE.Vector3().crossVectors(dir, _up);
