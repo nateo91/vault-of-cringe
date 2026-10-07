@@ -45,6 +45,20 @@ class MoaiStatue extends Enemy {
   applyVis(v) { this.glow = v[0]; }
   think(dt) { this.glow = Math.max(this.enc.awaiting ? 0.15 : 0, this.glow - dt * 1.4); }
   animate(dt) {
+    // a boom: a ring of its colour sweeps out from the pillar and a beam fires into the sky (every machine)
+    if (this.glow > (this.prevGlow || 0) + 0.5) {
+      const base = this.pos.clone().setY(5.05);
+      local(() => { fx.ringFx(base, 7, this.def.color, 0.7); fx.burst(base.clone().setY(base.y + 5.5), this.def.color, 16, 6, 0.12, 0.7, 2); });
+      this.beamK = 1;
+    }
+    this.prevGlow = this.glow;
+    if (!this.beam) {
+      this.beam = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 1.1, 60, 16, 1, true), new THREE.MeshBasicMaterial({ color: new THREE.Color(this.def.color).multiplyScalar(2), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false, fog: false }));
+      this.beam.position.y = 35; this.mesh.add(this.beam);
+    }
+    this.beamK = Math.max(0, (this.beamK || 0) - dt * 1.6);
+    this.beam.material.opacity = this.beamK * 0.55; this.beam.visible = this.beamK > 0.01;
+    this.beam.scale.set(0.6 + this.beamK * 0.6, 1, 0.6 + this.beamK * 0.6);
     this.model.userData.headMat.emissiveIntensity = this.glow * 2;
     this.light.intensity = this.glow * 60;
     this.crystal.rotation.y += dt * 1.5;
