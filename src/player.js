@@ -103,7 +103,7 @@ function buildArms(cls, kind) {
   return { group: g, left };
 }
 
-function buildGun(kind) {
+export function buildGun(kind) {
   if (!['hc', 'gg', 'sg', 'rl'].includes(kind)) return buildModel(kind);
   const g = new THREE.Group();
   const parts = {};

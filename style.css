@@ -376,3 +376,12 @@ label { cursor: pointer; }
 #wipe:not(.hidden) .wipe-reason { animation-delay: 1.5s; }
 #wipe:not(.hidden) .wipe-joke { animation-delay: 2.1s; }
 @keyframes wipeFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ---------- armory turntable ---------- */
+.arm-view { position: relative; height: 210px; margin: 6px 0 14px; background: radial-gradient(ellipse at 50% 60%, rgba(120,110,160,.35), rgba(10,8,20,.6) 70%); border: 1px solid rgba(255,255,255,.08); }
+.arm-view canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+.arm-view canvas:active { cursor: grabbing; }
+.arm-view-name { position: absolute; left: 16px; bottom: 12px; font-weight: 700; font-size: 20px; letter-spacing: .06em; pointer-events: none; }
+.arm-view-name small { display: block; font-size: 11px; letter-spacing: .2em; opacity: .7; }
+.arm-view-name.exotic { color: #ffd23f; } .arm-view-name.legendary { color: #d9b8ff; }
+.arm-view-hint { position: absolute; right: 14px; bottom: 10px; font-size: 11px; letter-spacing: .15em; opacity: .45; pointer-events: none; }

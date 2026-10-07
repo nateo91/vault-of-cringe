@@ -1,6 +1,7 @@
 // The Armory: browse your loot, read perks, equip weapons. Tab / I toggles it in-game.
 import { G, ELEMENTS } from './game.js';
 import { DEFS, PERKS, INV, SLOT_NAMES, saveInventory } from './arsenal.js';
+import { showGun, startView, stopView } from './gunview.js';
 
 let root = null, onClose = null;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -14,6 +15,8 @@ export function initArmory(closeCb) {
     if (!card) return;
     equip(card.dataset.uid);
   });
+  // hovering a card puts that gun on the turntable
+  root.addEventListener('mouseover', (e) => { const c = e.target.closest('.arm-card'); if (c) preview(c.dataset.uid); });
   addEventListener('keydown', (e) => {
     if (!isOpen()) return;
     if (e.code === 'Tab' || e.code === 'KeyI' || e.code === 'Escape') { e.preventDefault(); closeArmory(); }
@@ -21,15 +24,28 @@ export function initArmory(closeCb) {
 }
 export const isOpen = () => root && !root.classList.contains('hidden');
 
+function preview(uid) {
+  const item = INV.items.find((i) => i.uid === uid);
+  if (!item) return;
+  const d = DEFS[item.id];
+  try { showGun(item.id, root.querySelector('.arm-view canvas')); } catch (e) { return; }
+  const n = root.querySelector('.arm-view-name');
+  n.innerHTML = `${ELEMENTS[d.element]?.icon || ''} ${esc(d.name)} <small>${d.rarity === 'exotic' ? 'EXOTIC' : 'LEGENDARY'} ${esc(d.type.toUpperCase())}</small>`;
+  n.className = 'arm-view-name ' + d.rarity;
+}
 export function openArmory() {
   render();
   root.classList.remove('hidden');
   G.uiOpen = true;
+  const uid = INV.equipped[0];
+  if (uid) preview(uid);
+  startView();
 }
 export function closeArmory() {
   if (!isOpen()) return;
   root.classList.add('hidden');
   G.uiOpen = false;
+  stopView();
   for (const i of INV.items) i.isNew = false;
   saveInventory();
   onClose?.();
