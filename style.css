@@ -102,6 +102,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060a; col
 .dn { position: absolute; left: 0; top: 0; font-weight: 700; font-size: 18px; color: #fff; text-shadow: 0 0 3px #000, 0 0 2px #000; will-change: transform; white-space: nowrap; }
 .dn.crit { color: #ffd23f; font-size: 22px; }
 .dn.immune { color: #bbb; font-size: 14px; letter-spacing: .1em; }
+.dn.shield { font-size: 17px; }
+.dn.el-solar { color: #ff9a3a; } .dn.el-arc { color: #8fe0ff; } .dn.el-void { color: #c08cff; }
+.dn.shield.match { font-size: 22px; text-shadow: 0 0 8px currentColor, 0 0 2px #000; }
+#weapons .w .wel { margin-right: 6px; font-size: 13px; }
 .dn.big { font-size: 28px; color: #ffd23f; }
 
 #vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 45%, rgba(255,0,0,.75) 100%); opacity: 0; }

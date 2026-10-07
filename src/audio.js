@@ -255,6 +255,8 @@ export const sfxs = {
   enemyShot() { tone({ type: 'square', freq: 900, freqEnd: 300, dur: 0.12, gain: 0.05 }); },
   laser() { tone({ type: 'sawtooth', freq: 1400, freqEnd: 500, dur: 0.15, gain: 0.05 }); },
   hurt() { noise({ dur: 0.18, freq: 600, gain: 0.5 }); tone({ type: 'square', freq: 120, freqEnd: 70, dur: 0.12, gain: 0.12 }); },
+  shieldHit() { tone({ type: 'triangle', freq: 1900, freqEnd: 1500, dur: 0.06, gain: 0.05 }); noise({ dur: 0.04, freq: 6000, type: 'highpass', gain: 0.08 }); },
+  shieldHitMatch() { tone({ type: 'square', freq: 900, freqEnd: 600, dur: 0.07, gain: 0.06 }); noise({ dur: 0.08, freq: 2500, q: 2, type: 'bandpass', gain: 0.18 }); },
   shieldBreak() { noise({ dur: 0.35, freq: 3500, type: 'highpass', gain: 0.5 }); tone({ freq: 1500, freqEnd: 300, dur: 0.3, gain: 0.15 }); },
   pickup() { tone({ freq: 700, freqEnd: 1400, dur: 0.12, gain: 0.15 }); },
   orb() { tone({ type: 'triangle', freq: 900, dur: 0.1, gain: 0.12 }); tone({ type: 'triangle', freq: 1350, dur: 0.12, gain: 0.1, delay: 0.06 }); },

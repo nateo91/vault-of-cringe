@@ -1,5 +1,5 @@
 // The Armory: browse your loot, read perks, equip weapons. Tab / I toggles it in-game.
-import { G } from './game.js';
+import { G, ELEMENTS } from './game.js';
 import { DEFS, PERKS, INV, SLOT_NAMES, saveInventory } from './arsenal.js';
 
 let root = null, onClose = null;
@@ -54,7 +54,7 @@ function card(item) {
   const stats = statBars(d);
   return `<div class="arm-card ${d.rarity} ${on ? 'on' : ''}" data-uid="${item.uid}">
     ${on ? '<div class="arm-badge">EQUIPPED</div>' : item.isNew ? '<div class="arm-badge new">NEW</div>' : ''}
-    <div class="arm-name">${esc(d.name)}</div>
+    <div class="arm-name">${ELEMENTS[d.element]?.icon || ''} ${esc(d.name)}</div>
     <div class="arm-type">${d.rarity === 'exotic' ? 'EXOTIC' : 'LEGENDARY'} ${esc(d.type.toUpperCase())}</div>
     ${stats}
     <div class="arm-perks">${perks}</div>

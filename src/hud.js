@@ -1,5 +1,5 @@
 // DOM HUD in the style of a certain space-looter.
-import { G, share, shareable, local } from './game.js';
+import { G, share, shareable, local, ELEMENTS } from './game.js';
 import { say } from './audio.js';
 import { setGrade } from './render.js';
 import { PERKS, DEFS } from './arsenal.js';
@@ -123,7 +123,7 @@ export const HUD = {
       const d = document.createElement('div');
       d.className = 'w ' + w.def.ammo + ' ' + w.def.rarity;
       const perks = (w.inst?.perks || []).map((k) => `<span title="${PERKS[k].name}: ${PERKS[k].desc}">${PERKS[k].icon}</span>`).join('');
-      d.innerHTML = `<div class="wtype">${i + 1} · ${w.def.type.toUpperCase()}</div><div class="wname">${w.def.name}</div><div class="wperks">${perks}</div><div class="ammo"></div>`;
+      d.innerHTML = `<div class="wtype">${i + 1} · ${w.def.type.toUpperCase()}</div><div class="wname"><span class="wel" title="${ELEMENTS[w.def.element]?.name || ''}">${ELEMENTS[w.def.element]?.icon || ''}</span>${w.def.name}</div><div class="wperks">${perks}</div><div class="ammo"></div>`;
       els.weapons.appendChild(d);
       w.el = d; w.ammoEl = d.querySelector('.ammo');
     });

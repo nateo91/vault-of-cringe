@@ -59,6 +59,7 @@ class SkibidiBoss extends Enemy {
 class MiniToilet extends Enemy {
   constructor(enc, i) {
     super({ name: 'Toilet Disciple', hp: 420, radius: 1.2, height: 3, rank: 'major', flying: true, gib: 0xffffff, deathLines: ['was flushed', 'went down the drain'] });
+    this.addShield('void');
     this.enc = enc; this.knockable = false; this.ang = i * Math.PI / 2; this.netArgs = [i];
     this.model = M.makeMiniToilet(); this.mesh.add(this.model);
     this.animate = (dt) => this.model.userData.head.update(dt, { open: Math.abs(Math.sin(this.t * 4 + i)), target: G.camera.position });

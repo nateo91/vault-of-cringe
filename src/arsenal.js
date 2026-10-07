@@ -67,6 +67,10 @@ export function rollPerks(def) {
   const pool = (col) => Object.entries(PERKS).filter(([, p]) => p.col === col && (!p.ok || p.ok(def))).map(([k]) => k);
   return [pick(pool('a')), pick(pool('b'))];
 }
+// every gun's element
+const ELEMENT_OF = { hc: 'solar', ar: 'arc', pr: 'void', sr: 'void', sg: 'arc', sn: 'solar', ns: 'arc', fr: 'void', rl: 'solar', mg: 'arc', gl: 'void' };
+for (const id in DEFS) DEFS[id].element = ELEMENT_OF[id] || 'solar';
+
 export function makeItem(id, perks = null) { return { uid: 'w' + (uidN++).toString(36), id, perks: perks || rollPerks(DEFS[id]), isNew: true }; }
 
 export const INV = { items: [], equipped: [null, null, null] };

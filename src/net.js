@@ -109,7 +109,7 @@ function onHostData(conn, msg) {
     }
     case 'hit': {
       const e = G.enemies.find((x) => x.nid === msg.n && x.alive);
-      if (e) e.takeDamage(msg.d, msg.c, { from: id, splash: msg.s });
+      if (e) e.takeDamage(msg.d, msg.c, { from: id, splash: msg.s, element: msg.el || null });
       break;
     }
     case 'ev':
@@ -266,10 +266,12 @@ export function resetClientWorld() { proxyPickups.forEach((p) => p.remove()); pr
 // Clients: report a hit on a proxy to the host, and predict the feedback locally.
 Net.clientHit = (e, dmg, crit, info) => {
   if (!e.alive) return 0;
-  Net.outbox.push(['__hit', e.nid, Math.round(dmg), !!crit, !!info.splash]);
+  Net.outbox.push(['__hit', e.nid, Math.round(dmg), !!crit, !!info.splash, info.element || 0]);
   if (e.hostile === false) return 0; // crewmates / statues: the host decides what happens
   if (e.immune || e.untargetable) { dmgNumber(e.top(), 'IMMUNE', 'immune'); return 0; }
   e.pop = 1; e.flinch = Math.min(1.2, (e.flinch || 0) + (crit ? 0.9 : 0.45));
+  // predict the shield hit so the number shows in the shield's colour (the host does the real maths)
+  if (e.shieldHp > 0) { const m = info.element === e.shieldEl; const sd = Math.round(dmg * (m ? 3 : 1)); e.shieldFlash = 1; dmgNumber(e.top(), sd, 'shield el-' + e.shieldEl + (m ? ' match' : '')); return sd; }
   const d = Math.max(1, Math.round(dmg));
   dmgNumber(e.top(), d, crit ? 'crit' : '');
   if (crit) G.stats.crits++;
@@ -284,7 +286,7 @@ function clientTick() {
   if (!Net.outbox.length) return;
   const hits = Net.outbox.filter((e) => e[0] === '__hit');
   const evs = Net.outbox.filter((e) => e[0] !== '__hit');
-  for (const h of hits) sendRaw(c, { t: 'hit', n: h[1], d: h[2], c: h[3], s: h[4] });
+  for (const h of hits) sendRaw(c, { t: 'hit', n: h[1], d: h[2], c: h[3], s: h[4], el: h[5] || null });
   if (evs.length) sendRaw(c, { t: 'ev', e: evs });
   Net.outbox.length = 0;
 }

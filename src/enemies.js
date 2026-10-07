@@ -1,6 +1,6 @@
 // Enemy base class + the common meme roster.
 import * as THREE from 'three';
-import { G, rand, pick, clamp, damp, dampAngle, distXZ, distToSegment, nearestPlayer, hurtPlayer, playerById, local } from './game.js';
+import { G, rand, pick, clamp, damp, dampAngle, distXZ, distToSegment, nearestPlayer, hurtPlayer, playerById, local, ELEMENTS, ELEMENT_KEYS } from './game.js';
 import * as fx from './fx.js';
 import { play, playAt } from './audio.js';
 import { moveCollide, pointInWorld } from './world.js';
@@ -17,6 +17,29 @@ const barMajorMat = new THREE.MeshBasicMaterial({ color: 0xffb21e, depthTest: fa
 const barImmuneMat = new THREE.MeshBasicMaterial({ color: 0x9a9a9a, depthTest: false });
 const _t = new THREE.Vector3(), _t2 = new THREE.Vector3(), _prev = new THREE.Vector3();
 const r2 = (n) => Math.round(n * 100) / 100;
+
+// ---- elemental shields: a fresnel bubble with a hex shimmer that flares when hit ----
+const shieldGeo = new THREE.IcosahedronGeometry(1, 3);
+function shieldMaterial(color) {
+  return new THREE.ShaderMaterial({
+    uniforms: { uColor: { value: new THREE.Color(color) }, uFlash: { value: 0 }, uTime: { value: 0 } },
+    vertexShader: `varying vec3 vN; varying vec3 vV; varying vec3 vP;
+      void main() { vP = position; vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform vec3 uColor; uniform float uFlash, uTime; varying vec3 vN; varying vec3 vV; varying vec3 vP;
+      void main() {
+        float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.2);
+        // hex-ish cells from the sphere position
+        vec2 q = vec2(atan(vP.z, vP.x) * 9.0, vP.y * 15.0 + uTime * 0.8);
+        vec2 g = abs(fract(q + vec2(0.5 * floor(mod(q.y, 2.0)), 0.0)) - 0.5);
+        float hex = smoothstep(0.46, 0.5, max(g.x * 1.15, g.y)) * (0.5 + 0.5 * sin(uTime * 3.0 + vP.y * 6.0));
+        float a = f * (0.6 + uFlash * 1.1) + hex * (0.025 + uFlash * 0.3) * (0.3 + f) + uFlash * 0.06;
+        gl_FragColor = vec4(uColor * (1.4 + uFlash * 2.0) * a, a);
+      }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  });
+}
+const shieldBarMats = {};
+const shieldBarMat = (el) => (shieldBarMats[el] ||= new THREE.MeshBasicMaterial({ color: ELEMENTS[el].color, depthTest: false }));
 
 export class Enemy {
   constructor(o = {}) {
@@ -70,6 +93,7 @@ export class Enemy {
     if (G.net.isClient) return G.net.clientHit(this, dmg, crit, info);
     const mine = !info.from; // damage numbers only for your own shots, like the real game
     if (this.immune || this.untargetable) { if (mine) fx.dmgNumber(this.top(_t), 'IMMUNE', 'immune'); return 0; }
+    if (this.shieldHp > 0) return this.hitShield(dmg, info, mine);
     dmg = Math.max(1, Math.round(dmg));
     this.hp -= dmg; this.pop = 1; this.aggro = true;
     this.flinch = Math.min(1.2, this.flinch + (crit ? 0.9 : 0.45));
@@ -81,6 +105,48 @@ export class Enemy {
     this.onHurt?.(dmg, crit, info);
     if (this.hp <= 0) { this.hp = 0; this.die(info); }
     return dmg;
+  }
+
+  // ---- elemental shield ----
+  addShield(el, frac = 0.45) {
+    this.shieldEl = el; this.shieldMax = this.shieldHp = Math.round(this.maxHp * frac);
+    this.shieldMesh = new THREE.Mesh(shieldGeo, shieldMaterial(ELEMENTS[el].color));
+    this.shieldMesh.renderOrder = 6;
+    G.fxGroup.add(this.shieldMesh);
+    this.shieldFlash = 0;
+    return this;
+  }
+  updateShield(dt) {
+    const m = this.shieldMesh, up = this.alive && this.shieldHp > 0;
+    m.visible = up;
+    if (!up) return;
+    this.shieldFlash = Math.max(0, (this.shieldFlash || 0) - dt * 4);
+    const r = Math.max(this.height * 0.62, this.radius * 1.7);
+    m.position.set(this.pos.x, this.pos.y + this.height * 0.52, this.pos.z);
+    m.scale.set(r * 0.85, r, r * 0.85).multiplyScalar(1 + this.shieldFlash * 0.06);
+    m.material.uniforms.uFlash.value = this.shieldFlash; m.material.uniforms.uTime.value = this.t;
+  }
+  hitShield(dmg, info, mine) {
+    const match = info.element && info.element === this.shieldEl;
+    const sd = Math.max(1, Math.round(dmg * (match ? 3 : 1)));
+    this.shieldHp -= sd; this.shieldFlash = 1; this.pop = 0.6; this.aggro = true;
+    this.lastHitBy = info.from ?? null;
+    if (mine) fx.dmgNumber(this.top(_t), sd, 'shield el-' + this.shieldEl + (match ? ' match' : ''));
+    if (Math.random() < 0.5) playAt(this.center(_t), match ? 'shieldHitMatch' : 'shieldHit');
+    if (this.shieldHp <= 0) this.breakShield(info, match);
+    return sd;
+  }
+  breakShield(info, match) {
+    this.shieldHp = 0;
+    const c = this.center(new THREE.Vector3()), col = ELEMENTS[this.shieldEl].color;
+    fx.burst(c, col, 26, 9, 0.12, 0.6, 4); fx.burst(c, 0xffffff, 10, 6, 0.06, 0.35, 0);
+    fx.ringFx(c, 4.5, col, 0.5);
+    fx.floatText(this.top(new THREE.Vector3()), `${ELEMENTS[this.shieldEl].icon} SHIELD BROKEN`, { height: 0.4, color: ELEMENTS[this.shieldEl].css, life: 1.2 });
+    playAt(c, 'shieldBreak');
+    // the pop hurts everything around it, more when you broke it with the right element
+    for (const e of G.enemies) if (e !== this && e.alive && e.hostile && !e.immune && e.rank !== 'boss' && e.pos.distanceTo(this.pos) < 4.5) e.takeDamage(match ? 70 : 30, false, { splash: true, from: info.from });
+    this.stunT = match ? 1.6 : 0.9; this.flinch = 1.2;
+    this.rig?.hit(true);
   }
 
   die() {
@@ -119,6 +185,7 @@ export class Enemy {
     this.alive = false;
     if (this.bar) G.fxGroup.remove(this.bar);
     this.beam?.dispose(); this.aimBeam?.dispose?.();
+    if (this.shieldMesh) { G.fxGroup.remove(this.shieldMesh); this.shieldMesh.material.dispose(); }
     G.entities.remove(this.mesh);
     this.mesh.rotation.x = 0;
     // fall away from whoever landed the killing blow
@@ -137,6 +204,7 @@ export class Enemy {
   }
   cleanupMesh() {
     G.entities.remove(this.mesh);
+    if (this.shieldMesh) { G.fxGroup.remove(this.shieldMesh); this.shieldMesh.material.dispose(); }
     if (this.bar) G.fxGroup.remove(this.bar);
     this.beam?.dispose();
     this.mesh.traverse((o) => {
@@ -147,6 +215,8 @@ export class Enemy {
 
   update(dt) {
     this.t += dt;
+    if (this.shieldMesh) this.updateShield(dt);
+    if (this.stunT > 0 && !G.net.isClient) { this.stunT -= dt; this.vel.set(0, this.vel.y, 0); this.physics?.(dt); this.animSpeed = 0; this.animate?.(dt); this.rig?.update(dt, { speed: 0 }); this.mesh.rotation.y = this.yaw; return; }
     if (G.net.isClient) this.proxyUpdate(dt);
     else if (!G.cine && this.leash && !this.leashed()) { this.vel.set(0, 0, 0); this.animSpeed = 0; }
     else if (!G.cine) {
@@ -181,6 +251,7 @@ export class Enemy {
         this.barFill.scale.x = 1.04 * r;
         this.barFill.position.x = -0.52 * (1 - r);
         this.barFill.material = this.immune ? barImmuneMat : (this.rank === 'major' ? barMajorMat : barMinorMat);
+        if (this.shieldHp > 0) { const s = this.shieldHp / this.shieldMax; this.barFill.material = shieldBarMat(this.shieldEl); this.barFill.scale.x = 1.04 * s; this.barFill.position.x = -0.52 * (1 - s); }
       }
     }
   }
@@ -210,7 +281,8 @@ export class Enemy {
     const ps = this.pose?.();
     return [this.nid, this.netType, this.netArgs, r2(this.pos.x), r2(this.pos.y), r2(this.pos.z), r2(this.yaw), Math.ceil(this.hp), this.maxHp,
       (this.immune ? 1 : 0) | (this.untargetable ? 2 : 0) | (this.hostile ? 4 : 0), this.netVis?.() ?? 0, this.rank,
-      this.actN || 0, this.actName || 0, this.actDur || 0, ps ? [ps.aim ? 1 : 0, ps.mew ? 1 : 0, ps.task ? 1 : 0, r2(ps.windup || 0), r2(ps.crouch || 0)] : 0];
+      this.actN || 0, this.actName || 0, this.actDur || 0, ps ? [ps.aim ? 1 : 0, ps.mew ? 1 : 0, ps.task ? 1 : 0, r2(ps.windup || 0), r2(ps.crouch || 0)] : 0,
+      this.shieldMax ? [Math.max(0, Math.ceil(this.shieldHp)), this.shieldMax, ELEMENT_KEYS.indexOf(this.shieldEl), this.stunT > 0 ? 1 : 0] : 0];
   }
   applyRow(a) {
     if (!this.netPos) { this.netPos = new THREE.Vector3(a[3], a[4], a[5]); this.pos.copy(this.netPos); this.yaw = a[6]; }
@@ -220,6 +292,12 @@ export class Enemy {
     if (a[10]) this.applyVis?.(a[10]);
     if (this.actSeen !== undefined && a[12] !== this.actSeen && a[13]) this.rig?.play(a[13], a[14]);
     this.actSeen = a[12];
+    if (a[16]) {
+      const el = ELEMENT_KEYS[a[16][2]];
+      if (!this.shieldMesh) this.addShield(el);
+      if (a[16][0] < this.shieldHp) this.shieldFlash = 1;
+      this.shieldHp = a[16][0]; this.shieldMax = a[16][1];
+    }
     if (a[15]) this.netPose = { aim: !!a[15][0], mew: !!a[15][1], task: !!a[15][2], windup: a[15][3], crouch: a[15][4] || 0 };
   }
 
@@ -493,6 +571,7 @@ export class SusSniper extends Enemy {
 export class MoaiKnight extends Enemy {
   constructor() {
     super({ name: 'Moai Knight', hp: 650, radius: 0.8, height: 2.9, speed: 2.6, rank: 'major', gib: 0x7d7a73, deathLines: ['🗿', 'has returned to Easter Island', 'was out-mogged'] });
+    this.addShield('arc');
     this.useRig(new R.MoaiKnightRig());
     this.height = 3.2;
     this.hb(0, 1.2, 0, 0.8).hb(0, 0.5, 0, 0.5).hb(0, 2.45, 0.2, 0.62, true);
@@ -531,6 +610,7 @@ export class MoaiKnight extends Enemy {
 export class Wizard extends Enemy {
   constructor() {
     super({ name: 'Wizard', hp: 380, radius: 0.6, height: 2.4, speed: 5, flying: true, rank: 'major', gib: 0xc68bff, deathLines: ['went back to the moon', 'had no time to explain'] });
+    this.addShield('void');
     this.useRig(new R.WizardRig());
     const label = textSprite('i came from the moon', 0.26, { color: '#d9b8ff' }); label.position.set(0, 2.9, 0); this.mesh.add(label);
     this.hb(0, 1.0, 0, 0.6).hb(0, 1.85, 0, 0.33, true);
@@ -563,6 +643,7 @@ export class Wizard extends Enemy {
 export class Sigma extends Enemy {
   constructor() {
     super({ name: 'Sigma', hp: 260, radius: 0.45, height: 2.0, speed: 5, rank: 'major', gib: 0x222222, deathLines: ['lost the grindset', 'got mogged', 'forgot to mew'] });
+    this.addShield('solar');
     this.useRig(R.sigmaRig());
     this.hb(0, 1.2, 0, 0.45).hb(0, 0.6, 0, 0.3).hb(0, 1.98, 0.02, 0.27, true);
     this.mewT = rand(4, 8); this.mewing = 0; this.strafe = 1; this.strafeT = 2;

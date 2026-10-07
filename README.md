@@ -74,6 +74,17 @@ Big Chungus, the Dog and Skibidi get cinematic boss intros on your first attempt
 
 You get 3 revives per encounter. Run out and the squad wipes, which restarts the encounter. You can start from any encounter in the main menu to practice.
 
+## Elements and shields
+
+Every gun has an element: 🔥 Solar, ⚡ Arc or 🟣 Void. The icon shows next to its name on the HUD and in the Armory.
+
+Major enemies carry an elemental shield that soaks damage before their health:
+- ⚡ Arc: Moai Knights
+- 🟣 Void: Wizards and Toilet Disciples
+- 🔥 Solar: Sigmas
+
+A matching element does **triple** damage to the shield, and its damage numbers glow. Breaking a shield sets off a blast that hurts nearby enemies (harder if you used the right element) and staggers the major for a moment.
+
 ## Loot and perks
 
 Loot is personal and saved in your browser, so it carries over between sessions.

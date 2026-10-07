@@ -28,6 +28,14 @@ export const G = {
   net: { active: false, isHost: false, isClient: false, myId: 'solo', emit() {}, sendTo() {}, playerEv() {}, hud: {} },
 };
 
+// Damage elements. Each gun has one; majors carry a shield of one, which takes triple damage from a match.
+export const ELEMENTS = {
+  solar: { name: 'Solar', icon: '🔥', color: 0xff8a2a, css: '#ff9a3a' },
+  arc: { name: 'Arc', icon: '⚡', color: 0x7fd7ff, css: '#8fe0ff' },
+  void: { name: 'Void', icon: '🟣', color: 0xb06cff, css: '#c08cff' },
+};
+export const ELEMENT_KEYS = Object.keys(ELEMENTS);
+
 // Run fn without mirroring its fx/sounds/HUD to the fireteam (local-player-only stuff).
 export function local(fn) { G.netLocal++; try { return fn(); } finally { G.netLocal--; } }
 // True when we're the host and this effect should be mirrored to clients.

@@ -54,7 +54,7 @@ export function los(a, b) {
 }
 
 const _c = new THREE.Vector3();
-export function explode(pos, radius, dmg, { owner = 'player', color = 0xff8a2a, source = 'an explosion', knock = 1, big = 1, silent = false, localFx = false, ghost = false } = {}) {
+export function explode(pos, radius, dmg, { owner = 'player', color = 0xff8a2a, source = 'an explosion', knock = 1, big = 1, silent = false, localFx = false, ghost = false, element = null } = {}) {
   // projectile explosions are simulated on every machine, so their cosmetics stay local
   const cosmetic = () => {
     fx.explosion(pos, radius, color); if (!silent) playAt(pos, 'explosion', big);
@@ -72,7 +72,7 @@ export function explode(pos, radius, dmg, { owner = 'player', color = 0xff8a2a, 
       let dmin = Infinity;
       for (const hb of e.hitboxes) { e.hbWorld(hb, _c); dmin = Math.min(dmin, Math.max(0, _c.distanceTo(pos) - hb.r)); }
       if (dmin < radius) {
-        e.takeDamage(dmg * (1 - 0.5 * dmin / radius), false, { splash: true });
+        e.takeDamage(dmg * (1 - 0.5 * dmin / radius), false, { splash: true, element });
         if (e.rank !== 'boss' && e.knockable !== false && knock) {
           _c.subVectors(e.pos, pos).setY(0).normalize();
           e.vel.addScaledVector(_c, 9 * knock); e.vel.y += 5 * knock;
@@ -100,7 +100,7 @@ export function explode(pos, radius, dmg, { owner = 'player', color = 0xff8a2a, 
 const projGeo = new THREE.SphereGeometry(1, 10, 8);
 export class Projectile {
   constructor(o) {
-    Object.assign(this, { dmg: 10, radius: 0.25, owner: 'enemy', life: 6, gravity: 0, homing: 0, splash: 0, splashDmg: null, color: 0xff00ff, size: 0.2, target: null, source: 'a meme', onHit: null, crit: false, trail: 0, explodeColor: null, speed: 0, look: null, ghost: false, critable: false }, o);
+    Object.assign(this, { dmg: 10, radius: 0.25, owner: 'enemy', life: 6, gravity: 0, homing: 0, splash: 0, splashDmg: null, color: 0xff00ff, size: 0.2, target: null, source: 'a meme', onHit: null, crit: false, trail: 0, explodeColor: null, speed: 0, look: null, ghost: false, critable: false, element: null }, o);
     this.pos = o.pos.clone(); this.vel = o.vel.clone();
     this.speed = this.vel.length();
     if (this.look === 'nova') {
@@ -125,7 +125,7 @@ export class Projectile {
     const t = this.target;
     return { pos: r(this.pos), vel: r(this.vel), dmg: this.dmg, radius: this.radius, owner: this.owner, life: this.life, gravity: this.gravity, homing: this.homing,
       splash: this.splash, splashDmg: this.splashDmg, color: this.color, size: this.size, source: this.source, trail: this.trail, explodeColor: this.explodeColor,
-      critable: this.critable, look: this.look, tgt: t ? (t.nid ?? t.netId ?? null) : null };
+      critable: this.critable, look: this.look, element: this.element, tgt: t ? (t.nid ?? t.netId ?? null) : null };
   }
   static fromNet(o, ghost) {
     let target = null;
@@ -175,7 +175,7 @@ export class Projectile {
         for (const hb of e.hitboxes) {
           e.hbWorld(hb, sph.center);
           if (sph.center.distanceTo(this.pos) < hb.r + this.radius) {
-            if (this.dmg && !this.ghost) e.takeDamage(this.dmg, !!hb.crit && this.critable, { projectile: true });
+            if (this.dmg && !this.ghost) e.takeDamage(this.dmg, !!hb.crit && this.critable, { projectile: true, element: this.element });
             this.finish(e); return true;
           }
         }
@@ -187,7 +187,7 @@ export class Projectile {
     if (!this.alive) return;
     this.alive = false;
     G.fxGroup.remove(this.mesh);
-    if (this.splash) explode(this.pos, this.splash, this.splashDmg ?? this.dmg, { owner: this.owner, color: this.explodeColor || this.color, source: this.source, big: this.splash > 6 ? 1.6 : 1, localFx: true, ghost: this.ghost });
+    if (this.splash) explode(this.pos, this.splash, this.splashDmg ?? this.dmg, { owner: this.owner, color: this.explodeColor || this.color, source: this.source, big: this.splash > 6 ? 1.6 : 1, localFx: true, ghost: this.ghost, element: this.element });
     else local(() => fx.burst(this.pos, this.color, 5, 3, 0.1, 0.3));
     if (!this.ghost) this.onHit?.(this.pos, hitEnemy);
   }
