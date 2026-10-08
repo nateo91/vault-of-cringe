@@ -1,4 +1,6 @@
 // Encounter 3: THE VINE BOOM CHAMBER — Moai Says. Repeat the boom sequence to make Big Chungus vulnerable.
+// The twist: after the first damage phase, Cheems starts calling some sequences ("CHEEMS SAYS"). It's Simon
+// Says: don't copy those. Hold your fire through the whole turn and the Moai open Chungus up anyway.
 import * as THREE from 'three';
 import { G, rand, pick, after, dampAngle, distToSegment, alivePlayers, hurtPlayer, local } from '../game.js';
 import * as D from '../dressing.js';
@@ -224,7 +226,7 @@ export class VineBoomChamber extends Encounter {
     this.boss = applyMods(new Chungus(this));
     this.boss.pos.set(0, 1, 0);
     G.enemies.push(this.boss);
-    this.seqLen = 3; this.phase = 'intro'; this.enrageT = ENRAGE; this.spawnT = 3; this.awaiting = false;
+    this.seqLen = 3; this.seqCount = 0; this.trick = false; this.phase = 'intro'; this.enrageT = ENRAGE; this.spawnT = 3; this.awaiting = false;
     HUD.objective(VineBoomChamber.title, 'Listen to the Moai.');
     // first attempt gets the intro; game-time timers wait for it to finish
     if (!G.introsSeen.has('chungus')) { G.introsSeen.add('chungus'); this.ev('intro'); }
@@ -273,21 +275,25 @@ export class VineBoomChamber extends Encounter {
   playSequence() {
     if (this.done || this.phase === 'enrage') return;
     this.phase = 'listen'; this.awaiting = false; this.input = 0;
+    this.seqCount++;
+    // Cheems never calls the first two; the third is always his (so everyone meets him); after that, a third of them
+    this.trick = this.seqCount >= 3 && (this.seqCount === 3 || Math.random() < 0.33);
+    const caller = this.trick ? '🐕' : '🗿';
     this.seq = [];
     for (let i = 0; i < this.seqLen; i++) {
       let s; do { s = Math.floor(Math.random() * 4); } while (s === this.seq[i - 1]);
       this.seq.push(s);
     }
-    HUD.bigText('🗿 MOAI SAYS 🗿', 'listen...', 1.8, 'meme');
+    HUD.bigText(this.trick ? '🐕 CHEEMS SAYS 🐕' : '🗿 MOAI SAYS 🗿', 'listen...', 1.8, 'meme');
     this.seq.forEach((s, i) => after(1.6 + i * 1.05, () => {
       if (this.phase !== 'listen') return;
       const st = this.statues[s];
       st.flash(1); playAt(st.pos.clone().setY(st.pos.y + 3), 'vineBoom', st.def.pitch);
-      fx.floatEmoji(st.pos.clone().setY(st.pos.y + 7), '🗿', 2.5, 1.2, 1.5);
+      fx.floatEmoji(st.pos.clone().setY(st.pos.y + 7), caller, 2.5, 1.2, 1.5);
     }));
     after(1.6 + this.seq.length * 1.05 + 0.3, () => {
       if (this.phase !== 'listen') return;
-      this.phase = 'input'; this.awaiting = true; this.inputCd = 0;
+      this.phase = 'input'; this.awaiting = true; this.inputCd = 0; this.trickT = 7;
       HUD.bigText('YOUR TURN', 'shoot the Moai in order', 1.6);
     });
   }
@@ -297,25 +303,31 @@ export class VineBoomChamber extends Encounter {
     const want = this.seq[this.input];
     st.flash(1);
     playAt(st.pos.clone().setY(st.pos.y + 3), 'vineBoom', st.def.pitch);
+    if (this.trick) {
+      this.failSequence('CHEEMS SAID', 'not the Moai. Cheems. you listened to Cheems.');
+      if (!this.cheemsExplained) { this.cheemsExplained = true; this.ghost('Wait. That was not the Moai calling it. That was CHEEMS. Only copy the Moai. When Cheems says it... do nothing.', 2.5); }
+      return;
+    }
     if (st.idx === want) {
       this.input++;
       play('chime', this.input);
       if (this.input >= this.seq.length) this.startDps();
-    } else {
-      this.phase = 'fail'; this.awaiting = false;
-      play('wrong'); say('bruh', 'bruh'); G.stats.bruh++;
-      HUD.bigText('BRUH', `that was the ${st.def.name} Moai. disrespectful.`, 2.5, 'warn');
-      const targets = alivePlayers();
-      for (const s of this.statues) {
-        s.flash(1);
-        for (const q of targets) {
-          const from = s.pos.clone().setY(s.pos.y + 3.3);
-          const dir = _t.set(q.pos.x, q.pos.y + 1, q.pos.z).sub(from).normalize();
-          new Projectile({ pos: from, vel: dir.multiplyScalar(18), owner: 'enemy', dmg: 18, splash: 3.5, color: 0x8a867e, size: 0.6, trail: 0x555555, source: 'the Moai (you disrespected them)' });
-        }
+    } else this.failSequence('BRUH', `that was the ${st.def.name} Moai. disrespectful.`);
+  }
+  failSequence(title, sub) {
+    this.phase = 'fail'; this.awaiting = false;
+    play('wrong'); say('bruh', 'bruh'); G.stats.bruh++;
+    HUD.bigText(title, sub, 2.5, 'warn');
+    const targets = alivePlayers();
+    for (const s of this.statues) {
+      s.flash(1);
+      for (const q of targets) {
+        const from = s.pos.clone().setY(s.pos.y + 3.3);
+        const dir = _t.set(q.pos.x, q.pos.y + 1, q.pos.z).sub(from).normalize();
+        new Projectile({ pos: from, vel: dir.multiplyScalar(18), owner: 'enemy', dmg: 18, splash: 3.5, color: 0x8a867e, size: 0.6, trail: 0x555555, source: 'the Moai (you disrespected them)' });
       }
-      after(4, () => this.playSequence());
     }
+    after(4, () => this.playSequence());
   }
   startDps() {
     this.phase = 'dps'; this.awaiting = false; this.dpsT = 18;
@@ -349,6 +361,11 @@ export class VineBoomChamber extends Encounter {
     HUD.objective(null, `${obj}\nCheems BONK in ${mm}:${ss}`);
     HUD.boss(b.name, b.hp / b.maxHp, { immune: b.immune, sub: b.immune ? 'IMMUNE — simply too big' : 'VULNERABLE' });
     if (this.phase === 'dps') { this.dpsT -= dt; if (this.dpsT <= 0) this.endDps(); }
+    if (this.phase === 'input' && this.trick && (this.trickT -= dt) <= 0) {
+      HUD.bigText('🗿 RESPECT 🗿', 'the Moai noticed you did not listen to Cheems', 2.2, 'good');
+      this.ghost(pick(['You ignored Cheems. The Moai are... proud? Chungus is open!', 'Restraint. The rarest thing in this raid. Go!']));
+      this.startDps();
+    }
     if (this.enrageT <= 0 && this.phase !== 'enrage') this.enrage();
     // adds
     this.spawnT -= dt;
