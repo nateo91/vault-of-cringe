@@ -904,6 +904,8 @@ export class Wizard extends Enemy {
   }
   think(dt) {
     const p = this.tgt();
+    // a classic, the first time one shows up
+    if (this.canSee && !G.wizardSeen) { G.wizardSeen = true; HUD.ghost(pick(['That wizard came from the moon.', 'Guardian. That wizard. It came from the moon.'])); }
     this.blinkCd -= dt;
     if (this.blinkDmg > 110 && this.blinkCd <= 0) { this.blinkDmg = 0; this.blinkCd = 4; this.blink(p); }
     this.wander += dt * 0.3;

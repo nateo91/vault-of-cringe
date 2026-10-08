@@ -156,6 +156,7 @@ function setupMenus() {
     document.querySelectorAll('.voice').forEach((e) => (e.checked = G.settings.voice));
     document.querySelectorAll('.padon').forEach((e) => (e.checked = G.settings.pad !== false));
     document.querySelectorAll('.sprinthold').forEach((e) => (e.checked = !!G.settings.sprintHold));
+    document.querySelectorAll('.ghostvoice').forEach((e) => (e.value = G.settings.ghostVoice || 'dinkle'));
     document.querySelectorAll('.music').forEach((e) => (e.checked = G.settings.music));
     document.querySelectorAll('.quality').forEach((e) => (e.value = G.settings.quality || 'high'));
     document.querySelectorAll('.cvd').forEach((e) => (e.value = G.settings.cvd || 'off'));
@@ -167,6 +168,7 @@ function setupMenus() {
   document.querySelectorAll('.sens').forEach((e) => (e.oninput = () => { G.settings.sens = +e.value; save(); }));
   document.querySelectorAll('.fov').forEach((e) => (e.oninput = () => { G.settings.fov = +e.value; document.querySelectorAll('.fov').forEach((o) => (o.value = e.value)); save(); }));
   document.querySelectorAll('.vol').forEach((e) => (e.oninput = () => { G.settings.volume = +e.value; setVolume(G.settings.volume); save(); }));
+  document.querySelectorAll('.ghostvoice').forEach((e) => (e.onchange = () => { G.settings.ghostVoice = e.value; save(); say(e.value === 'dinkle' ? 'Guardian. I have been dead a long time. Not anymore.' : 'Guardian! Eyes up!', 'ghost'); }));
   document.querySelectorAll('.sprinthold').forEach((e) => (e.onchange = () => { G.settings.sprintHold = e.checked; save(); }));
   document.querySelectorAll('.padon').forEach((e) => (e.onchange = () => { G.settings.pad = e.checked; document.querySelectorAll('.padon').forEach((o) => (o.checked = e.checked)); save(); }));
   document.querySelectorAll('.voice').forEach((e) => (e.onchange = () => { G.settings.voice = e.checked; if (!e.checked) speechSynthesis?.cancel(); save(); }));

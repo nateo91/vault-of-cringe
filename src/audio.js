@@ -416,7 +416,38 @@ export function updateListener(cam) {
 }
 
 // ---------- Text to speech ----------
-let lastVoice = 0;
+// The Ghost, D1 style ("Dinklebot", the default): the best deep-ish male English voice the browser has, a touch
+// low and slow, with every exclamation flattened into a full stop, because that Ghost was never excited about
+// anything. Browser speech can't be run through audio effects, so the electronic chatter plays alongside.
+// 'classic' is the old squeaky one.
+let lastVoice = 0, voices = [];
+const loadVoices = () => { try { voices = speechSynthesis.getVoices() || []; } catch (e) { voices = []; } };
+if (window.speechSynthesis) { loadVoices(); speechSynthesis.addEventListener?.('voiceschanged', loadVoices); }
+// male English voices, best first: Edge's neural ones, then the stock Windows / Chrome / Mac ones
+const DINKLE = ['Christopher', 'Guy', 'Eric', 'Roger', 'Steffan', 'Andrew', 'Brian', 'Davis', 'Tony', 'Jason', 'Ryan', 'Thomas', 'Mark', 'David', 'Google UK English Male', 'Daniel', 'Alex', 'Fred'];
+let dinkleCache = null;
+export function ghostVoice() {
+  if (dinkleCache && voices.includes(dinkleCache)) return dinkleCache;
+  const en = voices.filter((v) => /^en[-_]/i.test(v.lang));
+  for (const name of DINKLE) {
+    const hits = en.filter((v) => v.name.includes(name));
+    const v = hits.find((x) => /natural|neural|online/i.test(x.name)) || hits.find((x) => /US/i.test(x.lang)) || hits[0];
+    if (v) return (dinkleCache = v);
+  }
+  return (dinkleCache = en.find((v) => /(^|[^e])male/i.test(v.name)) || null); // 'Male', not 'Female'
+}
+// the Ghost's little electronic chatter as it starts talking
+let chirpT = 0;
+function ghostChirp() {
+  if (!ctx || performance.now() - chirpT < 1500) return;
+  chirpT = performance.now();
+  const n = 3 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < n; i++) {
+    const f = 1400 + Math.random() * 1600;
+    tone({ type: 'sine', freq: f, freqEnd: f * (Math.random() < 0.5 ? 1.35 : 0.7), dur: 0.035 + Math.random() * 0.03, gain: 0.05, delay: i * 0.055 });
+  }
+  tone({ type: 'triangle', freq: 620, freqEnd: 980, dur: 0.09, gain: 0.04, delay: n * 0.055 + 0.02 });
+}
 export function say(text, voice = 'ghost', interrupt = true) {
   share(['say', text, voice, interrupt]);
   if (!G.settings.voice || !window.speechSynthesis) return;
@@ -424,9 +455,18 @@ export function say(text, voice = 'ghost', interrupt = true) {
   if (!interrupt && speechSynthesis.speaking) return;
   if (interrupt) speechSynthesis.cancel();
   lastVoice = now;
-  const u = new SpeechSynthesisUtterance(text.replace(/[^\p{L}\p{N}\s.,!?'-]/gu, ''));
+  const dinkle = voice === 'ghost' && (G.settings.ghostVoice || 'dinkle') === 'dinkle';
+  let line = text.replace(/[^\p{L}\p{N}\s.,!?'-]/gu, '');
+  if (dinkle) line = line.replace(/!+/g, '.').replace(/\?\./g, '?');
+  const u = new SpeechSynthesisUtterance(line);
   u.volume = Math.min(1, G.settings.volume * 1.4);
-  if (voice === 'ghost') { u.pitch = 1.55; u.rate = 1.12; }
+  if (dinkle) {
+    const v = ghostVoice(); if (v) { u.voice = v; u.lang = v.lang; }
+    // the neural voices already sound like a person; the robotic stock ones need more help sounding unbothered
+    const neural = v && /natural|neural|online/i.test(v.name);
+    u.pitch = neural ? 0.9 : 0.8; u.rate = neural ? 0.97 : 0.92;
+    ghostChirp();
+  } else if (voice === 'ghost') { u.pitch = 1.55; u.rate = 1.12; }
   else if (voice === 'boss') { u.pitch = 0.05; u.rate = 0.72; }
   else if (voice === 'bruh') { u.pitch = 0.4; u.rate = 0.8; }
   else if (voice === 'hype') { u.pitch = 1.9; u.rate = 1.35; }

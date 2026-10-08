@@ -222,6 +222,8 @@ World sounds are 3D (headphones recommended):
 - They get quieter, duller and echoier with distance.
 - In the Moai Says encounter, each statue booms from its own pillar, so you can play it by ear.
 
+The Ghost talks in a D1-style deadpan by default: the deepest natural-sounding male English voice your browser has, a little low and slow, with every exclamation flattened, and a burst of electronic chatter as it starts. It uses the browser's built-in speech, so the voice depends on your browser: Edge's "Natural" voices sound by far the best, and Chrome on Windows falls back to Microsoft Mark or David. Settings has **Ghost: Classic (squeaky)** for the old voice.
+
 Your own gun stays centered.
 
 ## Settings
