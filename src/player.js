@@ -575,7 +575,7 @@ export class Player {
       const ready = this.switchT <= 0 && this.reloadT <= 0 && w.mag > 0 && this.slideT <= 0.5 && this.superActive !== 'gg';
       if (Input.left && ready && G.time >= this.nextFire) {
         if (!this.drawT) play('bowDraw');
-        this.drawT = Math.min(d.charge, (this.drawT || 0) + dt);
+        this.drawT = Math.min(d.charge, (this.drawT || 0) + dt * (this.perks.has(w, 'archer') && this.perks.n('archer') ? 1.6 : 1));
         if (this.drawT >= d.charge && !this.drawFull) { this.drawFull = true; play('click'); } // the "perfect draw" tick
       } else if (this.drawT > 0) {
         w.drawK = this.drawT / d.charge; this.drawT = 0; this.drawFull = false;
@@ -1010,7 +1010,10 @@ export class Player {
       }
       if (best) {
         const wasAlive = best.alive;
-        best.takeDamage(120, false, { melee: true });
+        const punch = this.perks.n('one_two') ? 2.5 : 1; // One-Two Punch
+        best.takeDamage(120 * punch, false, { melee: true });
+        if (punch > 1) { this.perks.buffs.one_two.t = 0; fx.floatText(best.top().clone(), 'ONE-TWO', { height: 0.5, color: '#ffd23f' }); }
+        if (wasAlive && !best.alive) this.perks.onMeleeKill();
         if (best.rank !== 'boss' && best.knockable !== false && !best.proxy) { best.vel.addScaledVector(_f, 10); best.vel.y += 4; }
         this.vel.addScaledVector(_f, 5);
         play('bonk'); HUD.hitmarker(false, wasAlive && !best.alive);

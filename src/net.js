@@ -269,6 +269,7 @@ Net.clientHit = (e, dmg, crit, info) => {
   if (!e.alive) return 0;
   if (G.settings.mods?.glass) dmg *= 1.5;
   Net.outbox.push(['__hit', e.nid, Math.round(dmg), !!crit, !!info.splash, info.element || 0, info.weapon || 0]);
+  if (info.weapon) G.player?.perks?.noteHit(info.weapon); // (Bait and Switch counts your hits on your machine)
   if (e.hostile === false) return 0; // crewmates / statues: the host decides what happens
   if (e.immune || e.untargetable) { dmgNumber(e.top(), 'IMMUNE', 'immune'); return 0; }
   e.pop = 1; e.flinch = Math.min(1.2, (e.flinch || 0) + (crit ? 0.9 : 0.45));

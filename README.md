@@ -172,8 +172,8 @@ Open the **Armory** (Tab mid-raid, or from the main menu) to swap guns. A turnta
 
 The perk pool has D2 classics and meme perks:
 
-- **Classics:** Outlaw, Rampage, Kill Clip, Firefly, Subsistence, Feeding Frenzy, Triple Tap, Vorpal, Demolitionist, Auto-Loading Holster, Overflow, Snapshot, Opening Shot, Tracking Module, Cluster Bombs, Spike Grenades.
-- **Memes:** Stonks, Ratio, Vine Boom, Touch Grass, Rizz.
+- **Classics:** Outlaw, Rampage, Kill Clip, Firefly, Subsistence, Feeding Frenzy, Triple Tap, Vorpal, Demolitionist, Auto-Loading Holster, Overflow, Snapshot, Opening Shot, Tracking Module, Cluster Bombs, Spike Grenades, Archer's Tempo (bows), Bait and Switch, Swashbuckler, One-Two Punch (shotguns).
+- **Memes:** Stonks, Ratio, Vine Boom, Touch Grass, Rizz, Vibe Check (airborne or sliding kills refill the mag).
 - **Exotic signature perks:** Wolfpack Rounds, Memento Potato, 360 No Scope, Ooh Shiny, Rizzrunner, Mogged, Touch of Grass.
 
 ## Triumphs, secrets and the weekly challenge

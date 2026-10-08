@@ -51,6 +51,11 @@ export const PERKS = {
   stonks: { name: 'Stonks', icon: '📈', col: 'a', desc: 'Each consecutive hit: +3% damage (max +45%). Two misses in a row and the market crashes.' },
   ratio: { name: 'Ratio', icon: '💬', col: 'a', desc: 'Precision hits ratio the target: it takes +15% damage from you for 4s.', ok: PRECISION },
   tracking: { name: 'Tracking Module', icon: '🛰️', col: 'a', desc: 'Rockets home in on the nearest meme.', ok: (d) => d.kind === 'rocket' },
+  archer: { name: "Archer's Tempo", icon: '🏹', col: 'a', desc: 'Precision hits make your next draws 60% faster for 4s.', ok: (d) => d.kind === 'bow' },
+  vibe_check: { name: 'Vibe Check', icon: '✅', col: 'a', desc: 'Kills while sliding or airborne refill the magazine.' },
+  bait: { name: 'Bait and Switch', icon: '🔄', col: 'b', desc: 'Damage memes with all three of your weapons within 3s: this one gets +35% damage for 10s.' },
+  swashbuckler: { name: 'Swashbuckler', icon: '🗡️', col: 'b', desc: 'Melee kills stack weapon damage (up to +33%) for 5s.' },
+  one_two: { name: 'One-Two Punch', icon: '🥊', col: 'b', desc: 'Landing pellets makes your next melee (within 1.5s) hit 2.5x as hard.', ok: (d) => d.kind === 'pellets' },
   rampage: { name: 'Rampage', icon: '😤', col: 'b', desc: 'Kills grant stacking damage (x3), refreshed on each kill.' },
   kill_clip: { name: 'Kill Clip', icon: '📎', col: 'b', desc: 'Reloading soon after a kill: +25% damage for 5s.' },
   firefly: { name: 'Firefly', icon: '🔥', col: 'b', desc: 'Precision kills explode.', ok: PRECISION },
@@ -205,6 +210,8 @@ export class PerkEngine {
     if (this.has(w, 'memento') && w.memento > 0) m *= 1.25;
     if (this.has(w, 'mlg') && !p.onGround) m *= 2;
     if (this.has(w, 'grassy') && w.grassShot) m *= 1.6;
+    if (this.has(w, 'bait') && this.n('bait')) m *= 1.35;
+    const sw = this.n('swashbuckler'); if (sw && this.has(w, 'swashbuckler')) m *= 1 + 0.066 * sw;
     return m;
   }
   reloadMult(w) {
@@ -225,6 +232,9 @@ export class PerkEngine {
     }
   }
   onHit(w, e, crit) {
+    if (crit && this.has(w, 'archer')) this.buff('archer', 4);
+    if (w.def.kind === 'pellets' && this.has(w, 'one_two')) this.buff('one_two', 1.5);
+
     if (this.has(w, 'rizzrunner') && this.n('rizzrunner') && e) {
       w.mag = Math.min(w.def.mag, w.mag + 1);
       const near = G.enemies.filter((o) => o !== e && o.alive && o.hostile !== false && !o.untargetable && o.pos.distanceTo(e.pos) < 8).slice(0, 2);
@@ -261,12 +271,21 @@ export class PerkEngine {
     if (this.has(w, 'rizz')) { p.addSuper(4); if (crit) p.grenadeCd = Math.max(0, p.grenadeCd - 2); }
     if (this.has(w, 'demolitionist')) p.grenadeCd = Math.max(0, p.grenadeCd - 3);
     if (this.has(w, 'subsistence')) p.refill(w, Math.ceil(w.def.mag * 0.25));
+    if (this.has(w, 'vibe_check') && (p.slideT > 0 || !p.onGround)) { p.refill(w); fxm.floatText(p.pos.clone().setY(p.pos.y + 2.2), 'vibe check ✅', { height: 0.3, life: 0.7 }); }
     if (this.has(w, 'mlg') && !p.onGround) {
       play('airhorn');
       lhud('bigText', '360 NO SCOPE', pick(['GET REKT', 'MOM GET THE CAMERA', 'OHHHHHH', 'git gud']), 1.4, 'meme');
       p.addSuper(6);
     }
   }
+  // any damage you deal, from any source (enemy.takeDamage reports it with the weapon id): Bait and Switch's bookkeeping
+  noteHit(weaponId) {
+    const p = this.p, i = p.wpn.findIndex((w) => w.def.id === weaponId);
+    if (i < 0) return;
+    (this.slotHit ||= [])[i] = G.time;
+    if (!this.n('bait') && p.wpn.some((w) => this.has(w, 'bait')) && p.wpn.every((_, k) => G.time - (this.slotHit[k] ?? -99) < 3)) { this.buff('bait', 10); lhud('killfeed', '🔄 Bait and Switch'); }
+  }
+  onMeleeKill() { if (this.p.wpn.some((w) => this.has(w, 'swashbuckler'))) this.buff('swashbuckler', 5, 1, 5); }
   onReloadDone(w) {
     if (w.killReady > G.time) {
       if (this.has(w, 'kill_clip')) this.buff('kill_clip', 5);

@@ -94,7 +94,7 @@ export class Enemy {
     const mine = !info.from; // damage numbers only for your own shots, like the real game
     if (this.immune || this.untargetable) { if (mine) fx.dmgNumber(this.top(_t), 'IMMUNE', 'immune'); return 0; }
     if (mine && modOn('glass')) dmg *= 1.5;
-    if (info.weapon) this.lastWeapon = info.weapon;
+    if (info.weapon) { this.lastWeapon = info.weapon; if (mine) G.player?.perks?.noteHit(info.weapon); }
     if (this.shieldHp > 0) return this.hitShield(dmg, info, mine);
     dmg = Math.max(1, Math.round(dmg));
     this.hp -= dmg; this.pop = 1; this.aggro = true;
