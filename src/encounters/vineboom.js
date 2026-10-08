@@ -140,7 +140,7 @@ class Chungus extends Enemy {
       // the laser cooks anyone it sweeps across, not just its target
       for (const q of alivePlayers()) {
         _t.set(q.pos.x, q.pos.y + 1, q.pos.z);
-        if (distToSegment(_t, eye, end) < 1.0 && los(eye, _t)) hurtPlayer(q, 50 * dt, 'Big Chungus\'s eye laser');
+        if (distToSegment(_t, eye, end) < 1.0 && los(eye, _t)) hurtPlayer(q, 50 * dt, 'Big Chungus\'s eye laser', this.pos);
       }
       if (this.st <= 0) { this.state = 'idle'; this.beamCd = rand(6, 9); this.beam.hide(); }
     } else if (this.state === 'stomp') {

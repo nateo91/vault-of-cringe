@@ -68,10 +68,11 @@ export function nearestPlayer(pos) {
 }
 export function playerById(id) { if (id == null || id === G.net.myId) return G.player; return G.avatars.get(id) || null; }
 // Damage a guardian wherever they live: locally, or by telling their machine.
-export function hurtPlayer(pl, amt, cause) {
+// `from` (any {x, z}) points the damage-direction arc at whoever did it.
+export function hurtPlayer(pl, amt, cause, from = null) {
   if (!pl) return;
-  if (pl === G.player) pl.hurt(amt, cause);
-  else if (pl.alive) G.net.sendTo(pl.id, ['hurt', amt, cause]);
+  if (pl === G.player) pl.hurt(amt, cause, from);
+  else if (pl.alive) G.net.sendTo(pl.id, from ? ['hurt', amt, cause, Math.round(from.x * 10) / 10, Math.round(from.z * 10) / 10] : ['hurt', amt, cause]);
 }
 
 // Pausable timers that run on game time.

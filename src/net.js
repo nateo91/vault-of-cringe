@@ -328,7 +328,7 @@ function handleEvent(ev, from) {
       else if (a === 'rally') rally(new THREE.Vector3(...b));
       else if (a === 'crater') { const q = new THREE.Vector3(...b); superRing(q, 0x7fd7ff, 12); crater(q, 7); }
       break;
-    case 'hurt': G.player?.hurt(a, b); break;
+    case 'hurt': G.player?.hurt(a, b, c != null ? { x: c, z: d } : null); break;
     case 'rick': G.player?.rickroll(); break;
     case 'pickup': applyPickup(a); break;
     case 'kill': G.stats.kills++; G.player?.addSuper(a); break;

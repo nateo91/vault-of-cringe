@@ -92,7 +92,7 @@ export function explode(pos, radius, dmg, { owner = 'player', color = 0xff8a2a, 
   } else if (p.alive) {
     _c.copy(p.pos); _c.y += 0.9;
     const d = _c.distanceTo(pos);
-    if (d < radius + 0.4) p.hurt(dmg * (1 - 0.5 * d / (radius + 0.4)), source);
+    if (d < radius + 0.4) p.hurt(dmg * (1 - 0.5 * d / (radius + 0.4)), source, pos);
   }
 }
 
@@ -177,6 +177,8 @@ export class Projectile {
       if (this.trailT <= 0) { this.trailT = 0.03; local(() => fx.burst(this.pos, this.trail, 1, 0.5, this.size * 0.8, 0.35, 0)); }
     }
   }
+  // a point back along the flight path: where the shot came from, for the damage-direction arc
+  from(out) { const v = this.vel.lengthSq() > 0.01 ? this.vel : null; return out.copy(this.pos).addScaledVector(v ? _d.copy(v).normalize() : _d.set(0, 0, 0), -6); }
   checkHits() {
     for (const b of G.colliders) if (!b.noRay && b.containsPoint(this.pos)) { this.finish(null); return true; }
     if (this.owner === 'enemy') {
@@ -184,7 +186,7 @@ export class Projectile {
       if (p.alive) {
         const dx = this.pos.x - p.pos.x, dz = this.pos.z - p.pos.z;
         if (dx * dx + dz * dz < (0.45 + this.radius) ** 2 && this.pos.y > p.pos.y - this.radius && this.pos.y < p.pos.y + 1.8 + this.radius) {
-          if (!this.splash) p.hurt(this.dmg, this.source);
+          if (!this.splash) p.hurt(this.dmg, this.source, this.from(_c));
           this.finish(null); return true;
         }
       }
@@ -244,7 +246,7 @@ export class Shockwave {
       const d = Math.hypot(p.pos.x - this.center.x, p.pos.z - this.center.z);
       if (d >= prev - 0.5 && d <= this.r + 0.5 && p.pos.y - this.center.y < this.height - 0.05) {
         this.done = true;
-        p.hurt(this.dmg, this.source);
+        p.hurt(this.dmg, this.source, this.center);
         p.vel.y += 6;
       }
     }

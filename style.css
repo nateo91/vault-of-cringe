@@ -418,3 +418,12 @@ label { cursor: pointer; }
 #mods .mod:hover { background: rgba(255,255,255,.1); }
 #mods .mod.on { border-color: #ff4d4d; color: #fff; background: rgba(255,60,60,.15); box-shadow: 0 0 10px rgba(255,60,60,.25); }
 .lb-table .mods-b { font-family: Rajdhani, sans-serif; font-size: 13px; letter-spacing: .1em; }
+
+/* ---------- the reticle goes red over an enemy in range ---------- */
+#crosshair.on { --c: #ff4a3d; }
+#crosshair.on > * { box-shadow: 0 0 3px rgba(80,0,0,.9); }
+/* ---------- damage direction arcs ---------- */
+#dmgdirs { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+#dmgdirs i { position: absolute; left: -130px; top: -130px; width: 260px; height: 260px; border-radius: 50%; opacity: 0;
+  border: 7px solid transparent; border-top-color: rgba(255,40,30,.9); filter: drop-shadow(0 0 6px rgba(255,0,0,.7));
+  -webkit-mask: conic-gradient(from -28deg, #000 0 56deg, transparent 56deg); mask: conic-gradient(from -28deg, #000 0 56deg, transparent 56deg); }

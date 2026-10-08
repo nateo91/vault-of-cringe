@@ -14,6 +14,7 @@ const last = {};
 function set(key, el, prop, val) { if (last[key] !== val) { last[key] = val; el.style[prop] = val; } }
 function text(key, el, val) { if (last[key] !== val) { last[key] = val; el.textContent = val; } }
 
+const dmgDirs = [];
 export const HUD = {
   init() {
     els = {
@@ -79,6 +80,13 @@ export const HUD = {
     els.hit.style.opacity = 1;
     clearTimeout(hitTimer);
     hitTimer = setTimeout(() => (els.hit.style.opacity = 0), kill ? 280 : 120);
+  },
+  // a red arc on a ring round the reticle, pointing at whoever hurt you; it tracks as you turn, then fades
+  damageDir(from, amount) {
+    const host = els.dmgDirs ||= (() => { const d = document.createElement('div'); d.id = 'dmgdirs'; els.hud.appendChild(d); return d; })();
+    let a = dmgDirs.find((q) => q.from.x === from.x && q.from.z === from.z) || dmgDirs.find((q) => q.t <= 0);
+    if (!a) { if (dmgDirs.length >= 6) a = dmgDirs.reduce((m, q) => (q.t < m.t ? q : m)); else { a = { el: document.createElement('i') }; host.appendChild(a.el); dmgDirs.push(a); } }
+    a.from = { x: from.x, z: from.z }; a.t = 1.3; a.k = Math.min(1, 0.45 + amount / 40);
   },
   damageFlash(amount) {
     els.vignette.style.transition = 'none';
@@ -169,7 +177,17 @@ export const HUD = {
     const sp = (base + move * 7 + p.bloomK * 14) * (p.ads ? 0.45 : 1);
     const spv = sp.toFixed(1) + 'px';
     if (last.sp !== spv) { last.sp = spv; els.cross.style.setProperty('--sp', spv); }
-    const cls = 'w-' + wid + (p.scoped || p.inspectT > 0 || p.emote || p.carry ? ' hidden-x' : '');
+    const cls = 'w-' + wid + (p.scoped || p.inspectT > 0 || p.emote || p.carry ? ' hidden-x' : '') + (p.overTarget && p.alive ? ' on' : '');
+    // damage arcs: re-aim at their source as you turn
+    for (const q of dmgDirs) {
+      if (q.t <= 0) continue;
+      q.t -= 1 / 60;
+      const dx = q.from.x - p.pos.x, dz = q.from.z - p.pos.z;
+      const f = -dx * Math.sin(p.yaw) - dz * Math.cos(p.yaw), r = dx * Math.cos(p.yaw) - dz * Math.sin(p.yaw);
+      q.el.style.transform = `rotate(${Math.atan2(r, f).toFixed(3)}rad)`;
+      q.el.style.opacity = (Math.min(1, q.t / 0.5) * q.k).toFixed(2);
+      if (q.t <= 0) q.el.style.opacity = 0;
+    }
     if (els.cross.className !== cls) els.cross.className = cls;
     els.scope.classList.toggle('hidden', !p.scoped);
     if (p.scoped) {

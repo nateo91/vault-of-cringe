@@ -401,7 +401,7 @@ export class Doge extends Enemy {
     }
     this.cd -= dt;
     if (dist < 1.9 && Math.abs(p.pos.y - this.pos.y) < 1.6 && this.cd <= 0 && p.alive) {
-      hurtPlayer(p, 12, 'a Doge Thrall (such bite)'); this.cd = 0.9; playAt(this.pos, 'bark'); this.doAct('bite', 0.3);
+      hurtPlayer(p, 12, 'a Doge Thrall (such bite)', this.pos); this.cd = 0.9; playAt(this.pos, 'bark'); this.doAct('bite', 0.3);
       this.vel.x += (p.pos.x - this.pos.x) * 3; this.vel.z += (p.pos.z - this.pos.z) * 3;
     }
     this.wordT -= dt;
@@ -584,7 +584,7 @@ export class SusSniper extends Enemy {
         fx.tracer(eye, h.point, 0xff3030, 0.12, 0.15);
         playAt(eye, 'sn');
         _t.set(p.pos.x, p.pos.y + 1.0, p.pos.z);
-        if (p.alive && distToSegment(_t, eye, h.point) < 0.75) hurtPlayer(p, 38, 'a Sus Sniper (they saw you vent)');
+        if (p.alive && distToSegment(_t, eye, h.point) < 0.75) hurtPlayer(p, 38, 'a Sus Sniper (they saw you vent)', this.pos);
       }
     }
   }
@@ -641,7 +641,7 @@ export class MoaiKnight extends Enemy {
         if (!q?.alive || this.hitThisCharge) continue;
         if (distXZ(q.pos, this.pos) < this.radius + 0.9 && Math.abs(q.pos.y - this.pos.y) < 2.5) {
           this.hitThisCharge = true;
-          hurtPlayer(q, 45, 'a Moai Knight (charged)');
+          hurtPlayer(q, 45, 'a Moai Knight (charged)', this.pos);
           if (q === G.player) { q.vel.x += this.chargeDir.x * 16; q.vel.z += this.chargeDir.z * 16; q.vel.y += 6; }
           playAt(q.pos, 'bigBonk'); G.shake += 0.4;
         }
@@ -888,7 +888,7 @@ export class Troll extends Enemy {
       this.st -= dt; this.facePlayer(dt, 20); this.steer(p.pos.x, p.pos.z, this.st < 0.3 ? 10 : 2, dt, { stopDist: 0.9 });
       if (this.st <= 0) {
         if (distXZ(this.pos, p.pos) < 2.6 && p.alive) {
-          hurtPlayer(p, 28, 'a Smug Troll (problem?)');
+          hurtPlayer(p, 28, 'a Smug Troll (problem?)', this.pos);
           if (p === G.player) { p.vel.x += (p.pos.x - this.pos.x) * 4; p.vel.z += (p.pos.z - this.pos.z) * 4; p.vel.y += 3; }
           this.doAct('fire', 0.2);
         }
@@ -931,7 +931,7 @@ export class RickRoller extends Enemy {
     if (d < 1.4 && p.alive && Math.abs(p.pos.y - this.pos.y) < 1.8) {
       // gotcha
       if (p === G.player) G.player.rickroll(); else G.net.sendTo(p.id, ['rick']);
-      hurtPlayer(p, 8, 'a Rick Roller (never gonna live this down)');
+      hurtPlayer(p, 8, 'a Rick Roller (never gonna live this down)', this.pos);
       fx.burst(this.center(_t).clone(), 0xff4fd8, 30, 7, 0.1, 0.8, 6); fx.burst(this.center(_t).clone(), 0x7fd7ff, 20, 6, 0.1, 0.8, 6);
       this.drops = false; this.die();
     }

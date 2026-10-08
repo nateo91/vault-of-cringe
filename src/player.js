@@ -2,10 +2,11 @@
 // The viewmodel (hands + gun) lives in G.vmScene, drawn on top of the world with its own camera.
 import * as THREE from 'three';
 import { addWear, bevelBox } from './surface.js';
-import { G, clamp, damp, rand, pick, after, local } from './game.js';
+import { G, clamp, damp, dampAngle, rand, pick, after, local } from './game.js';
 import { Input, down, hit } from './input.js';
 import { moveCollide, groundY } from './world.js';
-import { raycast, explode, Projectile, los } from './combat.js';
+import { raycast, explode, Projectile, Pickup, los } from './combat.js';
+import { textSprite, IMPACT } from './textures.js';
 import * as fxm from './fx.js';
 import { buildGuardian, poseEmote, EMOTES } from './avatars.js';
 import { play as rawPlay, say as rawSay } from './audio.js';
@@ -288,11 +289,12 @@ export class Player {
     if (was < 100 && this.superCharge >= 100) { play('superReady'); lhud('killfeed', `Super ready: ${this.clsDef.superName} [F]`); }
   }
 
-  hurt(amount, cause = 'a meme') {
+  hurt(amount, cause = 'a meme', from = null) {
     if (G.settings.mods?.glass) amount *= 2;
     if (this.noticed) amount *= 1.5;
     if (G.settings.mods?.master) amount *= 1.4;
     if (!this.alive || G.godMode || G.state !== 'playing' || G.cine) return;
+    if (this.finisherT > 0) return;
     if (this.superActive === 'slam') amount *= 0.3;
     if (this.superActive === 'gg') amount *= 0.6;
     this.lastHurt = G.time;
@@ -303,6 +305,7 @@ export class Player {
     }
     this.hp -= a;
     HUD.damageFlash(amount);
+    if (from) HUD.damageDir(from, amount);
     hurtPulse(amount);
     play('hurt');
     G.shake += Math.min(0.4, amount * 0.008);
@@ -512,7 +515,7 @@ export class Player {
       for (const hb of e.hitboxes) {
         e.hbWorld(hb, _c);
         const to = _c.sub(origin); const dist = to.length();
-        if (dist > 80 || dist < 0.1) continue;
+        if (dist > (this.wpn[this.cur]?.def.aa?.[1] ?? 80) || dist < 0.1) continue;
         if (to.normalize().angleTo(dir) < Math.atan((hb.r + 0.5) / dist)) { this.overTarget = true; return; }
       }
     }
@@ -876,9 +879,63 @@ export class Player {
   }
   endSuper() { this.superActive = null; this.showGun(); document.querySelector('#superfx .sf-gold')?.classList.remove('on'); }
 
+  // Finishers: a weakened (non-boss) enemy in reach gets a marker; melee lunges you onto it for a takedown.
+  finisherTarget() {
+    if (!this.alive || this.superActive || this.carry || this.emote) return null;
+    _f.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
+    let best = null, bd = 3.2;
+    for (const e of G.enemies) {
+      if (!e.alive || e.untargetable || e.hostile === false || e.immune || (e.rank !== 'minor' && e.rank !== 'major')) continue;
+      if (e.hp / e.maxHp > (e.rank === 'major' ? 0.2 : 0.3) || e.shieldHp > 0) continue;
+      const to = _c.set(e.pos.x - this.pos.x, 0, e.pos.z - this.pos.z); const d = to.length() - e.radius;
+      if (d < bd && Math.abs(e.pos.y - this.pos.y) < 2 && to.normalize().dot(_f) > 0.5) { bd = d; best = e; }
+    }
+    return best;
+  }
+  updateFinisher(dt) {
+    const e = this.finTarget;
+    this.finisherT -= dt;
+    // lunge to just in front of it, facing it
+    if (e) {
+      const away = _c.set(this.pos.x - e.pos.x, 0, this.pos.z - e.pos.z); if (away.lengthSq() < 1e-4) away.set(0, 0, 1); away.normalize();
+      const k = Math.min(1, dt * 14);
+      this.pos.x += (e.pos.x + away.x * (e.radius + 0.9) - this.pos.x) * k;
+      this.pos.z += (e.pos.z + away.z * (e.radius + 0.9) - this.pos.z) * k;
+      this.yaw = dampAngle(this.yaw, Math.atan2(away.x, away.z), 18, dt);
+    }
+    this.vel.x = 0; this.vel.z = 0;
+    this.switchT = Math.max(this.switchT, 0.15); // no shooting mid-takedown
+    if (!this.finHit && this.finisherT <= 0.38) {
+      this.finHit = true; this.punchT = 0.35;
+      if (e && e.alive) {
+        const c = e.center();
+        e.takeDamage(e.hp + 99999, true, { melee: true, finisher: true });
+        play('bigBonk'); G.shake += 0.6; this.kickRV.x -= 14;
+        HUD.hitmarker(true, true);
+        fx.floatText(e.top().clone(), pick(['FINISHED', 'BONKED', 'L + RATIO', 'GET MOGGED', 'SIT.', 'DELETED']), { color: '#ffd23f', height: 0.75 });
+        for (let i = 0; i < 2; i++) new Pickup('orb', c.clone().add(new THREE.Vector3(rand(-0.6, 0.6), 0.3, rand(-0.6, 0.6))));
+        this.addSuper(5);
+      }
+    }
+    if (this.finisherT <= 0) { this.finTarget = null; }
+  }
   abilities(dt) {
+    // grenade / melee back: a little chime, like the real thing
+    if (this.grenadeCd > 0 && this.grenadeCd - dt <= 0) play('abilityReady', 0);
+    if (this.meleeCd > 0 && this.meleeCd - dt <= 0) play('abilityReady', 1);
     this.grenadeCd = Math.max(0, this.grenadeCd - dt);
     this.meleeCd = Math.max(0, this.meleeCd - dt);
+    if (this.finisherT > 0) { this.updateFinisher(dt); return; }
+    // the finisher marker over whatever you could finish right now
+    const fin = this.finisherTarget();
+    if (!this.finMark?.parent) { this.finMark = textSprite('◆ [V] FINISH', 0.26, { font: IMPACT, weight: 'normal', color: '#ffd23f', fog: false, depthTest: false }); G.fxGroup.add(this.finMark); }
+    this.finMark.visible = !!fin;
+    if (fin) { fin.top(this.finMark.position); this.finMark.position.y += 0.35 + Math.sin(G.time * 6) * 0.05; }
+    if (fin && hit('KeyV')) {
+      this.finTarget = fin; this.finisherT = 0.62; this.finHit = false; this.finMark.visible = false;
+      play('whoosh');
+      return;
+    }
     if (this.superActive === 'gg') { this.superTimer -= dt; if (this.superTimer <= 0) this.endSuper(); }
 
     if (hit('KeyQ') && this.grenadeCd <= 0) {

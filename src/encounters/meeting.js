@@ -59,7 +59,7 @@ class Crewmate extends Enemy {
     if (this.revealed) {
       const d = this.steer(p.pos.x, p.pos.z, 8.5, dt, { stopDist: 1.0 });
       this.cd -= dt;
-      if (d < 1.9 && this.cd <= 0 && p.alive) { this.cd = 0.8; hurtPlayer(p, 22, `${this.colorName} (they were the impostor)`); playAt(this.pos, 'stab'); }
+      if (d < 1.9 && this.cd <= 0 && p.alive) { this.cd = 0.8; hurtPlayer(p, 22, `${this.colorName} (they were the impostor)`, this.pos); playAt(this.pos, 'stab'); }
       return;
     }
     switch (this.state) {
