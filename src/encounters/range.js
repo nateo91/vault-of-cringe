@@ -5,7 +5,7 @@ import * as D from '../dressing.js';
 import { Encounter } from './base.js';
 import { setEnv, addBox, add, std, addStars } from '../world.js';
 import { tileTex, textSprite, IMPACT } from '../textures.js';
-import { Enemy, Doge, Stonks, MoaiKnight, Wizard, Sigma, RickRoller, Troll, Boyfriend, spawnEnemy, registerNetType } from '../enemies.js';
+import { Enemy, Doge, Stonks, MoaiKnight, Wizard, Sigma, RickRoller, Troll, Boyfriend, Algorithm, spawnEnemy, registerNetType } from '../enemies.js';
 import { hit } from '../input.js';
 import { play } from '../audio.js';
 import { HUD } from '../hud.js';
@@ -52,6 +52,7 @@ const WAVES = [
   { name: 'NEVER GONNA', spawn: [[RickRoller, 5]] },
   { name: 'PROBLEM?', spawn: [[Troll, 3]] },
   { name: 'DISTRACTED', spawn: [[Boyfriend, 1], [Doge, 4], [Stonks, 2]] },
+  { name: 'FOR YOU', spawn: [[Algorithm, 2], [Doge, 3]] },
   { name: 'EVERYTHING', spawn: [[Doge, 4], [Stonks, 2], [MoaiKnight, 1], [Sigma, 1]] },
 ];
 
@@ -99,7 +100,7 @@ export class FiringRange extends Encounter {
     this.waveName = W.name; this.waveIdx = this.wave % WAVES.length; this.wave++;
     let k = 0;
     this.waveEnemies = [];
-    for (const [T, n] of W.spawn) for (let i = 0; i < n; i++, k++) this.waveEnemies.push(spawnEnemy(T, -18 + (k % 8) * 5, -44 - (k % 2) * 4, T === Wizard ? 4 : null));
+    for (const [T, n] of W.spawn) for (let i = 0; i < n; i++, k++) this.waveEnemies.push(spawnEnemy(T, -18 + (k % 8) * 5, -44 - (k % 2) * 4, T === Wizard ? 4 : T === Algorithm ? 6 : null));
     for (const e of this.waveEnemies) e.drops = false; // practice: no loot farming
     this.waveT = 0; this.waveDone = false;
     play('alarm'); HUD.bigText(`WAVE: ${W.name}`, 'incoming', 1.6, 'warn');

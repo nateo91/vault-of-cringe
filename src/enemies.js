@@ -610,6 +610,73 @@ export class Nyan extends Enemy {
   }
 }
 
+// ---------------- THE ALGORITHM (a Shrieker) ----------------
+// A floating black pyramid that can't be hurt while it's shut. Every few seconds it splits open around a
+// glowing eye and fires a volley of homing "recommendations". Only then can you damage it; the eye is a crit.
+export class Algorithm extends Enemy {
+  constructor() {
+    super({ name: 'The Algorithm', hp: 420, radius: 1.1, height: 2.4, speed: 0, rank: 'major', flying: true, gib: 0xff3b6a, ash: 0xff3b6a, deathLines: ['stopped recommending things', 'was not, in fact, for you', 'got its feed reset'] });
+    this.knockable = false; this.dodges = false;
+    const g = new THREE.Group(); this.mesh.add(g); this.model = g;
+    const shell = new THREE.MeshStandardMaterial({ color: 0x15131c, metalness: 0.85, roughness: 0.18, emissive: 0x2a0612, emissiveIntensity: 0.4 });
+    const trim = new THREE.MeshStandardMaterial({ color: 0x220008, emissive: 0xff2a55, emissiveIntensity: 1.8 });
+    // two halves of a diamond that part around the eye
+    this.upper = new THREE.Group(); this.lower = new THREE.Group(); g.add(this.upper, this.lower);
+    const top = new THREE.Mesh(new THREE.ConeGeometry(1.0, 1.15, 4), shell); top.position.y = 0.575; top.rotation.y = Math.PI / 4; this.upper.add(top);
+    const bot = new THREE.Mesh(new THREE.ConeGeometry(1.0, 1.15, 4), shell); bot.position.y = -0.575; bot.rotation.set(Math.PI, Math.PI / 4, 0); this.lower.add(bot);
+    for (const [grp, y] of [[this.upper, 0.03], [this.lower, -0.03]]) { const band = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.035, 6, 4), trim); band.rotation.set(Math.PI / 2, 0, Math.PI / 4); band.position.y = y; grp.add(band); }
+    // the eye
+    this.eyeMat = new THREE.MeshStandardMaterial({ color: 0x330010, emissive: 0xff2a55, emissiveIntensity: 0.3 });
+    this.eye = new THREE.Mesh(new THREE.SphereGeometry(0.42, 24, 16), this.eyeMat); g.add(this.eye);
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 12), new THREE.MeshBasicMaterial({ color: 0x050005 })); pupil.position.z = 0.3; pupil.scale.z = 0.5; this.eye.add(pupil);
+    this.glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: fx.glowTex, color: 0xff2a55, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }));
+    this.glow.scale.setScalar(3.2); g.add(this.glow);
+    // a ring of little "play" buttons orbiting it
+    this.orbit = new THREE.Group(); g.add(this.orbit);
+    for (let i = 0; i < 6; i++) { const s = textSprite('▶', 0.32, { color: '#ff4f7a', font: 'Arial' }); const a = (i / 6) * Math.PI * 2; s.position.set(Math.cos(a) * 1.7, Math.sin(a * 2) * 0.2, Math.sin(a) * 1.7); this.orbit.add(s); }
+    g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    this.hb(0, 0.75, 0, 0.75).hb(0, -0.75, 0, 0.75).hb(0, 0, 0.1, 0.48, true);
+    this.state = 'closed'; this.st = rand(2, 3.5); this.openK = 0; this.immune = true; this.home = null; this.volley = 0;
+  }
+  netVis() { return [r2(this.openK)]; }
+  applyVis(v) { this.openK = v[0]; }
+  center(out = new THREE.Vector3()) { return out.set(this.pos.x, this.pos.y, this.pos.z); }
+  top(out = new THREE.Vector3()) { return out.set(this.pos.x, this.pos.y + 1.6, this.pos.z); }
+  animate(dt) {
+    const k = this.openK;
+    this.upper.position.y = k * 0.6; this.lower.position.y = -k * 0.6;
+    this.eyeMat.emissiveIntensity = 0.3 + k * 2.6;
+    this.glow.material.opacity = k * 0.8;
+    this.orbit.rotation.y += dt * (0.6 + k * 2.5);
+    this.model.position.y = Math.sin(this.t * 1.3) * 0.25;
+    this.model.rotation.y += dt * (this.state === 'closed' ? 0.3 : 0);
+  }
+  think(dt) {
+    const p = this.tgt();
+    if (!this.home) this.home = this.pos.clone();
+    // it watches you
+    this.yaw = dampAngle(this.yaw, Math.atan2(p.pos.x - this.pos.x, p.pos.z - this.pos.z), 2.5, dt);
+    this.st -= dt;
+    if (this.state === 'closed') {
+      this.openK = Math.max(0, this.openK - dt * 3);
+      if (this.st <= 0 && p.alive && this.canSee) { this.state = 'opening'; this.st = 0.7; playAt(this.pos, 'frCharge', 1); }
+    } else if (this.state === 'opening') {
+      this.openK = Math.min(1, this.openK + dt * 2.2);
+      if (this.st <= 0) { this.state = 'open'; this.st = 2.6; this.volley = 6; this.shotT = 0.25; }
+    } else if (this.state === 'open') {
+      this.openK = Math.min(1, this.openK + dt * 4);
+      this.shotT -= dt;
+      if (this.volley > 0 && this.shotT <= 0) {
+        this.volley--; this.shotT = 0.14;
+        this.fire(this.center(new THREE.Vector3()), { speed: 15, dmg: 9, homing: 1.4, color: 0xff3b6a, size: 0.2, spread: 0.12, trail: 0xff8aa6, life: 4, source: 'The Algorithm (it was recommended for you)' });
+        playAt(this.pos, 'laser', 0.8);
+      }
+      if (this.st <= 0) { this.state = 'closed'; this.st = rand(3.5, 5); }
+    }
+    this.immune = this.openK < 0.5; // only while it's open
+  }
+}
+
 // ---------------- SUS SNIPER (hobgoblin) ----------------
 export class SusSniper extends Enemy {
   constructor(perches = G.encounter?.perches || []) {
@@ -1054,3 +1121,4 @@ export function clearEnemies() {
 registerNetType(RickRoller);
 registerNetType(Troll);
 registerNetType(Boyfriend);
+registerNetType(Algorithm);

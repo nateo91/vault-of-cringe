@@ -6,7 +6,7 @@ import * as D from '../dressing.js';
 import { Encounter, weightedPick } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight, addStars, removeCollider } from '../world.js';
 import { tileTex, textSprite, IMPACT, emojiSprite, emojiTex } from '../textures.js';
-import { Enemy, Doge, Stonks, Nyan, Wizard, RickRoller, Boyfriend, spawnEnemy, registerNetType } from '../enemies.js';
+import { Enemy, Doge, Stonks, Nyan, Wizard, RickRoller, Boyfriend, Algorithm, spawnEnemy, registerNetType } from '../enemies.js';
 import { HUD } from '../hud.js';
 import { play, playAt } from '../audio.js';
 import { unlock } from '../triumphs.js';
@@ -321,6 +321,9 @@ export class NormieGate extends Encounter {
       this.wizardSpawned = true;
       this.ghost('Two plates. Hold on. That wizard came from the moon.');
       this.spawnAway(Wizard, this.spawners, 20, 6);
+      // and the feed starts recommending things
+      spawnEnemy(Algorithm, 0, -40, 7);
+      this.ghost('Something is watching us from above the gate. It only opens when it shoots. Hit the eye.', 4);
     }
   }
   openGate() {

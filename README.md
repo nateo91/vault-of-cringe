@@ -139,6 +139,10 @@ Cloaked stalkers (just a faint shimmer) that circle around behind you. If one ge
 
 A support enemy in a plaid shirt who hangs back and turns his head to stare at one Guardian (a pink beam and heart-eyes). While he can see you, you're **NOTICED**: you take +50% damage and nearby enemies switch to you. Kill him first, or break his line of sight. Normie Gate (once a plate is held), This Is Fine, and the range's DISTRACTED wave.
 
+## The Algorithm
+
+A floating black pyramid, Destiny's Shrieker with a For You page. Shut, it can't be hurt (your hits say IMMUNE). Every few seconds it splits open around a glowing eye and fires a volley of homing "recommendations": that's your window, and the eye is a crit. It shows up over the Normie Gate once two plates are held, and in the range's FOR YOU wave.
+
 ## Elements and shields
 
 Every gun has an element: 🔥 Solar, ⚡ Arc or 🟣 Void. The icon shows next to its name on the HUD and in the Armory.
