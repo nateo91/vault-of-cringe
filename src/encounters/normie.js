@@ -10,6 +10,7 @@ import { Enemy, Doge, Stonks, Nyan, Wizard, RickRoller, Boyfriend, Algorithm, sp
 import { HUD } from '../hud.js';
 import { play, playAt } from '../audio.js';
 import { unlock } from '../triumphs.js';
+import { addLoreGhost } from '../lore.js';
 import { failChallenge } from '../challenges.js';
 import * as fx from '../fx.js';
 
@@ -164,6 +165,7 @@ export class NormieGate extends Encounter {
     this.adScreen = new THREE.Mesh(new THREE.PlaneGeometry(14.2, 8), new THREE.MeshBasicMaterial({ map: this.adTex, toneMapped: false }));
     this.adScreen.position.set(0, 4.2, -49.1); this.adScreen.visible = false; add(this.adScreen);
     this.adN = 0; this.adT = 0; this.adDrawT = 0;
+    addLoreGhost(3, new THREE.Vector3(-47.5, 1.3, 47.5)); // behind the crate in the far corner
     this.spawners = [[-46, 40], [46, 40], [-46, 10], [46, 10], [-46, -30], [46, -30], [-25, -46], [25, -46], [0, 46]].map(([x, z]) => new THREE.Vector3(x, 0, z));
   }
   start() {

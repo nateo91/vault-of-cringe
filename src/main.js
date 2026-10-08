@@ -5,6 +5,7 @@ import { Input, Pad, initInput, lockPointer, endFrame, pollPad, down, hit } from
 import { initAudio, play, say, setVolume, startMusic, stopMusic, updateListener, setRoom, setAmbience, setMusicIntensity } from './audio.js';
 import { HUD } from './hud.js';
 import { clearSecrets, updateSecrets, secretsFound, SECRETS } from './secrets.js';
+import { clearLore, updateLore } from './lore.js';
 import { unlock, renderTriumphs } from './triumphs.js';
 import { applyColorblind } from './colorblind.js';
 import { CAREER, newRun, bank, addTime, recordClear } from './career.js';
@@ -301,7 +302,7 @@ function beginRun(index) {
 
 function resetAll() {
   G.encounter?.cleanup();
-  clearEnemies(); clearCombat(); clearFx(); clearWorld(); clearSecrets();
+  clearEnemies(); clearCombat(); clearFx(); clearWorld(); clearSecrets(); clearLore();
   if (G.net.isClient) resetClientWorld();
   G.timers.length = 0;
   HUD.hideBoss(); HUD.clearDebuffs(); HUD.death(false);
@@ -713,6 +714,7 @@ function step(dt, doRender = true) {
     if (!G.net.isClient) G.encounter?.update(dt);
     G.encounter?.runLocal(dt);
     if (G.net.active) coopFrame(dt);
+    if (G.state === 'playing') updateLore(dt);
     updateSecrets(dt); // after coopFrame: a chest prompt wins over the empty revive prompt
     updateDressing(dt);
     updateFx(dt);

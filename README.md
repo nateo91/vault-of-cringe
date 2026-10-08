@@ -77,7 +77,7 @@ Press A on the name or code box for an on-screen keyboard, so a co-op game can b
    - Clear the guards in the plaza so the Vault's gate opens.
    - Miss a jump in the chasm and your Ghost catches you, putting you back on the last platform you stood on.
    - Falling anywhere else sends you back to the last checkpoint.
-   - A waypoint marker shows the way, and three hidden lore Ghosts are worth finding.
+   - A waypoint marker shows the way, and three hidden lore Ghosts are worth finding (every other encounter hides one more: eight in all, for the *Lorekeeper* triumph).
 
 1. **The Normie Gate** (cursed 1/5). Capture the 👍 LIKE, ▶ SUBSCRIBE and 🔔 BELL plates and hold all three at once. Stonks Acolytes walk onto your plates to un-capture them. A wizard comes from the moon.
 2. **Emergency Meeting** (cursed 2/5). Crewmates wander around doing tasks, and one of them is the impostor. Crewmates don't use vents. Shoot the wrong one and you get "bruh" plus a penalty. Every 30s the impostor kills someone, which calls a meeting and shuffles everyone. Three rounds. A vent that was just used flips open and keeps smoking for a few seconds, so you can catch an impostor even if you missed the moment.
@@ -178,7 +178,7 @@ The perk pool has D2 classics and meme perks:
 
 ## Triumphs, secrets and the weekly challenge
 
-- **🎖️ Triumphs** (main menu): thirteen raid achievements, from *Raid Clear* and *Flawless* to one for each encounter's twist. Get them all for the **TERMINALLY ONLINE** seal. Everyone earns their own.
+- **🎖️ Triumphs** (main menu): fourteen raid achievements, from *Raid Clear* and *Flawless* to one for each encounter's twist. Get them all for the **TERMINALLY ONLINE** seal. Everyone earns their own.
 - **Secret chests:** three are hidden off the main path. No waypoint, no objective text. Each player loots their own, and the victory screen counts how many you've ever found. Find all three for the raid exotic.
 - **📊 Raid Report** (main menu): your lifetime stats on this browser: clears and fastest clear, kills, precision-kill rate, accuracy, finishers, deaths, K/D, time played and your favourite weapon.
 - **🎯 Weekly challenge:** each week (resetting on Tuesday) one encounter gets an extra condition, shown on the main menu and in the encounter. Clear that encounter without breaking it for a once-a-week reward with a high exotic chance.

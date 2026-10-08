@@ -13,15 +13,11 @@ import * as D from '../dressing.js';
 import { playCinematic } from '../cinematic.js';
 import { addChest } from '../secrets.js';
 import { unlock } from '../triumphs.js';
+import { addLoreGhost } from '../lore.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const _e1 = new THREE.Vector3();
 
-const LORE = [
-  { title: 'The First Normie', text: 'Before the Vault there was only the Feed, endless and grey. Then someone posted a dog with a confused face, and the Feed blinked. Every meme since is a descendant of that blink. Most of them should not have been.' },
-  { title: 'On the Nature of Cringe', text: 'Cringe is not a feeling. Cringe is a substance. It pools in the low places of the internet and, given enough upvotes, it learns to stand. The Vault was built to hold it. The Vault is full.' },
-  { title: 'A Warning, Scratched Into Stone', text: 'Whoever reads this: do not look at the toilet. Do not let it sing. If you hear "skibidi" from below, you are already in Ohio. There is no leaving Ohio. There is only touching grass, and the grass is far away.' },
-];
 
 // A jumpship, roughly. Pointy, glowy, definitely not to scale.
 function makeJumpship() {
@@ -129,12 +125,7 @@ export class TheApproach extends Encounter {
     // the ship that dropped you off
     this.ship = makeJumpship(); this.ship.position.set(0, 3.5, 6); add(this.ship);
     // lore Ghosts
-    this.lore = [V(7, 1.3, -40), V(-8, 2.9, -82.5), V(14, 1.3, -147)].map((p, i) => {
-      const g = new THREE.Group(); g.position.copy(p); add(g);
-      g.add(emojiSprite('💠', 0.7));
-      const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: fx.glowTex, color: 0x9fe2ff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true })); glow.scale.setScalar(1.6); g.add(glow);
-      return { g, i, taken: false, base: p.clone() };
-    });
+    [V(7, 1.3, -40), V(-8, 2.9, -82.5), V(14, 1.3, -147)].forEach((p, i) => addLoreGhost(i, p));
     this.tt = 0; this.gateT = -1; this.section = 0;
   }
   // THE SHY BRIDGE. The gap is too wide to jump, and a howling headwind shoves anyone airborne back.
@@ -297,17 +288,6 @@ export class TheApproach extends Encounter {
       const gap = fellInGap && this.gapFall();
       if (!gap && (this.catches === 1 || Math.random() < 0.3)) HUD.ghost(pick(['Got you. Try that again.', 'Caught you. You are welcome.', 'I am a Ghost, not a safety net. ...Fine. Safety net.', 'That was a skill issue. Go again.']));
     }
-    // lore Ghosts
-    for (const l of this.lore) {
-      if (l.taken) continue;
-      l.g.position.y = l.base.y + Math.sin(this.tt * 2 + l.i) * 0.15;
-      l.g.rotation.y += dt;
-      if (p.alive && p.pos.distanceTo(l.g.position) < 1.8) {
-        l.taken = true; l.g.visible = false;
-        play('engram'); fx.burst(l.g.position, 0x9fe2ff, 20, 4, 0.1, 0.7, -2);
-        showLore(l.i);
-      }
-    }
     // checkpoints: falling just sends you back to the last one you reached
     if (p.alive && p.onGround) {
       if (p.pos.z < -58 && this.spawn.z > -55) { this.spawn.set(0, 0.1, -55); HUD.killfeed('Checkpoint reached: The Chasm'); }
@@ -365,20 +345,4 @@ function emojiRunes() {
   const r = ['🗿', '💀', '😂', '🔥', '👁️', '🚽', '🐸', '📉', '🐶', '🌚'];
   for (let j = 0; j < 7; j++) for (let i = 0; i < 6; i++) x.fillText(r[(i * 3 + j * 7) % r.length], 24 + i * 42, 34 + j * 40);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
-
-function showLore(i) {
-  const L = LORE[i];
-  let found = [];
-  try { found = JSON.parse(localStorage.getItem('voc-lore') || '[]'); } catch (e) { /* fine */ }
-  if (!found.includes(i)) found.push(i);
-  try { localStorage.setItem('voc-lore', JSON.stringify(found)); } catch (e) { /* fine */ }
-  const el = document.getElementById('lore');
-  el.querySelector('.lore-h').textContent = `LORE · ENTRY ${i + 1} OF ${LORE.length} · ${found.length}/${LORE.length} FOUND`;
-  el.querySelector('.lore-t').textContent = L.title;
-  el.querySelector('.lore-b').textContent = L.text;
-  el.classList.remove('hidden');
-  clearTimeout(showLore.t);
-  showLore.t = setTimeout(() => el.classList.add('hidden'), 14000);
-  local(() => say(L.text.split('. ')[0] + '.', 'ghost'));
 }

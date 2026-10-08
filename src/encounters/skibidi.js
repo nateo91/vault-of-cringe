@@ -16,6 +16,7 @@ import { HUD } from '../hud.js';
 import { play, playAt, say } from '../audio.js';
 import * as fx from '../fx.js';
 import { unlock } from '../triumphs.js';
+import { addLoreGhost } from '../lore.js';
 import { failChallenge } from '../challenges.js';
 
 const _t = new THREE.Vector3(), _f = new THREE.Vector3();
@@ -111,6 +112,7 @@ export class SkibidiFinale extends Encounter {
     // side floating islands (sigmas like to hang out here)
     const isle = std(0x6a5a78, { map: ft });
     this.islands = [[0, -40], [40, 0], [-40, 0], [0, 40]].map(([x, z]) => { addBox(x, -1, z, 10, 1.5, 10, isle); return new THREE.Vector3(x, 0.5, z); });
+    addLoreGhost(7, new THREE.Vector3(42, 1.8, 2)); // out on the east island
     // raised platforms — they matter later
     const plat = std(0x8a7a98, { emissive: 0x4fd8ff, emissiveIntensity: 0.15 });
     for (const [x, z] of [[-16, -16], [16, -16], [-16, 16], [16, 16]]) addBox(x, 0, z, 6, 1.2, 6, plat);

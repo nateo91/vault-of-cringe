@@ -12,6 +12,7 @@ import { setEnv, addBox, addCyl, add, std, pointLight } from '../world.js';
 import { addFur } from '../surface.js';
 import { addChest, addTrigger } from '../secrets.js';
 import { unlock } from '../triumphs.js';
+import { addLoreGhost } from '../lore.js';
 import { failChallenge } from '../challenges.js';
 import { tileTex, textSprite, emojiSprite, textTex, IMPACT } from '../textures.js';
 import { Enemy, Doge, Stonks, Boyfriend, registerNetType, applyMods } from '../enemies.js';
@@ -394,6 +395,7 @@ export class ThisIsFine extends Encounter {
     const sofa = std(0x6a2a2a, { roughness: 0.9 }), shelf = std(0x5a3a22);
     // sofas: low cover you can hop onto
     addBox(-13, 0, 6, 7, 1.3, 2.6, sofa); addBox(-13, 1.3, 7.1, 7, 1.4, 0.5, sofa);
+    addLoreGhost(6, new THREE.Vector3(-15.5, 2.6, 5.6)); // on the sofa (you'll be up there anyway)
     addBox(13, 0, 6, 7, 1.3, 2.6, sofa); addBox(13, 1.3, 7.1, 7, 1.4, 0.5, sofa);
     // bookshelves + side tables
     addBox(-16, 0, -14, 2.2, 5.5, 6, shelf); addBox(16, 0, -14, 2.2, 5.5, 6, shelf);

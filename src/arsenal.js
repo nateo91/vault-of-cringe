@@ -216,9 +216,9 @@ export class PerkEngine {
     if (this.has(w, 'kill_clip') || this.has(w, 'memento')) w.killReady = G.time + 3;
     if (crit && this.has(w, 'outlaw')) this.buff('outlaw', 6);
     if (this.has(w, 'frenzy')) this.buff('frenzy', 3.5, 1, 4);
-    if (crit && this.has(w, 'firefly')) this.boom(pos, 3, 90, 0xff8a2a);
+    if (crit && this.has(w, 'firefly')) this.boom(pos, 3, 90, 0xff8a2a, w.def.id);
     if (this.has(w, 'vine_boom')) {
-      this.boom(pos, 4.5, 70, 0x9a9488);
+      this.boom(pos, 4.5, 70, 0x9a9488, w.def.id);
       playAt(pos, 'vineBoom', 1 + Math.random() * 0.3);
     }
     if (crit && this.has(w, 'grassy')) {
@@ -246,8 +246,8 @@ export class PerkEngine {
   onAmmo(w) { if (this.has(w, 'overflow')) w.mag = Math.min(w.def.mag * 2, w.mag + w.def.mag); }
   onGrenade() { const p = this.p; const w = p.wpn[p.cur]; if (this.has(w, 'demolitionist')) p.refill(w); }
   // explosion from a perk: damage applies on this machine, teammates see the boom
-  boom(pos, r, dmg, color) {
-    explode(pos, r, dmg, { color, knock: 0.4, localFx: true, big: 0.7 });
+  boom(pos, r, dmg, color, weapon = null) {
+    explode(pos, r, dmg, { color, knock: 0.4, localFx: true, big: 0.7, weapon });
     G.net.playerEv(['pfx', 'boom', [+pos.x.toFixed(2), +pos.y.toFixed(2), +pos.z.toFixed(2)], r, color]);
   }
 }

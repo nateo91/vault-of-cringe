@@ -13,6 +13,7 @@ import { CrewRig } from '../rigs.js';
 import { playCinematic } from '../cinematic.js';
 import { addChest, addTrigger } from '../secrets.js';
 import { unlock } from '../triumphs.js';
+import { addLoreGhost } from '../lore.js';
 import { failChallenge } from '../challenges.js';
 import { los } from '../combat.js';
 import { HUD } from '../hud.js';
@@ -243,6 +244,7 @@ export class EmergencyMeeting extends Encounter {
     });
     this.dark = 0; this.darkK = 0; this.fixProg = 0; this.panelI = 0;
     this.vision = new THREE.PointLight(0xbfd4ff, 0, 11, 1.6); add(this.vision); // made now: adding a light later recompiles every shader
+    addLoreGhost(4, new THREE.Vector3(34.5, 5.3, 34.5)); // up on a sniper perch
     this.addSpawns = [[-36, -36], [36, 36], [-36, 36], [36, -36], [0, -37], [0, 37]].map(([x, z]) => new THREE.Vector3(x, 0, z));
   }
   start() {

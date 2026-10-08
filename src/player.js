@@ -616,7 +616,7 @@ export class Player {
       if (this.perks.has(w, 'tracking')) target = this.coneTarget(origin, this.aimDir(0), 0.45, 120);
       new Projectile({ pos: muzzle, vel: dir.multiplyScalar(38), owner: 'player', element: d.element, weapon: d.id, dmg: d.dmg, splash: d.splash, splashDmg: d.splashDmg * this.perks.dmgMult(w, null, false), color: 0xffaa55, size: 0.16, trail: 0xbbbbbb, life: 5,
         homing: target ? 3 : 0, target,
-        onHit: (pos) => { if (this.perks.has(w, 'wolfpack')) this.wolfpack(pos); if (this.perks.has(w, 'cluster')) this.cluster(pos); } });
+        onHit: (pos) => { if (this.perks.has(w, 'wolfpack')) this.wolfpack(pos, d.id); if (this.perks.has(w, 'cluster')) this.cluster(pos, d.id); } });
       fx.burst(muzzle, 0xffcc88, 8, 4, 0.08, 0.3, 0);
       G.net.playerEv(['snd3', v3(muzzle), d.sound, []]);
       G.shake += 0.12;
@@ -675,10 +675,10 @@ export class Player {
     }
     return best;
   }
-  cluster(pos) {
+  cluster(pos, weapon = null) {
     for (let i = 0; i < 6; i++) {
       const v = new THREE.Vector3(rand(-1, 1), rand(0.8, 1.6), rand(-1, 1)).normalize().multiplyScalar(rand(6, 10));
-      new Projectile({ pos: pos.clone().add(new THREE.Vector3(0, 0.4, 0)), vel: v, owner: 'player', dmg: 0, splash: 1.6, splashDmg: 35, gravity: 18, color: 0xffdd55, size: 0.06, life: 1.4, trail: 0xffaa55 });
+      new Projectile({ pos: pos.clone().add(new THREE.Vector3(0, 0.4, 0)), vel: v, owner: 'player', dmg: 0, splash: 1.6, splashDmg: 35, gravity: 18, color: 0xffdd55, size: 0.06, life: 1.4, trail: 0xffaa55, weapon });
     }
   }
   recoilKick([pitch, yaw, vm]) {
@@ -858,13 +858,13 @@ export class Player {
   }
 
   // ---------------------------------------------------------------- abilities & supers
-  wolfpack(pos) {
+  wolfpack(pos, weapon = null) {
     // Wolfpack rounds: mini rockets that seek nearby memes
     const targets = G.enemies.filter((e) => e.alive && !e.untargetable && e.hostile !== false && e.pos.distanceTo(pos) < 25);
     for (let i = 0; i < 3; i++) {
       const t = targets.length ? targets[i % targets.length] : null;
       const v = new THREE.Vector3(rand(-1, 1), rand(0.6, 1.4), rand(-1, 1)).normalize().multiplyScalar(14);
-      new Projectile({ pos: pos.clone().add(new THREE.Vector3(0, 0.4, 0)), vel: v, owner: 'player', dmg: 0, splash: 2, splashDmg: 45, color: 0xff7744, size: 0.08, homing: t ? 4 : 0, target: t, life: 2.2, trail: 0xff9966 });
+      new Projectile({ pos: pos.clone().add(new THREE.Vector3(0, 0.4, 0)), vel: v, owner: 'player', dmg: 0, splash: 2, splashDmg: 45, color: 0xff7744, size: 0.08, homing: t ? 4 : 0, target: t, life: 2.2, trail: 0xff9966, weapon });
     }
   }
   fireGG() {

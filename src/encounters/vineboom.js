@@ -13,6 +13,7 @@ import * as M from '../models.js';
 import { rimify } from '../rigs.js';
 import { playCinematic } from '../cinematic.js';
 import { unlock } from '../triumphs.js';
+import { addLoreGhost } from '../lore.js';
 import { failChallenge } from '../challenges.js';
 import { HUD } from '../hud.js';
 import { play, playAt, say } from '../audio.js';
@@ -221,6 +222,7 @@ export class VineBoomChamber extends Encounter {
     D.groundFog({ min: [-32, -32], max: [32, 32], color: 0x8a5aa8, opacity: 0.25, count: 26 });
     D.birds({ center: [0, 0, 0], count: 12, radius: [12, 30], height: [14, 24], color: 0x120a18, bats: true });
     D.weather('snow', { color: 0xd9b8ff, count: 500, speed: 0.35, wind: [0.2, 0.1], opacity: 0.6 }); // drifting motes
+    addLoreGhost(5, new THREE.Vector3(Math.cos(Math.PI + 0.42) * 30.5, 1.3, Math.sin(Math.PI + 0.42) * 30.5)); // tucked behind a tall cover block on the outer ring
     this.spawners = [];
     for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + Math.PI / 8; this.spawners.push(new THREE.Vector3(Math.cos(a) * 30, 0, Math.sin(a) * 30)); }
   }
