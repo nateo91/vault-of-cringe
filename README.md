@@ -182,7 +182,8 @@ The perk pool has D2 classics and meme perks:
 
 ## Triumphs, secrets and the weekly challenge
 
-- **🎖️ Triumphs** (main menu): fourteen raid achievements, from *Raid Clear* and *Flawless* to one for each encounter's twist. Get them all for the **TERMINALLY ONLINE** seal: a 🏅 next to your name that the whole fireteam sees (lobby, nameplate, leaderboard). Everyone earns their own.
+- **🎖️ Triumphs** (main menu): fifteen raid achievements, from *Raid Clear* and *Flawless* to one for each encounter's twist. Get them all for the **TERMINALLY ONLINE** seal: a 🏅 next to your name that the whole fireteam sees (lobby, nameplate, leaderboard). Everyone earns their own.
+- **A secret encounter:** somewhere in the Approach, reality didn't load properly. Find it and you leave the raid for a while. Getting back out earns a triumph and, once a week, loot.
 - **Secret chests:** three are hidden off the main path. No waypoint, no objective text. Each player loots their own, and the victory screen counts how many you've ever found. Find all three for the raid exotic.
 - **📊 Raid Report** (main menu): your lifetime stats on this browser: clears and fastest clear, kills, precision-kill rate, accuracy, finishers, deaths, K/D, time played and your favourite weapon.
 - **🎯 Weekly challenge:** each week (resetting on Tuesday) one encounter gets an extra condition, shown on the main menu and in the encounter. Clear that encounter without breaking it for a once-a-week reward with a high exotic chance.
@@ -238,6 +239,8 @@ Both the main menu and the pause menu have:
 - **Skibidi:** his first death doesn't stick. He rises again, immune, and every guardian has to out-vibe him: dance (B) or dab (J) for 4 seconds between shockwaves.
 
 **Secret chests:** a rock past the lore platform out over the Approach's chasm; the actual EMERGENCY button in the Meeting's cafeteria; the crooked 🌻 painting in This Is Fine.
+
+**The Backrooms:** a flickering yellow wall panel on the west edge of the Approach's plaza. Slide into it and you noclip out of the raid into a yellow maze. Collect four Almond Waters, then reach the glowing EXIT. Something called the Entity hunts you through the maze: it hits hard, gets faster with every bottle, and can't be killed, but enough damage scares it off to the far corner for a while. The exit drops the fireteam at the Normie Gate.
 
 **Raid exotic: Touch of Grass** (scout rifle). The last three rounds in the mag deal +60% damage and grow back by themselves, at 4 health a shot (never lethal). Precision kills heal you and clear brainrot. It drops once, for finding all three secrets.
 

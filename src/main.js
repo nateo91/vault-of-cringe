@@ -10,7 +10,7 @@ import { unlock, renderTriumphs, hasSeal } from './triumphs.js';
 import { applyColorblind } from './colorblind.js';
 import { BUILD, watchForUpdates } from './version.js';
 import { CAREER, newRun, bank, addTime, recordClear } from './career.js';
-import { announceChallenge, weekly, doneThisWeek } from './challenges.js';
+import { announceChallenge, weekly, doneThisWeek, weekNumber } from './challenges.js';
 import { Player } from './player.js';
 import { updateEnemies, clearEnemies } from './enemies.js';
 import { updateCombat, clearCombat, Pickup } from './combat.js';
@@ -29,6 +29,7 @@ import { EmergencyMeeting } from './encounters/meeting.js';
 import { VineBoomChamber } from './encounters/vineboom.js';
 import { ThisIsFine } from './encounters/thisisfine.js';
 import { FiringRange } from './encounters/range.js';
+import { Backrooms } from './encounters/backrooms.js';
 import { SkibidiFinale } from './encounters/skibidi.js';
 
 const ENCOUNTERS = [TheApproach, NormieGate, EmergencyMeeting, VineBoomChamber, ThisIsFine, SkibidiFinale];
@@ -85,6 +86,20 @@ function init() {
   G.onEngram = () => grantLoot({ exoticChance: 0.04 }, 'ENGRAM DECRYPTED');
   G.onSecret = () => grantLoot({ exoticChance: 0.35 }, 'SECRET CHEST');
   G.onChallenge = () => grantLoot({ exoticChance: 0.5 }, 'WEEKLY CHALLENGE');
+  // noclipping out of the Approach (the host decides; a client asks it)
+  G.onNoclip = () => {
+    if (G.net.isClient || G.state !== 'playing' || G.encounterIndex !== 0) return;
+    G.backroomsReturn = nextIndex(0);
+    play('vineBoom', 0.4); HUD.bigText('NOCLIP', 'you fell out of reality', 2, 'warn');
+    after(0.8, () => loadEncounter(BACKROOMS_INDEX));
+  };
+  // getting back out of the Backrooms pays once a week
+  G.onBackroomsLoot = () => {
+    let wk = -1; try { wk = +localStorage.getItem('voc-backrooms-week'); } catch (e) { /* fine */ }
+    if (wk === weekNumber()) { HUD.killfeed('The Backrooms: already looted this week (resets Tuesday)'); return; }
+    try { localStorage.setItem('voc-backrooms-week', String(weekNumber())); } catch (e) { /* fine */ }
+    grantLoot({ exoticChance: 0.4 }, 'THE BACKROOMS');
+  };
   // the raid exotic: a guaranteed drop, once, for finding every secret
   G.onRaidExotic = (id) => {
     if (INV.items.some((i) => i.id === id)) return;
@@ -322,11 +337,12 @@ function resetAll() {
 }
 
 // the Firing Range lives outside the raid's encounter list
-const RANGE_INDEX = 99;
-const encClass = (i) => (i === RANGE_INDEX ? FiringRange : ENCOUNTERS[i]);
+const RANGE_INDEX = 99, BACKROOMS_INDEX = 98;
+const encClass = (i) => (i === RANGE_INDEX ? FiringRange : i === BACKROOMS_INDEX ? Backrooms : ENCOUNTERS[i]);
 
 const SOUNDSCAPES = {
   FiringRange: ['courtyard', 'outdoor'],
+  Backrooms: ['hall', 'void'],
   TheApproach: ['outdoor', 'storm'], NormieGate: ['courtyard', 'courtyard'], EmergencyMeeting: ['ship', 'ship'],
   VineBoomChamber: ['temple', 'temple'], ThisIsFine: ['livingroom', 'livingroom'], SkibidiFinale: ['void', 'void'],
 };
@@ -446,6 +462,14 @@ function wipe(reason) {
 }
 
 function onEncounterComplete() {
+  // the secret encounter: back into the raid where you left it
+  if (G.encounter?.constructor?.secret) {
+    if (G.run) G.run.splits.push({ name: G.encounter.constructor.title, t: +G.run.clock.toFixed(2) });
+    play('fanfare');
+    HUD.bigText('YOU GOT OUT', 'the Vault is right where you left it. mostly.', 3, 'good');
+    after(3, () => loadEncounter(G.backroomsReturn ?? nextIndex(0)));
+    return;
+  }
   if (G.run) G.run.splits.push({ name: ENCOUNTERS[G.encounterIndex].title, t: +G.run.clock.toFixed(2) });
   if (G.encounter?.traversal) {
     play('superReady');

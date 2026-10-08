@@ -12,6 +12,7 @@ export const TRIUMPHS = {
   spicy: { icon: '🌶️', name: 'Spicy', desc: 'Carry the hot sauce while the Dog is putting the fire out.' },
   vibes: { icon: '🕺', name: 'Immeasurable Aura', desc: 'Out-vibe Skibidi after he refuses to die.' },
   finisher: { icon: '🪑', name: 'Sit.', desc: 'Land 5 finishers in a single run.' },
+  noclip: { icon: '🟨', name: 'Noclip', desc: 'Find The Backrooms, and get back out.' },
   lore: { icon: '📜', name: 'Lorekeeper', desc: 'Find every lore Ghost in the Vault (there are eight).' },
   secrets: { icon: '🔑', name: 'Secret Keeper', desc: 'Find all three secret chests. (The raid exotic is waiting.)' },
   master: { icon: '⚔️', name: 'Master Raider', desc: 'Clear the raid with the Master modifier on.' },

@@ -335,6 +335,7 @@ function handleEvent(ev, from) {
       const pa = new THREE.Vector3(...a), pb = new THREE.Vector3(...b);
       impact(pb, null, pb.clone().sub(pa).normalize(), { sparks: 4 });
     } break;
+    case 'noclip': if (Net.isHost) G.onNoclip?.(); break;
     case 'pfx':
       if (!playing) break;
       if (a === 'boom') { applyFx('explosion', [b, c, d]); playAt(b, 'explosion', 1.5); }

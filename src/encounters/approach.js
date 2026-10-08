@@ -96,6 +96,13 @@ export class TheApproach extends Encounter {
     for (const [x, z] of [[-16.5, -120], [16.5, -120], [-16.5, -138], [16.5, -138]]) D.column(x, z, { h: 9, r: 1.0, color: 0x5d646c, accent: 0x5fd8ff });
     for (const [x, z] of [[-15, -110], [15, -110], [-15, -146], [15, -146]]) D.brazier(x, z, { color: 0xff7a20 });
     D.rubble(-6, -140, { n: 7 }); D.rubble(8, -112, { n: 5 });
+    // secret: a patch of reality that didn't load. Slide into it.
+    this.glitchPos = V(-17.4, 0, -122);
+    const gl = document.createElement('canvas'); gl.width = gl.height = 64;
+    const gx = gl.getContext('2d'); gx.fillStyle = '#c9b46a'; gx.fillRect(0, 0, 64, 64); gx.strokeStyle = 'rgba(120,100,40,.4)'; gx.lineWidth = 2; for (let i = 0; i < 64; i += 8) { gx.beginPath(); gx.moveTo(i, 0); gx.lineTo(i, 64); gx.stroke(); }
+    const glTex = new THREE.CanvasTexture(gl); glTex.colorSpace = THREE.SRGBColorSpace;
+    this.glitchMat = new THREE.MeshStandardMaterial({ map: glTex, emissive: 0x6a5a20, emissiveIntensity: 0.6, roughness: 0.9 });
+    this.glitch = addBox(this.glitchPos.x, 0, this.glitchPos.z, 0.25, 3, 2.4, this.glitchMat);
     // 5) the gate of the Vault
     const gateM = std(0x3a3f46, { roughness: 0.9, flatShading: true });
     addBox(-11.5, 0, -150, 13, 18, 3, gateM); addBox(11.5, 0, -150, 13, 18, 3, gateM); addBox(0, 12, -150, 10, 6, 3, gateM);
@@ -278,6 +285,18 @@ export class TheApproach extends Encounter {
       pl.last.set(x, y, pl.base.z);
     }
     this.updateShyBridge(dt);
+    // the glitch: it jitters like it didn't load properly; sliding into it noclips you out of the raid
+    if (this.glitch) {
+      const j = Math.random() < 0.08;
+      this.glitch.position.x = this.glitchPos.x + (j ? (Math.random() - 0.5) * 0.15 : 0);
+      this.glitchMat.emissiveIntensity = j ? 1.4 : 0.5 + Math.sin(this.tt * 9) * 0.1;
+      const d = distXZ(p.pos, this.glitchPos);
+      if (p.alive && d < 9 && !this.glitchHinted) { this.glitchHinted = true; HUD.ghost('That wall is... yellow? Nothing in the Vault is that shade of yellow.'); }
+      if (p.alive && p.slideT > 0 && d < 1.8 && !this.noclipped) {
+        this.noclipped = true;
+        if (G.net.isClient) G.net.playerEv(['noclip']); else G.onNoclip?.();
+      }
+    }
     // missed a jump? your Ghost catches you and puts you back on the last platform you stood on
     if (p.alive && p.pos.y < -5 && p.pos.z < -60 && p.pos.z > -108) {
       const b = this.lastPlat?.box, back = b ? V((b.min.x + b.max.x) / 2, b.max.y + 0.05, (b.min.z + b.max.z) / 2) : V(0, 0.1, -58);
