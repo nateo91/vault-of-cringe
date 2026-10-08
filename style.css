@@ -483,3 +483,8 @@ html[data-cvd="protan"] #dmgdirs i, html[data-cvd="deutan"] #dmgdirs i { border-
 .rp-k { font-size: 11px; letter-spacing: .2em; color: #9fe2ff; text-transform: uppercase; }
 .rp-fav { margin: 6px 0 16px; color: #ccd; }
 .rp-fav b { color: #ffd23f; }
+
+/* ---------- build stamp + update notice ---------- */
+#buildStamp { position: fixed; right: 8px; bottom: 6px; font-size: 11px; color: rgba(255,255,255,.35); letter-spacing: .08em; z-index: 5; pointer-events: none; }
+#updateNote { position: fixed; left: 50%; top: 10px; transform: translateX(-50%); z-index: 60; padding: 8px 14px; background: rgba(20,12,36,.94); border: 1px solid #ffd23f; color: #fff; font-size: 14px; box-shadow: 0 0 20px rgba(255,210,63,.3); }
+#updateNote span { color: #aab; font-size: 12px; }

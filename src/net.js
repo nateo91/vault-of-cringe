@@ -6,6 +6,13 @@ import { G, pick, local } from './game.js';
 import { applyFx, dmgNumber, impact, superRing, crater, grenadeField, rally } from './fx.js';
 import { play, playAt, say } from './audio.js';
 import { HUD } from './hud.js';
+import { BUILD } from './version.js';
+// a build mismatch: in the killfeed mid-raid, and on the lobby line in the menu (where the killfeed isn't shown)
+function versionWarning(t) {
+  HUD.killfeed(t);
+  const s = document.querySelector('#lobby .lobby-status');
+  if (s) { s.textContent = t; s.classList.add('err'); }
+}
 import { Projectile, Shockwave, Pickup, applyPickup } from './combat.js';
 import { NET_TYPES, applyMods, creditKill } from './enemies.js';
 import { Avatar } from './avatars.js';
@@ -95,7 +102,8 @@ function onHostData(conn, msg) {
     case 'hello': {
       if (Net.peers.size >= 5) { sendRaw(conn, { t: 'full' }); return; }
       Net.peers.set(id, { conn, name: clean(msg.name), cls: msg.cls, state: null });
-      sendRaw(conn, { t: 'welcome', id });
+      sendRaw(conn, { t: 'welcome', id, build: BUILD });
+      if (msg.build !== BUILD) versionWarning(`⚠ ${clean(msg.name)} is on a different version (${msg.build || 'old'} vs your ${BUILD}). Everyone should reload.`);
       if (G.state !== 'menu') { ensureAvatar(id, clean(msg.name), msg.cls); sendRaw(conn, { t: 'load', i: G.encounterIndex }); }
       HUD.killfeed(`${clean(msg.name)} joined the fireteam`);
       updateLobby();
@@ -185,10 +193,13 @@ export function joinGame(code, name) {
       const conn = peer.connect(PREFIX + code.toUpperCase().trim(), { reliable: true, serialization: 'json' });
       conn.on('open', () => {
         Object.assign(Net, { peer, hostConn: conn, code: code.toUpperCase(), active: true, isHost: false, isClient: true });
-        sendRaw(conn, { t: 'hello', name, cls: G.cls });
+        sendRaw(conn, { t: 'hello', name, cls: G.cls, build: BUILD });
       });
       conn.on('data', (msg) => {
-        if (msg.t === 'welcome') { Net.myId = msg.id; done = true; resolve(); }
+        if (msg.t === 'welcome') {
+          Net.myId = msg.id; done = true; resolve();
+          if (msg.build !== BUILD) setTimeout(() => versionWarning(`⚠ The host is on a different version (${msg.build || 'old'} vs your ${BUILD}). Everyone should reload.`), 500);
+        }
         else if (msg.t === 'full') fail('That fireteam is full (6 max).');
         else onClientData(msg);
       });

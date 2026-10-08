@@ -8,6 +8,7 @@ import { clearSecrets, updateSecrets, secretsFound, SECRETS } from './secrets.js
 import { clearLore, updateLore } from './lore.js';
 import { unlock, renderTriumphs } from './triumphs.js';
 import { applyColorblind } from './colorblind.js';
+import { BUILD, watchForUpdates } from './version.js';
 import { CAREER, newRun, bank, addTime, recordClear } from './career.js';
 import { announceChallenge, weekly, doneThisWeek } from './challenges.js';
 import { Player } from './player.js';
@@ -170,6 +171,15 @@ function setupMenus() {
   const drawMods = () => { $('#mods').innerHTML = Object.entries(MODS).map(([k, m]) => `<button class="mod ${G.settings.mods[k] ? 'on' : ''}" data-mod="${k}" title="${m.desc}">${m.icon} ${m.name}</button>`).join(''); };
   drawMods();
   $('#mods').onclick = (e) => { const b = e.target.closest('[data-mod]'); if (!b) return; G.settings.mods[b.dataset.mod] = !G.settings.mods[b.dataset.mod]; try { localStorage.setItem('voc-settings', JSON.stringify(G.settings)); } catch (err) { /* fine */ } drawMods(); };
+  // the build stamp, and a heads-up when a newer build is out
+  const ver = document.createElement('div'); ver.id = 'buildStamp'; ver.textContent = 'build ' + BUILD; document.body.appendChild(ver);
+  watchForUpdates((b) => {
+    const n = document.createElement('div'); n.id = 'updateNote';
+    n.innerHTML = `A new version of the Vault is out (build ${escapeHtml(b)}). <button class="btn ghostbtn inline" id="updReload">RELOAD</button> <span>(between runs is best; co-op: everyone should reload)</span>`;
+    document.body.appendChild(n);
+    n.querySelector('#updReload').onclick = () => location.reload();
+    if (G.state === 'playing') HUD.killfeed(`🆕 New version out (build ${b}). Reload between runs.`);
+  });
   // this week's challenge, on the menu
   { const c = weekly(), E = ENCOUNTERS.find((k) => k.name === c.enc); $('#weekly').innerHTML = `<span class="wk-l">🎯 THIS WEEK</span> <b>${E?.title || c.enc}</b> · ${c.name}: ${c.desc}${doneThisWeek() ? ' <span class="wk-done">✓ done</span>' : ''}`; }
   $('#reportBtn').onclick = () => { bank(); renderReport(); $('#report').classList.remove('hidden'); };
