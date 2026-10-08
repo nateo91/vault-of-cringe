@@ -67,7 +67,7 @@ Plug one in and press any button; it works alongside mouse and keyboard, menus i
 | D-pad | emotes |
 | View / Start | Armory / pause |
 
-You can't type a name or a join code on a controller, so whoever joins a co-op game needs a keyboard for the code.
+Press A on the name or code box for an on-screen keyboard, so a co-op game can be joined without a keyboard.
 
 ## The raid
 

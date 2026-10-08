@@ -532,9 +532,29 @@ function frame() {
 // ---------------- menus on a controller ----------------
 // D-pad / left stick moves a highlight between whatever is clickable on the topmost screen, A clicks it,
 // B backs out, left/right nudge sliders and dropdowns. View opens the armory mid-raid.
-const OVERLAYS = ['credits', 'armory', 'triumphs', 'leaderboard', 'victory', 'wipe', 'pause', 'menu'];
-const BACK = { armory: '#armClose', triumphs: '#triClose', leaderboard: '#boardClose', pause: '#resume' };
+const OVERLAYS = ['padkb', 'credits', 'armory', 'triumphs', 'leaderboard', 'victory', 'wipe', 'pause', 'menu'];
+const BACK = { padkb: '#pkOk', armory: '#armClose', triumphs: '#triClose', leaderboard: '#boardClose', pause: '#resume' };
 let padSel = null;
+// an on-screen keyboard for text boxes (your name, the join code), driven by the same highlight
+function openPadKeyboard(target) {
+  let kb = document.getElementById('padkb');
+  if (!kb) {
+    kb = document.createElement('div'); kb.id = 'padkb'; kb.className = 'overlay hidden';
+    const keys = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('');
+    kb.innerHTML = `<div class="menu-inner pk-inner"><div class="title-small">TYPE IT</div><div class="pk-text"></div><div class="pk-grid">${keys.map((k) => `<button class="btn ghostbtn inline pk-k" data-k="${k}">${k}</button>`).join('')}<button class="btn ghostbtn inline pk-k" data-k=" ">SPACE</button><button class="btn ghostbtn inline pk-k" data-k="del">⌫</button></div><button id="pkOk" class="btn">OK</button></div>`;
+    document.body.appendChild(kb);
+  }
+  const show = () => { kb.querySelector('.pk-text').textContent = target.value + '_'; };
+  kb.querySelector('.pk-grid').onclick = (e) => {
+    const k = e.target.closest('[data-k]')?.dataset.k; if (!k) return;
+    const max = +target.maxLength > 0 ? +target.maxLength : 24;
+    if (k === 'del') target.value = target.value.slice(0, -1);
+    else if (target.value.length < max) target.value += k;
+    target.dispatchEvent(new Event('input', { bubbles: true })); show();
+  };
+  kb.querySelector('#pkOk').onclick = () => { kb.classList.add('hidden'); target.dispatchEvent(new Event('change', { bubbles: true })); };
+  show(); kb.classList.remove('hidden');
+}
 if (G.debug) window.padMenu = () => padMenu(); // test hook
 function padMenu() {
   const nav = Pad.nav;
@@ -586,10 +606,19 @@ function padMenu() {
       else if (score < ls) { ls = score; loose = el; }
     }
     best ||= loose;
+    // up/down: the nearest row that way, then whatever in it is closest sideways (how TV menus do it)
+    if (dir[1]) {
+      const cand = items.filter((el) => el !== padSel).map((el) => { const r = el.getBoundingClientRect(); return { el, along: (r.top + r.height / 2 - cy) * dir[1], side: Math.max(0, r.left - cx, cx - r.right) }; }).filter((c) => c.along >= 8);
+      if (cand.length) {
+        const near = Math.min(...cand.map((c) => c.along));
+        best = cand.filter((c) => c.along <= near + 24).sort((a, b) => a.side - b.side)[0].el;
+      }
+    }
     if (best) select(best);
     return;
   }
   if (nav.a) {
+    if (padSel.tagName === 'INPUT' && (padSel.type === 'text' || !padSel.getAttribute('type'))) { openPadKeyboard(padSel); return; }
     if (padSel.type === 'checkbox') { padSel.checked = !padSel.checked; padSel.dispatchEvent(new Event('change', { bubbles: true })); }
     else if (padSel.tagName !== 'INPUT' && padSel.tagName !== 'SELECT') padSel.click();
   }

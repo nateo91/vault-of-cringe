@@ -460,3 +460,10 @@ label { cursor: pointer; }
 
 /* the controller's menu highlight */
 .pad-sel { outline: 3px solid #ffd23f !important; outline-offset: 3px; box-shadow: 0 0 18px rgba(255,210,63,.45) !important; }
+
+/* the controller's on-screen keyboard */
+#padkb.overlay { z-index: 40; background: rgba(6,4,14,.92); backdrop-filter: blur(6px); }
+.pk-inner { max-width: 640px; }
+.pk-text { font-family: var(--impact); font-size: 34px; letter-spacing: .12em; margin: 8px 0 14px; min-height: 42px; color: #ffd23f; }
+.pk-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; margin-bottom: 14px; }
+.pk-grid .pk-k { padding: 8px 0; min-width: 0; font-size: 16px; }
