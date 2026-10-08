@@ -1,6 +1,8 @@
 // Encounter 5: SKIBIDI OF A THOUSAND TOILETS — touch grass, farm aura, pass the vibe check, survive Ohio.
+// The twist: he doesn't stay dead. The victory banner rolls, then he rises out of the bowl still singing, immune.
+// You can't shoot a vibe. Every guardian has to out-vibe him: dance (B) or dab (J) for 4 s, between shockwaves.
 import * as THREE from 'three';
-import { G, rand, pick, after, dampAngle, distXZ, local } from '../game.js';
+import { G, rand, pick, after, dampAngle, distXZ, local, players } from '../game.js';
 import * as D from '../dressing.js';
 import { Encounter, weightedPick } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight, addStars } from '../world.js';
@@ -29,8 +31,15 @@ class SkibidiBoss extends Enemy {
     this.shieldLbl = textSprite('RIZZ SHIELD', 0.8, { font: IMPACT, weight: 'normal', color: '#ff4fd8' }); this.shieldLbl.position.y = 13.2; this.mesh.add(this.shieldLbl);
     this.spitCd = 4; this.talkT = 6;
   }
+  // the first time he "dies", he doesn't
+  die(info) {
+    if (this.enc && !this.enc.fakedOut && !G.net.isClient) { this.hp = 1; this.enc.fakeOut(); return; }
+    super.die(info);
+  }
   animate(dt) {
-    this.shield.visible = this.shieldLbl.visible = this.immune;
+    this.sinkK = (this.sinkK || 0) + ((this.sinkTo || 0) - (this.sinkK || 0)) * Math.min(1, dt * 1.6);
+    this.model.position.y = -this.sinkK * 7.5;
+    this.shield.visible = this.shieldLbl.visible = this.immune && !this.sinkTo && this.enc.phase !== 'vibeoff';
     const bob = Math.abs(Math.sin(this.t * 3.2)) * 1.4;
     const u = this.model.userData;
     u.head.group.position.y = 6.3 + bob;
@@ -45,7 +54,7 @@ class SkibidiBoss extends Enemy {
     this.talkT -= dt;
     if (this.talkT <= 0) { this.talkT = rand(8, 14); const l = pick(BOSS_LINES); fx.floatText(this.top().clone().setY(this.pos.y + 13), l, { height: 1.0 }); say(l, 'boss', false); }
     this.spitCd -= dt;
-    if (this.spitCd <= 0 && p.alive && this.enc.phase !== 'final') {
+    if (this.spitCd <= 0 && p.alive && this.enc.phase !== 'final' && this.enc.phase !== 'vibeoff' && this.enc.phase !== 'fakeout') {
       this.spitCd = rand(3, 4.5) - (this.enc.p2 ? 0.8 : 0);
       const from = this.hbWorld(this.hitboxes[1], new THREE.Vector3());
       for (let i = 0; i < 5; i++) {
@@ -256,6 +265,12 @@ export class SkibidiFinale extends Encounter {
     else HUD.setDebuff('brain', `🧠 BRAINROT x${this.brainrot}${inGrass ? '  🌱' : ''}`, this.brainrot >= 7);
     if (!this.host) this.grassT -= dt;
     for (const g of this.grass) g.userData.base.material.emissiveIntensity = this.grassT < 3 ? (Math.sin(this.t * 20) > 0 ? 1.5 : 0.2) : 0.5;
+    // the dance-off: your own meter
+    if (this.phase === 'vibeoff' && p.alive) {
+      if (p.emote === 1 || p.emote === 3) this.myDance = (this.myDance || 0) + dt;
+      const m = Math.min(4, this.myDance || 0);
+      HUD.setDebuff('vibe', m >= 4 ? '🕺 OUT-VIBED. hold it there.' : `🕺 VIBE ${m.toFixed(1)}/4s — dance (B) or dab (J)`, m < 4);
+    } else HUD.clearDebuff('vibe');
     // lava
     if (this.phase === 'final') {
       this.floorMat.emissiveIntensity = 0.6 + Math.sin(this.t * 4) * 0.2;
@@ -287,6 +302,7 @@ export class SkibidiFinale extends Encounter {
     const b = this.boss;
     if (!b.alive) { this.won = true; return this.win(); }
     const ratio = b.hp / b.maxHp;
+    if (this.phase === 'fakeout' || this.phase === 'vibeoff') return this.updateVibeOff(dt);
 
     this.grassT -= dt;
     if (this.grassT <= 3 && this.grassT + dt > 3) HUD.killfeed('🌱 The grass is moving in 3s...');
@@ -334,6 +350,61 @@ export class SkibidiFinale extends Encounter {
       }
     }
   }
+  fakeOut() {
+    this.fakedOut = true; this.phase = 'fakeout'; this.fakeT = 0; this.vibe = null;
+    const b = this.boss; b.immune = true;
+    for (const e of G.enemies) if (e.alive && e !== b) { fx.burst(e.center(), 0xffffff, 8, 4, 0.12, 0.5); e.remove(); }
+    this.ev('fakeout');
+  }
+  ev_fakeout() {
+    const b = this.boss || G.enemies.find((e) => e instanceof SkibidiBoss);
+    if (b) b.sinkTo = 1;
+    HUD.hideBoss(); play('flush'); play('airhorn');
+    HUD.bigText('SKIBIDI HAS BEEN FLUSHED', 'Ohio is saved. Somehow.', 3.2, 'meme');
+    this.ghost('We did it. We actually did it. I am going to go touch grass. For—');
+  }
+  ev_rise() {
+    const b = this.boss || G.enemies.find((e) => e instanceof SkibidiBoss);
+    if (b) { b.sinkTo = 0; fx.floatText(b.top().clone().setY(b.pos.y + 13), 'you thought', { height: 1.2, life: 2.5 }); }
+    play('vineBoom', 0.6); play('flush'); G.shake += 1;
+    HUD.bigText('...skibidi dop dop', 'yes yes', 2.6, 'warn');
+    this.ghost('No. NO. He is still vibing. Guardian, you cannot shoot a vibe. You have to OUT-VIBE it. DANCE! (B) Or dab! (J)', 1.2);
+    say('skibidi', 'boss', false);
+    this.myDance = 0;
+  }
+  ev_outvibed() {
+    play('airhorn'); play('correct');
+    HUD.bigText('OUT-VIBED', 'skibidi could not handle that much rizz', 3, 'good');
+  }
+  updateVibeOff(dt) {
+    const b = this.boss;
+    if (this.phase === 'fakeout') {
+      this.fakeT += dt;
+      if (this.fakeT >= 4.5) {
+        this.phase = 'vibeoff'; this.vibeOffT = 35; this.danced = new Map(); this.vibeT = 6;
+        b.hp = Math.round(b.maxHp * 0.25);
+        this.ev('rise');
+      }
+      return;
+    }
+    // every guardian needs 4 s of dancing/dabbing; the jump shockwaves keep interrupting
+    const alive = players().filter((q) => q.alive);
+    for (const q of alive) {
+      const k = q === G.player ? 'me' : q.id;
+      if (q.emote === 1 || q.emote === 3) this.danced.set(k, (this.danced.get(k) || 0) + dt);
+    }
+    const done = alive.filter((q) => (this.danced.get(q === G.player ? 'me' : q.id) || 0) >= 4).length;
+    this.vibeOffT -= dt;
+    HUD.objective(null, `HE IS STILL VIBING. You can't shoot a vibe.\nOut-vibe him: DANCE (B) or DAB (J) for 4s each\nGuardians out-vibing: ${done}/${alive.length}\nThe Final Flush in ${Math.max(0, Math.ceil(this.vibeOffT))}s`);
+    HUD.boss(b.name, b.hp / b.maxHp, { immune: true, sub: 'VIBING — out-vibe him: dance (B)' });
+    this.updateVibe(dt);
+    if (alive.length && done >= alive.length) {
+      this.ev('outvibed');
+      this.phase = 'final'; b.immune = false; b.hp = 0; b.die({}); // the real one this time
+      return;
+    }
+    if (this.vibeOffT <= 0 && !this.flushed) { this.flushed = true; play('flush'); HUD.bigText('*FLUSH*', 'you got out-vibed', 3, 'warn'); this.ev('flush'); }
+  }
   ev_flush() { G.player.revives = 0; local(() => G.player.die('the Final Flush (DPS check failed)')); }
   addAura() {
     this.aura = Math.min(3000, this.aura + 1000);
@@ -370,7 +441,7 @@ export class SkibidiFinale extends Encounter {
     if (!this.vibe) {
       this.vibeT -= dt;
       if (this.vibeT <= 0) {
-        if (this.phase === 'final') { this.vibeT = 7; this.startVibe('jump'); }
+        if (this.phase === 'final' || this.phase === 'vibeoff') { this.vibeT = 7; this.startVibe('jump'); }
         else { this.vibeT = this.p2 ? rand(15, 19) : rand(19, 24); this.startVibe(pick(['move', 'look', 'jump'])); }
       }
       return;
@@ -456,5 +527,5 @@ export class SkibidiFinale extends Encounter {
       },
     });
   }
-  cleanup() { HUD.clearDebuff('brain'); document.getElementById('game').style.animation = ''; }
+  cleanup() { HUD.clearDebuff('brain'); HUD.clearDebuff('vibe'); document.getElementById('game').style.animation = ''; }
 }
