@@ -305,6 +305,7 @@ export class Player {
       if (this.shield <= 0) play('shieldBreak');
     }
     this.hp -= a;
+    this.perks?.onHurt?.(amount);
     HUD.damageFlash(amount);
     if (from) HUD.damageDir(from, amount);
     hurtPulse(amount);

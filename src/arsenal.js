@@ -23,6 +23,8 @@ export const DEFS = {
   sa: { id: 'sa', model: 'sa', name: 'Pocket Pickle', type: 'Sidearm', slot: 1, ammo: 'primary', rarity: 'legendary', kind: 'single', dmg: 21, crit: 1.6, rof: 0.17, mag: 15, reload: 1.3, spread: 0.012, range: 50, falloff: [14, 30, 0.55], color: 0x9cff6a, sound: 'sa', kick: [0.014, 0.01, 0.6], aa: [2.4, 40], zoom: 66, adsZ: -0.32, hip: [0.11, -0.12, -0.27], flavor: "I turned myself into a pistol. Funniest thing I've ever seen." },
   tr: { id: 'tr', model: 'tr', name: 'Laser Pointer', type: 'Trace Rifle', slot: 1, ammo: 'special', rarity: 'exotic', kind: 'trace', dmg: 5, crit: 1.5, rof: 0.05, mag: 100, reload: 2.0, spread: 0, range: 60, falloff: [30, 60, 0.6], color: 0xff2a3a, sound: 'tr', kick: [0.0015, 0.001, 0.05], aa: [2.2, 60], zoom: 62, adsZ: -0.36, hip: [0.12, -0.12, -0.32], brick: 30, maxRes: 200, fixedPerks: ['shiny', 'subsistence'], flavor: 'Built for cats. Works on memes. Do not point it at the Moai.' },
   lf: { id: 'lf', model: 'lf', name: 'Main Character Beam', type: 'Linear Fusion Rifle', slot: 2, ammo: 'heavy', rarity: 'legendary', kind: 'linear', dmg: 300, crit: 2.2, charge: 0.55, rof: 0.9, mag: 3, reload: 2.4, spread: 0, range: 220, falloff: [200, 220, 0.9], color: 0xb98bff, sound: 'lf', kick: [0.05, 0.01, 2.0], aa: [1.0, 150], zoom: 36, adsZ: -0.38, hip: [0.14, -0.15, -0.38], brick: 3, maxRes: 9, flavor: 'Everyone else is an NPC. This proves it.' },
+  rz: { id: 'rz', model: 'rz', name: 'Rizzrunner', type: 'Submachine Gun', slot: 0, ammo: 'primary', rarity: 'exotic', kind: 'auto', dmg: 10, crit: 1.5, rof: 0.07, mag: 32, reload: 1.6, spread: 0.02, range: 60, falloff: [16, 36, 0.5], color: 0x7fd7ff, sound: 'smg', kick: [0.006, 0.006, 0.25], aa: [2.0, 40], zoom: 64, adsZ: -0.36, hip: [0.12, -0.12, -0.3], fixedPerks: ['rizzrunner', 'subsistence'], flavor: 'Getting hit just makes it more confident.' },
+  lm: { id: 'lm', model: 'lm', name: 'Le Mogarch', type: 'Combat Bow', slot: 0, ammo: 'primary', rarity: 'exotic', kind: 'bow', dmg: 96, crit: 2.0, charge: 0.6, rof: 0.22, mag: 20, reload: 1.0, spread: 0.003, range: 150, falloff: [60, 120, 0.7], color: 0xc58bff, sound: 'bow', kick: [0.028, 0.004, 0.6], aa: [1.6, 90], zoom: 46, adsZ: -0.34, hip: [0.1, -0.06, -0.38], fixedPerks: ['mogged', 'outlaw'], flavor: 'It looks at them once. That is enough.' },
   sr: { id: 'sr', model: 'sr', name: 'The Sus-pect', type: 'Scout Rifle', slot: 0, ammo: 'primary', rarity: 'legendary', kind: 'single', dmg: 46, crit: 1.85, rof: 0.38, mag: 14, reload: 2.0, spread: 0.004, range: 170, falloff: [70, 130, 0.7], color: 0xff8080, sound: 'sr', kick: [0.024, 0.008, 0.8], aa: [1.4, 110], zoom: 40, adsZ: -0.38, hip: [0.13, -0.13, -0.32], flavor: 'Seen venting. Shoots anyway.' },
   sg: { id: 'sg', model: 'sg', name: 'The Chaperwoof', type: 'Shotgun', slot: 1, ammo: 'special', rarity: 'legendary', kind: 'pellets', dmg: 15, pellets: 10, crit: 1.4, rof: 0.85, mag: 5, shellTime: 0.48, spread: 0.065, range: 32, falloff: [10, 26, 0.35], color: 0xa0fff0, sound: 'sg', kick: [0.06, 0.02, 1.6], aa: [3.5, 16], zoom: 64, adsZ: -0.4, hip: [0.12, -0.125, -0.3], brick: 4, maxRes: 25, flavor: 'Who let the dogs out? This did.' },
   sn: { id: 'sn', model: 'sn', name: 'Big Brain', type: 'Sniper Rifle', slot: 1, ammo: 'special', rarity: 'legendary', kind: 'sniper', dmg: 105, crit: 2.6, rof: 0.95, mag: 4, reload: 2.4, spread: 0.06, range: 260, falloff: [220, 260, 1], color: 0xc8e8ff, sound: 'sn', kick: [0.07, 0.012, 1.8], aa: [1.0, 220], zoom: 54, scope: 'sn', adsZ: -0.36, hip: [0.13, -0.14, -0.3], brick: 4, maxRes: 16, flavor: 'Galaxy brain. Galaxy damage.' },
@@ -63,6 +65,8 @@ export const PERKS = {
   wolfpack: { name: 'Wolfpack Rounds', icon: '🐺', col: 'x', desc: 'Rockets split into seeking mini-rockets on impact.' },
   memento: { name: 'Memento Potato', icon: '🥔', col: 'x', desc: 'Reloading after a kill empowers the next 6 shots (+25% damage).' },
   grassy: { name: 'Touch of Grass', icon: '🌱', col: 'x', desc: 'The last 3 rounds in the mag deal +60% damage and grow back by themselves, at 4 health a shot (never lethal). Precision kills touch grass: health and shields back, and a stack of brainrot gone.' },
+  rizzrunner: { name: 'Rizzrunner', icon: '⚡', col: 'x', desc: 'Taking damage charges Rizz. At full Rizz, for 6 s every hit chains lightning to up to two nearby memes and puts a round back in the mag.' },
+  mogged: { name: 'Mogged', icon: '🗿', col: 'x', desc: 'Precision hits mog the target: it takes damage every half second for 3 s.' },
   shiny: { name: 'Ooh, Shiny', icon: '🔴', col: 'x', desc: "The beam's damage ramps up the longer you hold it (up to double), and minor memes it touches get distracted and stop for a moment." },
   mlg: { name: '360 No Scope', icon: '🎮', col: 'x', desc: 'Shots fired while airborne are perfectly accurate and deal double damage. Airborne kills: AIRHORN.' },
 };
@@ -76,7 +80,7 @@ export function rollPerks(def) {
   return [pick(pool('a')), pick(pool('b'))];
 }
 // every gun's element
-const ELEMENT_OF = { smg: 'arc', bw: 'void', sa: 'solar', tr: 'solar', lf: 'void', tg: 'arc', hc: 'solar', ar: 'arc', pr: 'void', sr: 'void', sg: 'arc', sn: 'solar', ns: 'arc', fr: 'void', rl: 'solar', mg: 'arc', gl: 'void' };
+const ELEMENT_OF = { rz: 'arc', lm: 'void', smg: 'arc', bw: 'void', sa: 'solar', tr: 'solar', lf: 'void', tg: 'arc', hc: 'solar', ar: 'arc', pr: 'void', sr: 'void', sg: 'arc', sn: 'solar', ns: 'arc', fr: 'void', rl: 'solar', mg: 'arc', gl: 'void' };
 for (const id in DEFS) DEFS[id].element = ELEMENT_OF[id] || 'solar';
 
 export function makeItem(id, perks = null) { return { uid: 'w' + (uidN++).toString(36), id, perks: perks || rollPerks(DEFS[id]), isNew: true }; }
@@ -151,14 +155,28 @@ export function describe(item) {
 
 // ---------------------------------------------------------------- perk engine (one per player)
 export class PerkEngine {
-  constructor(player) { this.p = player; this.buffs = {}; }
+  constructor(player) { this.p = player; this.buffs = {}; this.moggedList = []; }
   has(w, id) { return w.inst.perks.includes(id); }
   buff(id, dur, add = 1, max = 1) {
     const b = this.buffs[id] || (this.buffs[id] = { t: 0, n: 0 });
     b.t = dur; b.n = Math.min(max, b.n + add);
   }
   n(id) { const b = this.buffs[id]; return b && b.t > 0 ? b.n : 0; }
+  // Rizzrunner charges from damage taken (the player's hurt() calls this)
+  onHurt(amount) {
+    const w = this.p.wpn[this.p.cur];
+    if (!w || !this.has(w, 'rizzrunner') || this.n('rizzrunner')) return;
+    w.rizz = Math.min(100, (w.rizz || 0) + amount * 1.6);
+    lhud('setDebuff', 'rizz', `⚡ RIZZ ${Math.floor(w.rizz)}%`);
+    if (w.rizz >= 100) { w.rizz = 0; this.buff('rizzrunner', 6); lhud('clearDebuff', 'rizz'); lhud('killfeed', '⚡ Rizzrunner: unspoken rizz unlocked'); play('superReady'); }
+  }
   tick(dt) {
+    // Mogged: the damage-over-time ticks on whoever is mogged
+    for (let i = (this.moggedList ||= []).length - 1; i >= 0; i--) {
+      const e = this.moggedList[i];
+      if (!e.alive || !(e.mogUntil > G.time)) { this.moggedList.splice(i, 1); continue; }
+      if (G.time >= e.mogNext) { e.mogNext = G.time + 0.5; e.takeDamage(16, false, { splash: true, element: 'void', weapon: e.mogBy }); if (Math.random() < 0.4) fxm.floatText(e.top(), '🗿', { height: 0.35, life: 0.5 }); }
+    }
     for (const [id, b] of Object.entries(this.buffs)) {
       if (b.t > 0) {
         b.t -= dt;
@@ -207,6 +225,12 @@ export class PerkEngine {
     }
   }
   onHit(w, e, crit) {
+    if (this.has(w, 'rizzrunner') && this.n('rizzrunner') && e) {
+      w.mag = Math.min(w.def.mag, w.mag + 1);
+      const near = G.enemies.filter((o) => o !== e && o.alive && o.hostile !== false && !o.untargetable && o.pos.distanceTo(e.pos) < 8).slice(0, 2);
+      for (const o of near) { o.takeDamage(12, false, { splash: true, element: 'arc', weapon: w.def.id }); fxm.tracer(e.center(), o.center(), 0x7fd7ff, 0.03, 0.08); }
+    }
+    if (crit && this.has(w, 'mogged') && e) { e.mogUntil = G.time + 3; e.mogBy = w.def.id; e.mogNext = e.mogNext > G.time ? e.mogNext : G.time + 0.5; if (!this.moggedList.includes(e)) this.moggedList.push(e); }
     if (this.has(w, 'shiny') && e && e.rank === 'minor' && !(e.shinyAt > G.time)) { e.shinyAt = G.time + 1.2; e.stunT = Math.max(e.stunT || 0, 0.3); if (Math.random() < 0.25) fxm.floatText(e.top(), pick(['ooh', 'shiny', '!?', 'red dot']), { height: 0.35, life: 0.6 }); }
     if (this.has(w, 'stonks')) { w.stonks = Math.min(15, (w.stonks || 0) + 1); w.misses = 0; }
     if (crit && this.has(w, 'ratio') && e) { e.ratioUntil = G.time + 4; if (Math.random() < 0.3) fxm.dmgNumber(e.top(), 'RATIO', 'immune'); }
@@ -266,9 +290,28 @@ const BX = (w, h, d) => bevelBox(w, h, d);
 const CY = (r, l, s = 14, r2 = r) => new THREE.CylinderGeometry(r, r2, l, s);
 
 // Left-hand placement per model (foregrip)
-export const LEFT_HAND = { smg: [0, -0.07, -0.2], sa: [0, -0.07, -0.02], bow: [0, -0.02, -0.02], tr: [0, -0.07, -0.26], lf: [0, -0.08, -0.32], tg: [0, -0.06, -0.28], ar: [0, -0.06, -0.26], pr: [0, -0.06, -0.24], sr: [0, -0.06, -0.28], sn: [0, -0.07, -0.3], ns: [0, -0.07, -0.3], fr: [0, -0.07, -0.25], mg: [0, -0.09, -0.3], gl: [0, -0.08, -0.22] };
+export const LEFT_HAND = { rz: [0, -0.07, -0.2], lm: [0, -0.02, -0.02], smg: [0, -0.07, -0.2], sa: [0, -0.07, -0.02], bow: [0, -0.02, -0.02], tr: [0, -0.07, -0.26], lf: [0, -0.08, -0.32], tg: [0, -0.06, -0.28], ar: [0, -0.06, -0.26], pr: [0, -0.06, -0.24], sr: [0, -0.06, -0.28], sn: [0, -0.07, -0.3], ns: [0, -0.07, -0.3], fr: [0, -0.07, -0.25], mg: [0, -0.09, -0.3], gl: [0, -0.08, -0.22] };
 
 export function buildModel(kind) {
+  if (kind === 'rz') {
+    // the SMG, wired up: arc-blue glow strips and a coil
+    const r = buildModel('smg'); r.kind = 'rz';
+    const arc = M(0x0a2a3a, { emissive: 0x7fd7ff, emissiveIntensity: 2.0 });
+    part(r.group, BX(0.054, 0.012, 0.22), arc, 0, -0.035, -0.06);
+    for (let i = 0; i < 3; i++) part(r.group, new THREE.TorusGeometry(0.03, 0.006, 6, 12), arc, 0, 0.012, -0.25 - i * 0.03);
+    r.group.traverse((o) => { if (o.isMesh && o.material?.color?.getHex?.() === 0x262a24) o.material = M(0x1e2230, { roughness: 0.35 }); });
+    return r;
+  }
+  if (kind === 'lm') {
+    // the bow, royal: purple limbs and gold tips
+    const r = buildModel('bow'); r.kind = 'lm';
+    r.group.traverse((o) => {
+      const c = o.material?.color?.getHex?.();
+      if (c === 0x3a1f2c) o.material = M(0x3a1a5a, { roughness: 0.35 });
+      else if (c === 0xff7aa8) o.material = M(0xffd23f, { emissive: 0xaa7a00, emissiveIntensity: 0.8, metalness: 0.9 });
+    });
+    return r;
+  }
   if (kind === 'tg') {
     const r = buildModel('sr'); r.kind = 'tg';
     // a fine fuzz of grass along the top and sides (thin blades, a few shades of green)
