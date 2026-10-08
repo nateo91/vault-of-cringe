@@ -1,5 +1,6 @@
 // The arsenal: weapon archetypes, named guns, perks, loot rolls, the saved inventory, and new gun models.
 import * as THREE from 'three';
+import * as roast from './roasts.js';
 import { addWear, bevelBox } from './surface.js';
 import { G, rand, pick, local } from './game.js';
 import * as fxm from './fx.js';
@@ -237,6 +238,7 @@ export class PerkEngine {
     }
   }
   onHit(w, e, crit) {
+    this.missRun = 0;
     if (crit && this.has(w, 'archer')) this.buff('archer', 4);
     if (crit && this.p.armor === 'lens' && e) { if (!(e.lensUntil > G.time)) fxm.floatText(e.top(), '🕶️', { height: 0.4, life: 0.7 }); e.lensUntil = G.time + 4; }
     if (w.def.kind === 'pellets' && this.has(w, 'one_two')) this.buff('one_two', 1.5);
@@ -253,6 +255,7 @@ export class PerkEngine {
     if (crit && this.has(w, 'triple_tap')) { w.crits = (w.crits || 0) + 1; if (w.crits % 3 === 0 && w.mag < w.def.mag) { w.mag++; play('shellIn'); } }
   }
   onMiss(w) {
+    roast.onMissStreak(this.missRun = (this.missRun || 0) + 1);
     if (!this.has(w, 'stonks') || !w.stonks) return;
     w.misses = (w.misses || 0) + 1;
     if (w.misses >= 2) { w.stonks = 0; w.misses = 0; lhud('killfeed', '📉 NOT STONKS (market crashed)'); }

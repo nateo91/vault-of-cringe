@@ -19,6 +19,7 @@ import { clearWorld, mergeStatic, trimShadows } from './world.js';
 import { initRenderer, render, applyQuality, followSun, bakeEnvironment, wipeGrade } from './render.js';
 import { togglePhoto, photoUpdate } from './photo.js';
 import { warmShaders } from './warmup.js';
+import * as roast from './roasts.js';
 import { updateDressing } from './dressing.js';
 import { loadInventory, rollLoot, addItem, makeItem, INV, DEFS, PERKS } from './arsenal.js';
 import { loadArmor, rollArmor, grantArmor, ARMOR } from './armor.js';
@@ -49,15 +50,6 @@ const TIPS = [
   'Tip: Hold space as a Warlock to glide. Look at you. Floating. Reading.',
   'Tip: Power level does nothing here. Just like real life.',
   'Tip: In co-op, hold E on a dead teammate\'s Ghost to revive them. Or don\'t. Your call.',
-];
-const WIPE_JOKES = [
-  'Bungie would like to remind you that this is a skill issue.',
-  'Have you considered: being better?',
-  "Your Ghost is drafting a strongly worded LFG post.",
-  'Somewhere, a Sherpa just felt a disturbance.',
-  'Wipe #{n}. The memes grow stronger.',
-  'Bruh.',
-  'Who was on adds? Nobody was on adds.',
 ];
 const LOOT = [
   ['Touch of Grass', 'Exotic Hand Cannon. "Go outside." Perk: Photosynthesis.'],
@@ -157,6 +149,7 @@ function setupMenus() {
     document.querySelectorAll('.padon').forEach((e) => (e.checked = G.settings.pad !== false));
     document.querySelectorAll('.sprinthold').forEach((e) => (e.checked = !!G.settings.sprintHold));
     document.querySelectorAll('.ghostvoice').forEach((e) => (e.value = G.settings.ghostVoice || 'dinkle'));
+    document.querySelectorAll('.roasts').forEach((e) => (e.value = G.settings.roasts || 'spicy'));
     document.querySelectorAll('.music').forEach((e) => (e.checked = G.settings.music));
     document.querySelectorAll('.quality').forEach((e) => (e.value = G.settings.quality || 'high'));
     document.querySelectorAll('.cvd').forEach((e) => (e.value = G.settings.cvd || 'off'));
@@ -168,6 +161,7 @@ function setupMenus() {
   document.querySelectorAll('.sens').forEach((e) => (e.oninput = () => { G.settings.sens = +e.value; save(); }));
   document.querySelectorAll('.fov').forEach((e) => (e.oninput = () => { G.settings.fov = +e.value; document.querySelectorAll('.fov').forEach((o) => (o.value = e.value)); save(); }));
   document.querySelectorAll('.vol').forEach((e) => (e.oninput = () => { G.settings.volume = +e.value; setVolume(G.settings.volume); save(); }));
+  document.querySelectorAll('.roasts').forEach((e) => (e.onchange = () => { G.settings.roasts = e.value; save(); }));
   document.querySelectorAll('.ghostvoice').forEach((e) => (e.onchange = () => { G.settings.ghostVoice = e.value; save(); say(e.value === 'dinkle' ? 'Guardian. I have been dead a long time. Not anymore.' : 'Guardian! Eyes up!', 'ghost'); }));
   document.querySelectorAll('.sprinthold').forEach((e) => (e.onchange = () => { G.settings.sprintHold = e.checked; save(); }));
   document.querySelectorAll('.padon').forEach((e) => (e.onchange = () => { G.settings.pad = e.checked; document.querySelectorAll('.padon').forEach((o) => (o.checked = e.checked)); save(); }));
@@ -385,7 +379,7 @@ function loadEncounter(i) {
   const E = encClass(i);
   const L = $('#loading');
   L.querySelector('.load-name').textContent = E.title;
-  L.querySelector('.load-tip').textContent = pick(TIPS);
+  L.querySelector('.load-tip').textContent = pick([...TIPS, ...roast.extraTips()]);
   const fill = L.querySelector('.load-bar .fill');
   fill.style.transition = 'none'; fill.style.width = '0';
   L.classList.remove('hidden');
@@ -462,7 +456,7 @@ function showWipe(reason) {
   wipeGrade(); HUD.death(false);
   const W = $('#wipe');
   W.querySelector('.wipe-reason').textContent = reason;
-  W.querySelector('.wipe-joke').textContent = pick(WIPE_JOKES).replace('{n}', G.stats.wipes);
+  W.querySelector('.wipe-joke').textContent = roast.wipeJoke(G.stats.wipes);
   W.classList.remove('hidden');
 }
 function wipe(reason) {

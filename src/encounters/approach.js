@@ -14,6 +14,7 @@ import { playCinematic } from '../cinematic.js';
 import { addChest } from '../secrets.js';
 import { unlock } from '../triumphs.js';
 import { addLoreGhost } from '../lore.js';
+import { catchLine } from '../roasts.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const _e1 = new THREE.Vector3();
@@ -337,7 +338,9 @@ export class TheApproach extends Encounter {
       fx.spawnFx(p.pos); play('orb');
       this.catches = (this.catches || 0) + 1;
       const gap = fellInGap && this.gapFall();
-      if (!gap && (this.catches === 1 || Math.random() < 0.3)) HUD.ghost(pick(['Got you. Try that again.', 'Caught you. You are welcome.', 'I am a Ghost, not a safety net. ...Fine. Safety net.', 'That was a skill issue. Go again.']));
+      const burn = catchLine(this.catches);
+      if (!gap && burn) HUD.ghost(burn);
+      else if (!gap && (this.catches === 1 || Math.random() < 0.3)) HUD.ghost(pick(['Got you. Try that again.', 'Caught you. You are welcome.', 'I am a Ghost, not a safety net. ...Fine. Safety net.', 'That was a skill issue. Go again.']));
     }
     // checkpoints: falling just sends you back to the last one you reached
     if (p.alive && p.onGround) {

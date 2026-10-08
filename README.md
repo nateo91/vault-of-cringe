@@ -224,6 +224,8 @@ World sounds are 3D (headphones recommended):
 
 The Ghost talks in a D1-style deadpan by default: the deepest natural-sounding male English voice your browser has, a little low and slow, with every exclamation flattened, and a burst of electronic chatter as it starts. It uses the browser's built-in speech, so the voice depends on your browser: Edge's "Natural" voices sound by far the best, and Chrome on Windows falls back to Microsoft Mark or David. Settings has **Ghost: Classic (squeaky)** for the old voice.
 
+The Ghost also roasts you. Death screens, wipe screens, loading tips and the killfeed are meaner, and it keeps count: your deaths in a run, long streaks of missed shots, how many times it has caught you over the Approach's chasm, and (in co-op) teammates going down. Your roasts are yours: they only show on your screen. The rule for these is mean about your *skill*, never about people: no slurs, nothing sexual, no real people or politics. Settings has **Roasts: Mild** for the original, gentler tone.
+
 Your own gun stays centered.
 
 ## Settings
@@ -268,6 +270,7 @@ Both the main menu and the pause menu have:
 - `src/net.js`: co-op networking (host snapshots, client hits, event mirroring)
 - `src/avatars.js`: your teammates' guardians
 - `src/player.js`: movement, firing, abilities, supers, viewmodel animation
+- `src/roasts.js`: the spicy lines (death, wipe and loading-screen roasts, the Ghost keeping count) and the Mild switch
 - `src/armor.js`: exotic armor pieces, drops and what each class is wearing
 - `src/arsenal.js`: weapon definitions, perks + perk engine, loot rolls, saved inventory, new gun models
 - `src/inventory.js`: the Armory screen

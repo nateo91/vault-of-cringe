@@ -6,6 +6,7 @@ import { play, playAt } from './audio.js';
 import { moveCollide, pointInWorld, trimShadows, floorAt } from './world.js';
 import { los, Projectile, Pickup, raycast, Shockwave } from './combat.js';
 import { HUD } from './hud.js';
+import { deathLines as roastLines } from './roasts.js';
 import { textSprite } from './textures.js';
 import { makeChampion, champHit, champAfterHit, champUpdate, champRow, applyChampRow } from './champions.js';
 import * as M from './models.js';
@@ -185,7 +186,7 @@ export class Enemy {
       if (Math.random() < 0.5) new Pickup('orb', c);
       if (Math.random() < (this.rank === 'major' ? 0.08 : 0.015)) new Pickup('engram', c);
     }
-    HUD.killfeed(`${this.name} ${pick(this.deathLines)}`);
+    HUD.killfeed(`${this.name} ${pick([...this.deathLines, ...roastLines(this)])}`);
     this.onDeathFx?.(c);
     this.onDeath?.(this);
   }

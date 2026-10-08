@@ -15,6 +15,7 @@ import { HUD } from './hud.js';
 import { hurtPulse } from './render.js';
 import { DEFS, PERKS, PerkEngine, equippedItem, buildModel, LEFT_HAND, applyShader } from './arsenal.js';
 import { armorOn } from './armor.js';
+import * as roast from './roasts.js';
 
 // Your own guns/abilities are cosmetic-local: teammates see them via explicit 'shot'/'proj'/'pfx' events instead.
 const play = (...a) => local(() => rawPlay(...a));
@@ -52,7 +53,6 @@ function inspectPose(u) {
   return [0, 0, 0, 0, 0, 0];
 }
 
-const DEATH_QUIPS = ['Bruh.', 'Skill issue detected.', 'Have you tried not dying?', 'Your Ghost sighs audibly.', 'That was cringe.', 'L + ratio + revived.'];
 
 const _f = new THREE.Vector3(), _r = new THREE.Vector3(), _v = new THREE.Vector3(), _o = new THREE.Vector3(), _c = new THREE.Vector3();
 const _up = new THREE.Vector3(0, 1, 0);
@@ -334,7 +334,8 @@ export class Player {
     document.querySelector('#superfx .sf-gold')?.classList.remove('on');
     G.stats.deaths++; G.stats.bruh++;
     say('bruh', 'bruh');
-    HUD.death(true, `Killed by ${cause}. ${pick(DEATH_QUIPS)}` + (G.net.active ? '\nWaiting for a teammate to revive you (they hold E on your Ghost).' : ''));
+    roast.onDeath(G.stats.deaths);
+    HUD.death(true, `Killed by ${cause}. ${roast.deathQuip(cause)}` + (G.net.active ? '\nWaiting for a teammate to revive you (they hold E on your Ghost).' : ''));
     G.onPlayerDeath?.(cause);
   }
   get netId() { return G.net.myId; }

@@ -1,5 +1,6 @@
 // Other guardians in your fireteam, as seen on your screen.
 import * as THREE from 'three';
+import * as roast from './roasts.js';
 import { G, dampAngle } from './game.js';
 import { textSprite, emojiSprite } from './textures.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
@@ -136,6 +137,7 @@ export class Avatar {
   setState(s) {
     if (!this.netPos) { this.netPos = new THREE.Vector3(s[0], s[1], s[2]); this.pos.copy(this.netPos); }
     this.netPos.set(s[0], s[1], s[2]); this.netYaw = s[3]; this.pitch = s[4];
+    if (this.alive && !s[5]) roast.onTeammateDown(this.name);
     this.alive = !!s[5];
     this.emote = s[11] || 0;
     if (s[6] && s[6] !== this.cls) { this.cls = s[6]; this.root.remove(this.body); this.body = buildGuardian(this.cls); this.root.add(this.body); }
