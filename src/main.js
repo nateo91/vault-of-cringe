@@ -1,7 +1,7 @@
 // Bootstrap, raid flow, game loop.
 import * as THREE from 'three';
 import { MODS, G, pick, after, updateTimers, alivePlayers, local } from './game.js';
-import { Input, initInput, lockPointer, endFrame, down, hit } from './input.js';
+import { Input, Pad, initInput, lockPointer, endFrame, pollPad, down, hit } from './input.js';
 import { initAudio, play, say, setVolume, startMusic, stopMusic, updateListener, setRoom, setAmbience, setMusicIntensity } from './audio.js';
 import { HUD } from './hud.js';
 import { clearSecrets, updateSecrets, secretsFound, SECRETS } from './secrets.js';
@@ -508,6 +508,12 @@ function coopFrame(dt) {
 function frame() {
   requestAnimationFrame(frame);
   const raw = clock.getDelta();
+  pollPad(Math.min(raw, 1 / 20), G.settings.sens ?? 1);
+  // Start pauses / resumes (a controller can't press Esc)
+  if (Pad.startPressed && G.state === 'playing') {
+    if ($('#pause').classList.contains('hidden')) { if (!G.net.active) G.paused = true; $('#pause').classList.remove('hidden'); $('#restartEnc').classList.toggle('hidden', G.net.isClient); document.exitPointerLock?.(); }
+    else resume();
+  }
   autoQuality(raw);
   step(Math.min(raw, 1 / 20));
 }

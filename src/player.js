@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { addWear, bevelBox } from './surface.js';
 import { G, clamp, damp, dampAngle, rand, pick, after, local } from './game.js';
-import { Input, down, hit } from './input.js';
+import { Input, Pad, down, hit } from './input.js';
 import { moveCollide, groundY } from './world.js';
 import { raycast, explode, Projectile, Pickup, los } from './combat.js';
 import { textSprite, IMPACT } from './textures.js';
@@ -352,7 +352,7 @@ export class Player {
     }
     this.vm.visible = !this.scoped && !this.carry && !this.emote;
     // look (aim slows a touch over enemies: "reticle friction")
-    const friction = this.overTarget && (G.settings.aimAssist ?? true) ? 0.72 : 1;
+    const friction = this.overTarget && (G.settings.aimAssist ?? true) ? (Pad.active ? 0.5 : 0.72) : 1; // sticks get more, like console
     const sens = 0.0022 * G.settings.sens * (this.ads ? 0.65 : 1) * friction;
     const dyaw = -Input.dx * sens, dpitch = -Input.dy * sens;
     this.yaw += dyaw;
