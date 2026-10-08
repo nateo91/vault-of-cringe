@@ -9,6 +9,7 @@ import * as fx from './fx.js';
 import { add, std } from './world.js';
 import { down } from './input.js';
 import { unlock } from './triumphs.js';
+import { weekNumber } from './challenges.js';
 
 export const SECRETS = {
   approach: 'The Rock Nobody Checks',
@@ -67,10 +68,14 @@ function openChest(c) {
   const fresh = !found.includes(c.id);
   if (fresh) { found.push(c.id); try { localStorage.setItem('voc-secrets', JSON.stringify(found)); } catch (e) { /* fine */ } }
   const n = found.filter((k) => SECRETS[k]).length, total = Object.keys(SECRETS).length;
-  play('engram'); play('chime', 3);
-  fx.burst(c.pos.clone().setY(c.pos.y + 1), 0xffe9a0, 40, 7, 0.12, 1.1, 2);
-  HUD.bigText('SECRET CHEST', `${SECRETS[c.id] || 'a secret'} · ${n}/${total} found${fresh ? ' (new!)' : ''}`, 3, 'good');
-  G.onSecret?.(c.id);
+  // loot once per chest per week (like the real thing), or it's an exotic farm
+  let looted = {}; try { looted = JSON.parse(localStorage.getItem('voc-secrets-week') || '{}'); } catch (e) { /* fine */ }
+  const pays = looted[c.id] !== weekNumber();
+  if (pays) { looted[c.id] = weekNumber(); try { localStorage.setItem('voc-secrets-week', JSON.stringify(looted)); } catch (e) { /* fine */ } }
+  play(pays ? 'engram' : 'click'); play('chime', 3);
+  fx.burst(c.pos.clone().setY(c.pos.y + 1), 0xffe9a0, pays ? 40 : 12, 7, 0.12, 1.1, 2);
+  HUD.bigText('SECRET CHEST', `${SECRETS[c.id] || 'a secret'} · ${n}/${total} found${fresh ? ' (new!)' : ''}${pays ? '' : ' · already looted this week (resets Tuesday)'}`, 3, 'good');
+  if (pays) G.onSecret?.(c.id);
   if (n === total) { unlock('secrets'); G.onRaidExotic?.('tg'); }
 }
 

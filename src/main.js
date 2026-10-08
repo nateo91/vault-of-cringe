@@ -93,7 +93,8 @@ function init() {
     (G.runLoot ||= []).push(item);
   };
   // loot scales with how deep into the run you are (k), and the last encounter of the run pays a bonus
-  G.onLoot = (i, k = i, last = i === ENCOUNTERS.length - 1) => { if (ENCOUNTERS[i]?.traversal) return; grantLoot({ exoticChance: [0, 0.05, 0.12, 0.2, 0.3, 0.5][k] ?? 0.1 }); if (last) after(1.2, () => grantLoot({ exoticChance: 0.2 })); };
+  // practice runs (not started from The Approach) roll exotics at a quarter of the chance, or replaying the finale is a farm
+  G.onLoot = (i, k = i, last = i === ENCOUNTERS.length - 1, practice = false) => { if (ENCOUNTERS[i]?.traversal) return; const m = practice ? 0.25 : 1; grantLoot({ exoticChance: ([0, 0.05, 0.12, 0.2, 0.3, 0.5][k] ?? 0.1) * m }); if (last) after(1.2, () => grantLoot({ exoticChance: 0.2 * m })); };
   // skip a boss intro
   addEventListener('keydown', (e) => { if (G.cine && ['Space', 'Enter', 'KeyE', 'Escape'].includes(e.code)) G.cine.skip(); });
   addEventListener('mousedown', () => { if (G.cine) G.cine.skip(); });
@@ -443,8 +444,9 @@ function onEncounterComplete() {
   play('fanfare');
   HUD.bigText('ENCOUNTER COMPLETE', pick(['the memes have been defeated', 'certified W', 'that was cringe. good job.']), 3.5, 'good');
   const k = runOrder().indexOf(G.encounterIndex), last = nextIndex(G.encounterIndex) < 0;
-  if (G.net.isHost) G.net.emit(['loot', G.encounterIndex, k, last]);
-  local(() => G.onLoot(G.encounterIndex, k, last));
+  const practice = !G.run || G.run.startIdx !== 0;
+  if (G.net.isHost) G.net.emit(['loot', G.encounterIndex, k, last, practice ? 1 : 0]);
+  local(() => G.onLoot(G.encounterIndex, k, last, practice));
   for (let i = 0; i < 4; i++) new Pickup(i % 2 ? 'special' : 'heavy', G.player.pos.clone().setY(G.player.pos.y + 2));
   after(5, () => {
     const next = nextIndex(G.encounterIndex);

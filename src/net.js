@@ -333,7 +333,7 @@ function handleEvent(ev, from) {
     case 'pickup': applyPickup(a); break;
     case 'kill': G.stats.kills++; G.player?.addSuper(a); creditKill(b || null, !!c); break;
     case 'revive': G.player?.revive(); break;
-    case 'loot': G.onLoot?.(a, b ?? a, c ?? undefined); break;
+    case 'loot': G.onLoot?.(a, b ?? a, c ?? undefined, !!d); break;
   }
 }
 
