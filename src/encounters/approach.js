@@ -11,6 +11,7 @@ import { play, playAt, say } from '../audio.js';
 import * as fx from '../fx.js';
 import * as D from '../dressing.js';
 import { playCinematic } from '../cinematic.js';
+import { addChest } from '../secrets.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const _e1 = new THREE.Vector3();
@@ -85,6 +86,9 @@ export class TheApproach extends Encounter {
     plat(1.2, 0.5, -72.45, 5.5, 5.5, { bob: 0.25, speed: 0.9 });
     plat(-0.8, 1.0, -79.15, 5.5, 5.5, { slide: 1.2, speed: 0.4 });
     plat(-8, 2.0, -82.5, 3.5, 3.5, { bob: 0.2, speed: 0.7 }); // optional side platform with lore on it
+    // secret: a rock further out past the lore platform, with a chest on it (fall, and the Ghost puts you back on it)
+    plat(-13.6, 1.3, -88.6, 3.2, 3.2, null);
+    addChest('approach', V(-13.6, 1.3, -88.9), { yaw: Math.PI * 0.75 });
     plat(0.8, 1.4, -85.85, 5.5, 5.5, { bob: 0.3, speed: 1.0, phase: 1 });
     plat(0, 0, -92.2, 6, 5, null); // the last ledge. After it: an 11 m gap and a sign.
     this.buildShyBridge(trim);

@@ -11,6 +11,7 @@ import { Enemy, Doge, Nyan, SusSniper, Troll, spawnEnemy, registerNetType } from
 import * as M from '../models.js';
 import { CrewRig } from '../rigs.js';
 import { playCinematic } from '../cinematic.js';
+import { addChest, addTrigger } from '../secrets.js';
 import { los } from '../combat.js';
 import { HUD } from '../hud.js';
 import { play, playAt, say } from '../audio.js';
@@ -172,6 +173,13 @@ export class EmergencyMeeting extends Encounter {
     addCyl(0, 0, 0, 3.2, 1.0, std(0x9aa5b8, { metalness: 0.5 }), { seg: 24 }).visible = false;
     addCyl(0, 1.0, 0, 0.6, 0.35, std(0xff0000, { emissive: 0xaa0000 }), { collide: false });
     D.glassDome(0, 1.0, 0, 0.85);
+    // secret: actually pressing the button
+    const fundsChest = addChest('meeting', new THREE.Vector3(0, 0, 4.6), { yaw: 0, hidden: true });
+    addTrigger(new THREE.Vector3(0, 0, 0), 4.4, 'Hold [E] to press the EMERGENCY button', () => {
+      play('alarm');
+      HUD.bigText('EMERGENCY MEETING', 'called by you. agenda item 1: the loot.', 2.6, 'meme');
+      fundsChest.reveal();
+    });
     const btnLbl = textSprite('EMERGENCY', 0.5, { font: IMPACT, weight: 'normal', color: '#ff3333' }); btnLbl.position.set(0, 2.4, 0); add(btnLbl);
     for (const [x, z] of [[-12, -6], [12, -6], [-12, 6], [12, 6]]) { addCyl(x, 0, z, 1.6, 0.9, std(0x9aa5b8, { metalness: 0.5 }), { seg: 18 }).visible = false; D.cafeTable(x, z, { r: 1.6, h: 0.9, bench: true }); }
     // sniper perches (corners) with steps

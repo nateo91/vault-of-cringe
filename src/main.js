@@ -4,6 +4,7 @@ import { MODS, G, pick, after, updateTimers, alivePlayers, local } from './game.
 import { Input, initInput, lockPointer, endFrame, down, hit } from './input.js';
 import { initAudio, play, say, setVolume, startMusic, stopMusic, updateListener, setRoom, setAmbience, setMusicIntensity } from './audio.js';
 import { HUD } from './hud.js';
+import { clearSecrets, updateSecrets, secretsFound, SECRETS } from './secrets.js';
 import { Player } from './player.js';
 import { updateEnemies, clearEnemies } from './enemies.js';
 import { updateCombat, clearCombat, Pickup } from './combat.js';
@@ -76,6 +77,7 @@ function init() {
   setupMenus();
   setupCoop();
   G.onEngram = () => grantLoot({ exoticChance: 0.04 }, 'ENGRAM DECRYPTED');
+  G.onSecret = () => grantLoot({ exoticChance: 0.35 }, 'SECRET CHEST');
   // loot scales with how deep into the run you are (k), and the last encounter of the run pays a bonus
   G.onLoot = (i, k = i, last = i === ENCOUNTERS.length - 1) => { if (ENCOUNTERS[i]?.traversal) return; grantLoot({ exoticChance: [0, 0.05, 0.12, 0.2, 0.3, 0.5][k] ?? 0.1 }); if (last) after(1.2, () => grantLoot({ exoticChance: 0.2 })); };
   // skip a boss intro
@@ -273,7 +275,7 @@ function beginRun(index) {
 
 function resetAll() {
   G.encounter?.cleanup();
-  clearEnemies(); clearCombat(); clearFx(); clearWorld();
+  clearEnemies(); clearCombat(); clearFx(); clearWorld(); clearSecrets();
   if (G.net.isClient) resetClientWorld();
   G.timers.length = 0;
   HUD.hideBoss(); HUD.clearDebuffs(); HUD.death(false);
@@ -456,6 +458,7 @@ function victory(run = null) {
     ['Time', run ? formatTime(run.time, false) : `${mins}:${String(secs).padStart(2, '0')}`], ['Memes Deleted', s.kills], ['Crits', s.crits],
     ['Deaths', s.deaths], ['Wipes', s.wipes], ['Bruh Moments', s.bruh], ['Accuracy', acc + '%'], ['Class', G.player.clsDef.name],
     G.net.active ? ['Fireteam', G.avatars.size + 1] : ['Title', 'Terminally Online'],
+    ['Secret Chests', `${secretsFound().filter((k) => SECRETS[k]).length}/${Object.keys(SECRETS).length}`],
   ].map(([k, v]) => `<div>${k}<b>${v}</b></div>`).join('');
   // what you actually got this run (it's already in your armory), plus one bit of flavor
   const got = (G.runLoot || []).map((it) => { const d = DEFS[it.id]; return `<div class="item ${d.rarity === 'exotic' ? '' : 'leg'}"><b>${d.name}</b><div>${d.rarity === 'exotic' ? 'Exotic' : 'Legendary'} ${d.type} · ${it.perks.map((k) => PERKS[k].icon + ' ' + PERKS[k].name).join(' · ')}</div></div>`; });
@@ -558,6 +561,7 @@ function step(dt, doRender = true) {
     if (!G.net.isClient) G.encounter?.update(dt);
     G.encounter?.runLocal(dt);
     if (G.net.active) coopFrame(dt);
+    updateSecrets(dt); // after coopFrame: a chest prompt wins over the empty revive prompt
     updateDressing(dt);
     updateFx(dt);
     HUD.update(G.player);

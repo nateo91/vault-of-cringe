@@ -10,6 +10,7 @@ import * as D from '../dressing.js';
 import { Encounter, weightedPick } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight } from '../world.js';
 import { addFur } from '../surface.js';
+import { addChest, addTrigger } from '../secrets.js';
 import { tileTex, textSprite, emojiSprite, textTex, IMPACT } from '../textures.js';
 import { Enemy, Doge, Stonks, Boyfriend, registerNetType, applyMods } from '../enemies.js';
 import { Shockwave, Pickup } from '../combat.js';
@@ -406,8 +407,15 @@ export class ThisIsFine extends Encounter {
       const g = new THREE.Group(); g.position.set(x, 6.2, z); g.rotation.y = rotY; add(g);
       const f = new THREE.Mesh(new THREE.BoxGeometry(w + 0.4, w * 0.8 + 0.4, 0.15), std(0x3a2414)); g.add(f);
       const pic = emojiSprite(e, w * 0.7); pic.position.z = 0.12; g.add(pic);
+      return g;
     };
-    frame(-9, -W + 1.1, 0, '🌻'); frame(9, -W + 1.1, 0, '🐶'); frame(-W + 1.1, -2, Math.PI / 2, '🏠'); frame(W - 1.1, -2, -Math.PI / 2, '☕');
+    // secret: the sunflowers hang crooked. Straighten them and they come off the wall, and something drops out.
+    const sun = frame(-9, -W + 1.1, 0, '🌻'); sun.rotation.z = 0.14;
+    const sunChest = addChest('fine', new THREE.Vector3(-9, 0, -W + 2.6), { hidden: true });
+    addTrigger(new THREE.Vector3(-9, 0, -W + 2.2), 3.2, 'Hold [E] to straighten the painting', () => {
+      play('wrong'); HUD.bigText('...oops', 'the painting was load-bearing', 2, 'meme');
+      let t = 0; const iv = setInterval(() => { t += 0.03; sun.position.y = 6.2 - t * t * 9; sun.rotation.z = 0.14 + t * 2.5; if (sun.position.y < 0.6) { clearInterval(iv); sun.position.y = 0.6; sun.rotation.set(-1.45, 0, 0.4); play('land', 1, 'wood'); sunChest.reveal(); } }, 16);
+    }); frame(9, -W + 1.1, 0, '🐶'); frame(-W + 1.1, -2, Math.PI / 2, '🏠'); frame(W - 1.1, -2, -Math.PI / 2, '☕');
     frame(-W + 1.1, 15, Math.PI / 2, '🙂', 2.4); frame(W - 1.1, 15, -Math.PI / 2, '👍', 2.4);
     const sign = textSprite('THIS IS FINE', 2.2, { font: IMPACT, weight: 'normal', color: '#fff', stroke: '#000' }); sign.position.set(0, 10.6, -W + 1.3); add(sign);
     // smoke up top, fog of war down low
