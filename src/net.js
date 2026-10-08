@@ -7,7 +7,7 @@ import { applyFx, dmgNumber, impact, superRing, crater, grenadeField, rally } fr
 import { play, playAt, say } from './audio.js';
 import { HUD } from './hud.js';
 import { Projectile, Shockwave, Pickup, applyPickup } from './combat.js';
-import { NET_TYPES, applyMods } from './enemies.js';
+import { NET_TYPES, applyMods, creditKill } from './enemies.js';
 import { Avatar } from './avatars.js';
 
 const PREFIX = 'vault-of-cringe-v1-';
@@ -109,7 +109,7 @@ function onHostData(conn, msg) {
     }
     case 'hit': {
       const e = G.enemies.find((x) => x.nid === msg.n && x.alive);
-      if (e) e.takeDamage(msg.d, msg.c, { from: id, splash: msg.s, element: msg.el || null });
+      if (e) e.takeDamage(msg.d, msg.c, { from: id, splash: msg.s, element: msg.el || null, weapon: msg.w || null });
       break;
     }
     case 'ev':
@@ -268,7 +268,7 @@ export function resetClientWorld() { proxyPickups.forEach((p) => p.remove()); pr
 Net.clientHit = (e, dmg, crit, info) => {
   if (!e.alive) return 0;
   if (G.settings.mods?.glass) dmg *= 1.5;
-  Net.outbox.push(['__hit', e.nid, Math.round(dmg), !!crit, !!info.splash, info.element || 0]);
+  Net.outbox.push(['__hit', e.nid, Math.round(dmg), !!crit, !!info.splash, info.element || 0, info.weapon || 0]);
   if (e.hostile === false) return 0; // crewmates / statues: the host decides what happens
   if (e.immune || e.untargetable) { dmgNumber(e.top(), 'IMMUNE', 'immune'); return 0; }
   e.pop = 1; e.flinch = Math.min(1.2, (e.flinch || 0) + (crit ? 0.9 : 0.45));
@@ -291,7 +291,7 @@ function clientTick() {
   if (!Net.outbox.length) return;
   const hits = Net.outbox.filter((e) => e[0] === '__hit');
   const evs = Net.outbox.filter((e) => e[0] !== '__hit');
-  for (const h of hits) sendRaw(c, { t: 'hit', n: h[1], d: h[2], c: h[3], s: h[4], el: h[5] || null });
+  for (const h of hits) sendRaw(c, { t: 'hit', n: h[1], d: h[2], c: h[3], s: h[4], el: h[5] || null, w: h[6] || null });
   if (evs.length) sendRaw(c, { t: 'ev', e: evs });
   Net.outbox.length = 0;
 }
@@ -331,7 +331,7 @@ function handleEvent(ev, from) {
     case 'hurt': G.player?.hurt(a, b, c != null ? { x: c, z: d } : null); break;
     case 'rick': G.player?.rickroll(); break;
     case 'pickup': applyPickup(a); break;
-    case 'kill': G.stats.kills++; G.player?.addSuper(a); break;
+    case 'kill': G.stats.kills++; G.player?.addSuper(a); creditKill(b || null, !!c); break;
     case 'revive': G.player?.revive(); break;
     case 'loot': G.onLoot?.(a, b ?? a, c ?? undefined); break;
   }

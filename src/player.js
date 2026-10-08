@@ -614,7 +614,7 @@ export class Player {
       const dir = aim.point.clone().sub(muzzle).normalize();
       let target = null;
       if (this.perks.has(w, 'tracking')) target = this.coneTarget(origin, this.aimDir(0), 0.45, 120);
-      new Projectile({ pos: muzzle, vel: dir.multiplyScalar(38), owner: 'player', element: d.element, dmg: d.dmg, splash: d.splash, splashDmg: d.splashDmg * this.perks.dmgMult(w, null, false), color: 0xffaa55, size: 0.16, trail: 0xbbbbbb, life: 5,
+      new Projectile({ pos: muzzle, vel: dir.multiplyScalar(38), owner: 'player', element: d.element, weapon: d.id, dmg: d.dmg, splash: d.splash, splashDmg: d.splashDmg * this.perks.dmgMult(w, null, false), color: 0xffaa55, size: 0.16, trail: 0xbbbbbb, life: 5,
         homing: target ? 3 : 0, target,
         onHit: (pos) => { if (this.perks.has(w, 'wolfpack')) this.wolfpack(pos); if (this.perks.has(w, 'cluster')) this.cluster(pos); } });
       fx.burst(muzzle, 0xffcc88, 8, 4, 0.08, 0.3, 0);
@@ -623,7 +623,7 @@ export class Player {
     } else if (d.kind === 'gl') {
       const dir = this.aimDir(0); dir.y += 0.06; dir.normalize();
       const impact = d.dmg * (this.perks.has(w, 'spike') ? 1.5 : 1) * this.perks.dmgMult(w, null, false);
-      new Projectile({ pos: muzzle, vel: dir.multiplyScalar(d.speed), owner: 'player', element: d.element, dmg: impact, splash: d.splash, splashDmg: d.splashDmg * this.perks.dmgMult(w, null, false), gravity: d.gravity, color: 0xff9a40, size: 0.12, trail: 0xffd0a0, life: 4 });
+      new Projectile({ pos: muzzle, vel: dir.multiplyScalar(d.speed), owner: 'player', element: d.element, weapon: d.id, dmg: impact, splash: d.splash, splashDmg: d.splashDmg * this.perks.dmgMult(w, null, false), gravity: d.gravity, color: 0xff9a40, size: 0.12, trail: 0xffd0a0, life: 4 });
       if (this.rig.parts.drum) this.drumSpin = 1;
       G.net.playerEv(['snd3', v3(muzzle), d.sound, []]);
       fx.burst(muzzle, 0xffcc88, 6, 3, 0.07, 0.3, 0);
@@ -695,15 +695,13 @@ export class Player {
       const wasAlive = e.alive, hpBefore = e.hp;
       if (e.shieldHp > 0) shieldEl = e.shieldEl;
       const dmg = w ? h.dmg * this.perks.dmgMult(w, e, h.crit) : h.dmg;
-      const dealt = e.takeDamage(dmg, h.crit, { hitscan: true, element: w?.def.element, point: h.point });
+      const dealt = e.takeDamage(dmg, h.crit, { hitscan: true, element: w?.def.element, point: h.point, weapon: w ? w.def.id : 'gg' });
       if (dealt > 0) { any = true; G.stats.hits++; if (w) this.perks.onHit(w, e, h.crit); }
       anyCrit = anyCrit || (h.crit && dealt > 0);
       // on clients the proxy doesn't die locally; predict it so kill perks still feel instant
       const killed = wasAlive && (!e.alive || (e.proxy && dealt > 0 && hpBefore - dealt <= 0 && e.hostile !== false));
       if (killed) {
         kill = true; if (w) this.perks.onKill(w, e, h.crit, e.center());
-        const id = w ? w.def.id : 'gg'; (G.stats.wk ||= {})[id] = (G.stats.wk[id] || 0) + 1;
-        if (h.crit) G.stats.pkills = (G.stats.pkills || 0) + 1;
       }
       fx.burst(h.point, h.crit ? 0xffd23f : 0xffb070, h.crit ? 7 : 4, 4, 0.05, 0.25, 6);
     }

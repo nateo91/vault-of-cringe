@@ -54,7 +54,7 @@ export function los(a, b) {
 }
 
 const _c = new THREE.Vector3();
-export function explode(pos, radius, dmg, { owner = 'player', color = 0xff8a2a, source = 'an explosion', knock = 1, big = 1, silent = false, localFx = false, ghost = false, element = null } = {}) {
+export function explode(pos, radius, dmg, { owner = 'player', color = 0xff8a2a, source = 'an explosion', knock = 1, big = 1, silent = false, localFx = false, ghost = false, element = null, weapon = null } = {}) {
   // projectile explosions are simulated on every machine, so their cosmetics stay local
   const cosmetic = () => {
     fx.explosion(pos, radius, color); if (!silent) playAt(pos, 'explosion', big);
@@ -72,7 +72,7 @@ export function explode(pos, radius, dmg, { owner = 'player', color = 0xff8a2a, 
       let dmin = Infinity;
       for (const hb of e.hitboxes) { e.hbWorld(hb, _c); dmin = Math.min(dmin, Math.max(0, _c.distanceTo(pos) - hb.r)); }
       if (dmin < radius) {
-        e.takeDamage(dmg * (1 - 0.5 * dmin / radius), false, { splash: true, element });
+        e.takeDamage(dmg * (1 - 0.5 * dmin / radius), false, { splash: true, element, weapon });
         if (e.rank !== 'boss' && e.knockable !== false && knock) {
           _c.subVectors(e.pos, pos).setY(0).normalize();
           e.vel.addScaledVector(_c, 9 * knock); e.vel.y += 5 * knock;
@@ -111,7 +111,7 @@ function boltMats_(color) {
 }
 export class Projectile {
   constructor(o) {
-    Object.assign(this, { dmg: 10, radius: 0.25, owner: 'enemy', life: 6, gravity: 0, homing: 0, splash: 0, splashDmg: null, color: 0xff00ff, size: 0.2, target: null, source: 'a meme', onHit: null, crit: false, trail: 0, explodeColor: null, speed: 0, look: null, ghost: false, critable: false, element: null }, o);
+    Object.assign(this, { dmg: 10, radius: 0.25, owner: 'enemy', life: 6, gravity: 0, homing: 0, splash: 0, splashDmg: null, color: 0xff00ff, size: 0.2, target: null, source: 'a meme', onHit: null, crit: false, trail: 0, explodeColor: null, speed: 0, look: null, ghost: false, critable: false, element: null, weapon: null }, o);
     this.pos = o.pos.clone(); this.vel = o.vel.clone();
     this.speed = this.vel.length();
     if (this.look === 'nova') {
@@ -196,7 +196,7 @@ export class Projectile {
         for (const hb of e.hitboxes) {
           e.hbWorld(hb, sph.center);
           if (sph.center.distanceTo(this.pos) < hb.r + this.radius) {
-            if (this.dmg && !this.ghost) e.takeDamage(this.dmg, !!hb.crit && this.critable, { projectile: true, element: this.element });
+            if (this.dmg && !this.ghost) e.takeDamage(this.dmg, !!hb.crit && this.critable, { projectile: true, element: this.element, weapon: this.weapon });
             this.finish(e); return true;
           }
         }
@@ -213,12 +213,12 @@ export class Projectile {
       const at = this.pos.clone();
       local(() => fx.implode(at, 3.5));
       after(0.28, () => {
-        explode(at, this.splash, this.splashDmg ?? this.dmg, { owner: this.owner, color: this.explodeColor || this.color, source: this.source, big: 1.6, localFx: true, ghost: this.ghost, element: this.element });
+        explode(at, this.splash, this.splashDmg ?? this.dmg, { owner: this.owner, color: this.explodeColor || this.color, source: this.source, big: 1.6, localFx: true, ghost: this.ghost, element: this.element, weapon: this.weapon });
         if (!this.ghost) this.onHit?.(at, hitEnemy);
       });
       return;
     }
-    if (this.splash) explode(this.pos, this.splash, this.splashDmg ?? this.dmg, { owner: this.owner, color: this.explodeColor || this.color, source: this.source, big: this.splash > 6 ? 1.6 : 1, localFx: true, ghost: this.ghost, element: this.element });
+    if (this.splash) explode(this.pos, this.splash, this.splashDmg ?? this.dmg, { owner: this.owner, color: this.explodeColor || this.color, source: this.source, big: this.splash > 6 ? 1.6 : 1, localFx: true, ghost: this.ghost, element: this.element, weapon: this.weapon });
     else local(() => fx.burst(this.pos, this.color, 5, 3, 0.1, 0.3));
     if (!this.ghost) this.onHit?.(this.pos, hitEnemy);
   }

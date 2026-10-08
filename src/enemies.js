@@ -94,6 +94,7 @@ export class Enemy {
     const mine = !info.from; // damage numbers only for your own shots, like the real game
     if (this.immune || this.untargetable) { if (mine) fx.dmgNumber(this.top(_t), 'IMMUNE', 'immune'); return 0; }
     if (mine && modOn('glass')) dmg *= 1.5;
+    if (info.weapon) this.lastWeapon = info.weapon;
     if (this.shieldHp > 0) return this.hitShield(dmg, info, mine);
     dmg = Math.max(1, Math.round(dmg));
     this.hp -= dmg; this.pop = 1; this.aggro = true;
@@ -170,8 +171,8 @@ export class Enemy {
     playAt(c, 'kill');
     // kill credit goes to whoever landed the last hit
     const superGain = this.rank === 'minor' ? 2.5 : 7;
-    if (this.lastHitBy == null) { G.stats.kills++; G.player.addSuper(superGain); }
-    else G.net.sendTo(this.lastHitBy, ['kill', superGain]);
+    if (this.lastHitBy == null) { G.stats.kills++; G.player.addSuper(superGain); creditKill(this.lastWeapon, this.lastCrit); }
+    else G.net.sendTo(this.lastHitBy, ['kill', superGain, this.lastWeapon || 0, this.lastCrit ? 1 : 0]);
     if (this.drops) {
       const r = Math.random();
       if (r < (this.rank === 'major' ? 0.35 : 0.1)) new Pickup('special', c);
@@ -1084,6 +1085,12 @@ export class RickRoller extends Enemy {
 
 export function registerNetType(Cls, make = () => new Cls()) { NET_TYPES[Cls.name] = make; }
 [Doge, Stonks, Nyan, SusSniper, MoaiKnight, Wizard, Sigma].forEach((C) => registerNetType(C));
+
+// Per-weapon and precision kill tallies for the Raid Report (the killer's machine counts them)
+export function creditKill(weapon, crit) {
+  if (weapon) (G.stats.wk ||= {})[weapon] = (G.stats.wk[weapon] || 0) + 1;
+  if (crit) G.stats.pkills = (G.stats.pkills || 0) + 1;
+}
 
 // Apply the enemy-side raid modifiers to a freshly made enemy (host spawns + client proxies)
 export function applyMods(e) {
