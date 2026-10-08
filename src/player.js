@@ -700,7 +700,11 @@ export class Player {
       anyCrit = anyCrit || (h.crit && dealt > 0);
       // on clients the proxy doesn't die locally; predict it so kill perks still feel instant
       const killed = wasAlive && (!e.alive || (e.proxy && dealt > 0 && hpBefore - dealt <= 0 && e.hostile !== false));
-      if (killed) { kill = true; if (w) this.perks.onKill(w, e, h.crit, e.center()); }
+      if (killed) {
+        kill = true; if (w) this.perks.onKill(w, e, h.crit, e.center());
+        const id = w ? w.def.id : 'gg'; (G.stats.wk ||= {})[id] = (G.stats.wk[id] || 0) + 1;
+        if (h.crit) G.stats.pkills = (G.stats.pkills || 0) + 1;
+      }
       fx.burst(h.point, h.crit ? 0xffd23f : 0xffb070, h.crit ? 7 : 4, 4, 0.05, 0.25, 6);
     }
     if (any || kill) { HUD.hitmarker(anyCrit, kill, shieldEl); play(anyCrit ? 'crit' : 'hit'); if (kill) play('kill'); }

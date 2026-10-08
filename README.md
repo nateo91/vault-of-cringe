@@ -180,6 +180,7 @@ The perk pool has D2 classics and meme perks:
 
 - **🎖️ Triumphs** (main menu): thirteen raid achievements, from *Raid Clear* and *Flawless* to one for each encounter's twist. Get them all for the **TERMINALLY ONLINE** seal. Everyone earns their own.
 - **Secret chests:** three are hidden off the main path. No waypoint, no objective text. Each player loots their own, and the victory screen counts how many you've ever found. Find all three for the raid exotic.
+- **📊 Raid Report** (main menu): your lifetime stats on this browser: clears and fastest clear, kills, precision-kill rate, accuracy, finishers, deaths, K/D, time played and your favourite weapon.
 - **🎯 Weekly challenge:** each week (resetting on Tuesday) one encounter gets an extra condition, shown on the main menu and in the encounter. Clear that encounter without breaking it for a once-a-week reward with a high exotic chance.
 
 ## Leaderboard

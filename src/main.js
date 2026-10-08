@@ -7,6 +7,7 @@ import { HUD } from './hud.js';
 import { clearSecrets, updateSecrets, secretsFound, SECRETS } from './secrets.js';
 import { unlock, renderTriumphs } from './triumphs.js';
 import { applyColorblind } from './colorblind.js';
+import { CAREER, newRun, bank, addTime, recordClear } from './career.js';
 import { announceChallenge, weekly, doneThisWeek } from './challenges.js';
 import { Player } from './player.js';
 import { updateEnemies, clearEnemies } from './enemies.js';
@@ -169,6 +170,8 @@ function setupMenus() {
   $('#mods').onclick = (e) => { const b = e.target.closest('[data-mod]'); if (!b) return; G.settings.mods[b.dataset.mod] = !G.settings.mods[b.dataset.mod]; try { localStorage.setItem('voc-settings', JSON.stringify(G.settings)); } catch (err) { /* fine */ } drawMods(); };
   // this week's challenge, on the menu
   { const c = weekly(), E = ENCOUNTERS.find((k) => k.name === c.enc); $('#weekly').innerHTML = `<span class="wk-l">🎯 THIS WEEK</span> <b>${E?.title || c.enc}</b> · ${c.name}: ${c.desc}${doneThisWeek() ? ' <span class="wk-done">✓ done</span>' : ''}`; }
+  $('#reportBtn').onclick = () => { bank(); renderReport(); $('#report').classList.remove('hidden'); };
+  $('#reportClose').onclick = () => $('#report').classList.add('hidden');
   $('#triBtn').onclick = () => { renderTriumphs($('#triumphs')); $('#triumphs').classList.remove('hidden'); };
   $('#triClose').onclick = () => $('#triumphs').classList.add('hidden');
   $('#boardBtn').onclick = () => { renderBoard($('#leaderboard')); $('#leaderboard').classList.remove('hidden'); };
@@ -271,7 +274,9 @@ function resume() { G.paused = false; $('#pause').classList.add('hidden'); speec
 
 function createPlayer() {
   G.runLoot = [];
+  if (G.stats) bank(); // whatever the last run hadn't banked yet
   G.stats = { kills: 0, crits: 0, deaths: 0, wipes: 0, shots: 0, hits: 0, start: performance.now(), bruh: 0 };
+  newRun();
   if (G.player) G.vmCamera.remove(G.player.vm);
   G.player = new Player(G.cls);
   HUD.buildWeapons(G.player);
@@ -343,6 +348,7 @@ function loadEncounter(i) {
   requestAnimationFrame(() => { fill.style.transition = ''; fill.style.width = '100%'; });
   HUD.show(false);
   setTimeout(() => {
+    bank();
     resetAll();
     G.encounterIndex = i;
     const enc = new E();
@@ -457,6 +463,7 @@ function finishRun() {
 
 function victory(run = null) {
   G.state = 'victory';
+  recordClear(run && run.eligible ? run.time : null);
   // the leaderboard
   const L = $('#victory .clear');
   if (run && run.eligible) {
@@ -533,11 +540,25 @@ function frame() {
   step(Math.min(raw, 1 / 20));
 }
 
+// ---------------- the Raid Report ----------------
+function renderReport() {
+  const c = CAREER, fmt = (s) => { const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return h ? `${h}h ${m}m` : m ? `${m}m` : `${Math.floor(s)}s`; };
+  const fav = Object.entries(c.wk).sort((a, b) => b[1] - a[1])[0];
+  const favName = fav ? (fav[0] === 'gg' ? 'Golden Gun (super)' : DEFS[fav[0]]?.name || fav[0]) : '—';
+  const tiles = [
+    ['Raid Clears', c.clears], ['Fastest Clear', c.fastest != null ? formatTime(c.fastest) : '—'], ['Runs Started', c.runs], ['Time in the Vault', fmt(c.time)],
+    ['Memes Deleted', c.kills.toLocaleString()], ['Precision Kills', c.kills ? Math.round(c.pkills / c.kills * 100) + '%' : '—'], ['Accuracy', c.shots ? Math.round(c.hits / c.shots * 100) + '%' : '—'], ['Finishers', c.finishers],
+    ['Deaths', c.deaths], ['Wipes', c.wipes], ['K/D', c.deaths ? (c.kills / c.deaths).toFixed(1) : c.kills ? '∞' : '—'], ['Bruh Moments', c.bruh],
+  ];
+  $('#report .rp-grid').innerHTML = tiles.map(([k, v]) => `<div class="rp-t"><div class="rp-v">${v}</div><div class="rp-k">${k}</div></div>`).join('');
+  $('#report .rp-fav').innerHTML = fav ? `<span class="rp-k">FAVOURITE WEAPON</span> <b>${favName}</b> · ${fav[1].toLocaleString()} kills` : '';
+}
+
 // ---------------- menus on a controller ----------------
 // D-pad / left stick moves a highlight between whatever is clickable on the topmost screen, A clicks it,
 // B backs out, left/right nudge sliders and dropdowns. View opens the armory mid-raid.
-const OVERLAYS = ['padkb', 'credits', 'armory', 'triumphs', 'leaderboard', 'victory', 'wipe', 'pause', 'menu'];
-const BACK = { padkb: '#pkOk', armory: '#armClose', triumphs: '#triClose', leaderboard: '#boardClose', pause: '#resume' };
+const OVERLAYS = ['padkb', 'credits', 'armory', 'report', 'triumphs', 'leaderboard', 'victory', 'wipe', 'pause', 'menu'];
+const BACK = { padkb: '#pkOk', report: '#reportClose', armory: '#armClose', triumphs: '#triClose', leaderboard: '#boardClose', pause: '#resume' };
 let padSel = null;
 // an on-screen keyboard for text boxes (your name, the join code), driven by the same highlight
 function openPadKeyboard(target) {
@@ -654,7 +675,7 @@ window.simulate = (seconds, dt = 1 / 60) => { for (let t = 0; t < seconds; t += 
 
 function step(dt, doRender = true) {
   // the raid clock: counts while playing (cutscenes included), stops while paused or loading
-  if (G.state === 'playing' && !G.paused) updateMusicIntensity(dt);
+  if (G.state === 'playing' && !G.paused) { updateMusicIntensity(dt); addTime(dt); }
   // the Distracted Boyfriend's stare
   if (G.state === 'playing' && G.player) {
     const n = G.enemies.some((e) => e.alive && e.markId && e.markId === G.net.myId);

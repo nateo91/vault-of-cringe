@@ -472,3 +472,14 @@ label { cursor: pointer; }
 html[data-cvd="protan"] #crosshair.on, html[data-cvd="deutan"] #crosshair.on { --c: #ffe600; }
 html[data-cvd="protan"] #crosshair.on > *, html[data-cvd="deutan"] #crosshair.on > * { box-shadow: 0 0 3px rgba(0,0,0,.95); }
 html[data-cvd="protan"] #dmgdirs i, html[data-cvd="deutan"] #dmgdirs i { border-top-color: rgba(255,230,0,.95); filter: drop-shadow(0 0 6px rgba(0,0,0,.8)); }
+
+/* ---------- raid report ---------- */
+#report.overlay { background: radial-gradient(ellipse at 50% 30%, rgba(40,14,64,.97), rgba(4,4,10,.99)); backdrop-filter: blur(8px); }
+.rp-inner { max-width: 820px; }
+.rp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
+@media (max-width: 640px) { .rp-grid { grid-template-columns: repeat(2, 1fr); } }
+.rp-t { padding: 12px 8px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); }
+.rp-v { font-family: var(--impact); font-size: 28px; color: #fff; font-variant-numeric: tabular-nums; }
+.rp-k { font-size: 11px; letter-spacing: .2em; color: #9fe2ff; text-transform: uppercase; }
+.rp-fav { margin: 6px 0 16px; color: #ccd; }
+.rp-fav b { color: #ffd23f; }
