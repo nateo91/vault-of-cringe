@@ -514,8 +514,75 @@ function frame() {
     if ($('#pause').classList.contains('hidden')) { if (!G.net.active) G.paused = true; $('#pause').classList.remove('hidden'); $('#restartEnc').classList.toggle('hidden', G.net.isClient); document.exitPointerLock?.(); }
     else resume();
   }
+  padMenu();
   autoQuality(raw);
   step(Math.min(raw, 1 / 20));
+}
+
+// ---------------- menus on a controller ----------------
+// D-pad / left stick moves a highlight between whatever is clickable on the topmost screen, A clicks it,
+// B backs out, left/right nudge sliders and dropdowns. View opens the armory mid-raid.
+const OVERLAYS = ['credits', 'armory', 'triumphs', 'leaderboard', 'victory', 'wipe', 'pause', 'menu'];
+const BACK = { armory: '#armClose', triumphs: '#triClose', leaderboard: '#boardClose', pause: '#resume' };
+let padSel = null;
+if (G.debug) window.padMenu = () => padMenu(); // test hook
+function padMenu() {
+  const nav = Pad.nav;
+  if (!Pad.active || !nav) return;
+  if (nav.view && G.state === 'playing' && !armoryOpen() && !G.cine) {
+    if (!G.net.active) G.paused = true;
+    openArmory(); document.exitPointerLock?.(); return;
+  }
+  const ov = OVERLAYS.map((id) => document.getElementById(id)).find((el) => el && !el.classList.contains('hidden'));
+  if (!ov) { if (padSel) { padSel.classList.remove('pad-sel'); padSel = null; } return; }
+  if (ov.id === 'credits') { if (nav.a || nav.b) closeCredits(); return; }
+  if (nav.b && BACK[ov.id]) { ov.querySelector(BACK[ov.id])?.click(); return; }
+  const items = [...ov.querySelectorAll('button, input, select, .arm-card')].filter((el) => el.offsetParent && !el.disabled && el.getBoundingClientRect().width > 0);
+  if (!items.length) return;
+  if (!items.includes(padSel)) { padSel?.classList.remove('pad-sel'); padSel = null; }
+  const select = (el) => {
+    padSel?.classList.remove('pad-sel'); padSel = el; el.classList.add('pad-sel');
+    el.scrollIntoView?.({ block: 'nearest' });
+    if (el.classList.contains('arm-card')) el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); // preview the gun
+  };
+  const any = nav.up || nav.down || nav.left || nav.right || nav.a;
+  if (!padSel) { if (any) select(items.find((el) => el.id === 'launch' || el.id === 'resume' || el.id === 'again') || items[0]); return; }
+  // sliders and dropdowns take left/right themselves
+  const horiz = nav.left ? -1 : nav.right ? 1 : 0;
+  if (horiz && padSel.type === 'range') {
+    const st = +padSel.step || 0.05;
+    padSel.value = Math.min(+padSel.max, Math.max(+padSel.min, +padSel.value + horiz * st * 2));
+    padSel.dispatchEvent(new Event('input', { bubbles: true })); padSel.dispatchEvent(new Event('change', { bubbles: true }));
+    return;
+  }
+  if (horiz && padSel.tagName === 'SELECT') {
+    padSel.selectedIndex = (padSel.selectedIndex + horiz + padSel.options.length) % padSel.options.length;
+    padSel.dispatchEvent(new Event('change', { bubbles: true }));
+    return;
+  }
+  const dir = nav.up ? [0, -1] : nav.down ? [0, 1] : nav.left ? [-1, 0] : nav.right ? [1, 0] : null;
+  if (dir) {
+    // the nearest thing that way (distance along the direction, plus a penalty for drifting sideways)
+    const r0 = padSel.getBoundingClientRect(), cx = r0.left + r0.width / 2, cy = r0.top + r0.height / 2;
+    // within a 45-degree cone of the direction first; anything that way if the cone is empty
+    let best = null, bs = Infinity, loose = null, ls = Infinity;
+    for (const el of items) {
+      if (el === padSel) continue;
+      const r = el.getBoundingClientRect(), x = r.left + r.width / 2 - cx, y = r.top + r.height / 2 - cy;
+      const along = x * dir[0] + y * dir[1], side = Math.abs(x * dir[1]) + Math.abs(y * dir[0]);
+      if (along < 4) continue;
+      const score = along + side * 2.5;
+      if (side <= along) { if (score < bs) { bs = score; best = el; } }
+      else if (score < ls) { ls = score; loose = el; }
+    }
+    best ||= loose;
+    if (best) select(best);
+    return;
+  }
+  if (nav.a) {
+    if (padSel.type === 'checkbox') { padSel.checked = !padSel.checked; padSel.dispatchEvent(new Event('change', { bubbles: true })); }
+    else if (padSel.tagName !== 'INPUT' && padSel.tagName !== 'SELECT') padSel.click();
+  }
 }
 
 if (G.debug) window.autoQuality = (dt) => autoQuality(dt); // test hook

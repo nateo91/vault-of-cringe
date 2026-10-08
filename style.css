@@ -457,3 +457,6 @@ label { cursor: pointer; }
 #weekly .wk-l { font-size: 11px; letter-spacing: .25em; color: #ffd23f; font-weight: 700; }
 #weekly b { color: #fff; }
 #weekly .wk-done { color: #7dff9a; font-weight: 700; }
+
+/* the controller's menu highlight */
+.pad-sel { outline: 3px solid #ffd23f !important; outline-offset: 3px; box-shadow: 0 0 18px rgba(255,210,63,.45) !important; }

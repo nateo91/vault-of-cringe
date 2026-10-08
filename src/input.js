@@ -55,11 +55,12 @@ const PAD_BUTTONS = {
 };
 const padHeld = new Set();
 let sprintLatch = false, lastY = false, lastStart = false, bumpT = 0, bumpWas = 0, bumpLock = false;
-export const Pad = { active: false, startPressed: false };
+export const Pad = { active: false, startPressed: false, nav: {} };
+const navHeld = {}, navRepeat = {};
 const dz = (v, d = 0.14) => (Math.abs(v) < d ? 0 : Math.sign(v) * (Math.abs(v) - d) / (1 - d));
 
 export function pollPad(dt, lookSpeed = 1) {
-  Pad.startPressed = false;
+  Pad.startPressed = false; Pad.nav = {};
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
   const gp = [...pads].find((p) => p && p.connected && p.mapping === 'standard') || [...pads].find((p) => p && p.connected);
   if (!gp) { if (Pad.active) release(); return; }
@@ -100,6 +101,16 @@ export function pollPad(dt, lookSpeed = 1) {
   lastY = b(3);
   if (b(9) && !lastStart) Pad.startPressed = true;
   lastStart = b(9);
+  // menu navigation: edges for A / B / View, and directions from the d-pad or left stick (held = repeat)
+  const nav = Pad.nav = {};
+  const edge = (name, on) => { if (on && !navHeld[name]) nav[name] = true; navHeld[name] = on; };
+  edge('a', b(0)); edge('b', b(1)); edge('view', b(8));
+  const dirs = { up: b(12) || ly < -0.6, down: b(13) || ly > 0.6, left: b(14) || lx < -0.6, right: b(15) || lx > 0.6 };
+  for (const [d, on] of Object.entries(dirs)) {
+    if (!on) { navRepeat[d] = 0; continue; }
+    if (!navRepeat[d]) { nav[d] = true; navRepeat[d] = 0.001; }
+    else if ((navRepeat[d] += dt) > 0.4) { nav[d] = true; navRepeat[d] = 0.28; } // first repeat after 0.4 s, then every 0.12 s
+  }
   // right stick -> look, with a response curve so small corrections stay small
   const curve = (v) => Math.sign(v) * Math.pow(Math.abs(v), 1.8);
   Input.dx += curve(rx) * 1400 * lookSpeed * dt;
