@@ -430,7 +430,7 @@ export class Enemy {
     const T = 1.0 + d / 45, g = 20;
     const vel = to.clone().sub(from).divideScalar(T); vel.y += 0.5 * g * T;
     new Projectile({ pos: from, vel, owner: 'enemy', gravity: g, dmg: 0, splash, splashDmg: dmg, color, size: 0.2, trail: color, explodeColor: color, life: T + 1.5, source });
-    fx.ringFx(to.clone().setY(p.pos.y + 0.08), splash, 0xff2a1a, T);
+    fx.ringFx(to.clone().setY(p.pos.y + 0.08), splash, G.signals?.warn ?? 0xff2a1a, T); // (yellow in the red-weak colourblind modes)
     playAt(to, 'tick', 1.4); after(T * 0.5, () => playAt(to, 'tick', 1.6)); // the 'grenade at your feet' beeps
     this.doAct?.('fire', 0.3); this.aimT = 0.4;
     playAt(this.pos, 'whoosh', 0.6);

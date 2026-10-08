@@ -211,6 +211,8 @@ Both the main menu and the pause menu have:
 - **Graphics:** High (bloom, anti-aliasing, soft shadows), Medium (no anti-aliasing, lower resolution), or Low (no post-processing, for potato laptops).
   On your first run the game watches your frame rate and steps down a preset if it can't hold ~45 fps (it tells you in the killfeed). Picking a preset yourself turns that off.
 - **Aim assist:** bullet magnetism plus slight aim slowdown over enemies. It's on by default. Purists can turn it off.
+- **FOV:** 60 to 100. Sprinting and sliding still widen it a little, and aiming keeps the same zoom.
+- **Colour:** colourblind modes. Protanopia and Deuteranopia turn the red gameplay signals (the on-target reticle, damage arcs, grenade warning rings) yellow, which stays visible on every floor; Tritanopia keeps red, which already reads well there.
 
 ## Cheats / debug
 

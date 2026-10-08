@@ -467,3 +467,8 @@ label { cursor: pointer; }
 .pk-text { font-family: var(--impact); font-size: 34px; letter-spacing: .12em; margin: 8px 0 14px; min-height: 42px; color: #ffd23f; }
 .pk-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; margin-bottom: 14px; }
 .pk-grid .pk-k { padding: 8px 0; min-width: 0; font-size: 16px; }
+
+/* colourblind modes: red signals turn yellow for protanopia / deuteranopia */
+html[data-cvd="protan"] #crosshair.on, html[data-cvd="deutan"] #crosshair.on { --c: #ffe600; }
+html[data-cvd="protan"] #crosshair.on > *, html[data-cvd="deutan"] #crosshair.on > * { box-shadow: 0 0 3px rgba(0,0,0,.95); }
+html[data-cvd="protan"] #dmgdirs i, html[data-cvd="deutan"] #dmgdirs i { border-top-color: rgba(255,230,0,.95); filter: drop-shadow(0 0 6px rgba(0,0,0,.8)); }

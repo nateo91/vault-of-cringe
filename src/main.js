@@ -6,6 +6,7 @@ import { initAudio, play, say, setVolume, startMusic, stopMusic, updateListener,
 import { HUD } from './hud.js';
 import { clearSecrets, updateSecrets, secretsFound, SECRETS } from './secrets.js';
 import { unlock, renderTriumphs } from './triumphs.js';
+import { applyColorblind } from './colorblind.js';
 import { announceChallenge, weekly, doneThisWeek } from './challenges.js';
 import { Player } from './player.js';
 import { updateEnemies, clearEnemies } from './enemies.js';
@@ -134,6 +135,8 @@ function setupMenus() {
     document.querySelectorAll('.voice').forEach((e) => (e.checked = G.settings.voice));
     document.querySelectorAll('.music').forEach((e) => (e.checked = G.settings.music));
     document.querySelectorAll('.quality').forEach((e) => (e.value = G.settings.quality || 'high'));
+    document.querySelectorAll('.cvd').forEach((e) => (e.value = G.settings.cvd || 'off'));
+    applyColorblind(G.settings.cvd);
     document.querySelectorAll('.aimassist').forEach((e) => (e.checked = G.settings.aimAssist ?? true));
   };
   syncSettings();
@@ -142,6 +145,7 @@ function setupMenus() {
   document.querySelectorAll('.fov').forEach((e) => (e.oninput = () => { G.settings.fov = +e.value; document.querySelectorAll('.fov').forEach((o) => (o.value = e.value)); save(); }));
   document.querySelectorAll('.vol').forEach((e) => (e.oninput = () => { G.settings.volume = +e.value; setVolume(G.settings.volume); save(); }));
   document.querySelectorAll('.voice').forEach((e) => (e.onchange = () => { G.settings.voice = e.checked; if (!e.checked) speechSynthesis?.cancel(); save(); }));
+  document.querySelectorAll('.cvd').forEach((e) => (e.onchange = () => { G.settings.cvd = e.value; document.querySelectorAll('.cvd').forEach((o) => (o.value = e.value)); save(); applyColorblind(e.value); }));
   document.querySelectorAll('.quality').forEach((e) => (e.onchange = () => { G.settings.quality = e.value; G.settings.qualityPicked = true; save(); applyQuality(); }));
   document.querySelectorAll('.aimassist').forEach((e) => (e.onchange = () => { G.settings.aimAssist = e.checked; save(); }));
   document.querySelectorAll('.music').forEach((e) => (e.onchange = () => {
