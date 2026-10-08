@@ -232,7 +232,9 @@ export class SkibidiFinale extends Encounter {
   netState() {
     const v = this.vibe;
     return { ph: this.phase, p2: this.p2 ? 1 : 0, gT: Math.round(this.grassT * 10) / 10, gr: this.grass.map((g) => [Math.round(g.position.x * 10) / 10, Math.round(g.position.z * 10) / 10]),
-      vb: v ? [v.type, v.stage, Math.round(v.t * 100) / 100, v.seq] : 0 };
+      vb: v ? [v.type, v.stage, Math.round(v.t * 100) / 100, v.seq] : 0,
+      // the dance-off tally is the host's: everyone's meter shows what actually counts
+      dn: this.danced ? Object.fromEntries([...this.danced].map(([k, t]) => [k === 'me' ? G.net.myId : k, Math.round(t * 10) / 10])) : 0 };
   }
   applyNet(s) {
     if (!s) return;
@@ -240,6 +242,7 @@ export class SkibidiFinale extends Encounter {
     if (s.p2 && !this.p2) { this.p2 = true; document.getElementById('game').style.animation = 'shake .2s 6'; }
     s.gr.forEach(([x, z], i) => { const g = this.grass[i]; if (Math.abs(g.position.x - x) + Math.abs(g.position.z - z) > 0.5) { g.position.set(x, 0, z); local(() => fx.burst(g.position.clone().setY(0.5), 0x5fd35f, 16, 4, 0.12, 0.6)); } });
     this.vibe = s.vb ? { type: s.vb[0], stage: s.vb[1], t: s.vb[2], seq: s.vb[3] } : null;
+    if (s.dn) this.myDance = s.dn[G.net.myId] || 0;
   }
 
   // ---------- what only *your* guardian experiences (every machine runs this) ----------
@@ -267,9 +270,9 @@ export class SkibidiFinale extends Encounter {
     for (const g of this.grass) g.userData.base.material.emissiveIntensity = this.grassT < 3 ? (Math.sin(this.t * 20) > 0 ? 1.5 : 0.2) : 0.5;
     // the dance-off: your own meter
     if (this.phase === 'vibeoff' && p.alive) {
-      if (p.emote === 1 || p.emote === 3) this.myDance = (this.myDance || 0) + dt;
+      if (this.host && (p.emote === 1 || p.emote === 3)) this.myDance = (this.myDance || 0) + dt; // clients get theirs from the host
       const m = Math.min(4, this.myDance || 0);
-      HUD.setDebuff('vibe', m >= 4 ? '🕺 OUT-VIBED. hold it there.' : `🕺 VIBE ${m.toFixed(1)}/4s — dance (B) or dab (J)`, m < 4);
+      HUD.setDebuff('vibe', m >= 4 ? G.net.active ? '🕺 OUT-VIBED ✓ waiting on the squad' : '🕺 OUT-VIBED ✓' : `🕺 VIBE ${m.toFixed(1)}/4s — dance (B) or dab (J)`, m < 4);
     } else HUD.clearDebuff('vibe');
     // lava
     if (this.phase === 'final') {
