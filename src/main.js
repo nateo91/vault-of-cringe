@@ -15,7 +15,7 @@ import { clearWorld, mergeStatic, trimShadows } from './world.js';
 import { initRenderer, render, applyQuality, followSun, bakeEnvironment, wipeGrade } from './render.js';
 import { togglePhoto, photoUpdate } from './photo.js';
 import { updateDressing } from './dressing.js';
-import { loadInventory, rollLoot, DEFS, PERKS } from './arsenal.js';
+import { loadInventory, rollLoot, addItem, makeItem, INV, DEFS, PERKS } from './arsenal.js';
 import { initArmory, openArmory, closeArmory, isOpen as armoryOpen } from './inventory.js';
 import { recordRun, formatTime, renderBoard, clearBoard, shareText } from './leaderboard.js';
 import { hostGame, joinGame, netUpdate, resetClientWorld, leave, clean } from './net.js';
@@ -81,6 +81,14 @@ function init() {
   G.onEngram = () => grantLoot({ exoticChance: 0.04 }, 'ENGRAM DECRYPTED');
   G.onSecret = () => grantLoot({ exoticChance: 0.35 }, 'SECRET CHEST');
   G.onChallenge = () => grantLoot({ exoticChance: 0.5 }, 'WEEKLY CHALLENGE');
+  // the raid exotic: a guaranteed drop, once, for finding every secret
+  G.onRaidExotic = (id) => {
+    if (INV.items.some((i) => i.id === id)) return;
+    const item = addItem(makeItem(id));
+    play('exotic'); HUD.loot(item); HUD.killfeed(`RAID EXOTIC: ${DEFS[id].name}`);
+    HUD.bigText('EXOTIC ACQUIRED', `${DEFS[id].name} · ${DEFS[id].flavor}`, 3.5, 'meme');
+    (G.runLoot ||= []).push(item);
+  };
   // loot scales with how deep into the run you are (k), and the last encounter of the run pays a bonus
   G.onLoot = (i, k = i, last = i === ENCOUNTERS.length - 1) => { if (ENCOUNTERS[i]?.traversal) return; grantLoot({ exoticChance: [0, 0.05, 0.12, 0.2, 0.3, 0.5][k] ?? 0.1 }); if (last) after(1.2, () => grantLoot({ exoticChance: 0.2 })); };
   // skip a boss intro

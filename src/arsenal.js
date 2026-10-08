@@ -17,6 +17,7 @@ export const DEFS = {
   hc: { id: 'hc', model: 'hc', name: 'Ace of Spuds', type: 'Hand Cannon', slot: 0, ammo: 'primary', rarity: 'exotic', kind: 'single', dmg: 34, crit: 2.1, rof: 0.33, mag: 12, reload: 1.55, spread: 0.006, range: 140, falloff: [45, 90, 0.6], color: 0xffe9a0, sound: 'hc', kick: [0.032, 0.012, 1], aa: [2.0, 70], zoom: 58, adsZ: -0.46, hip: [0.12, -0.12, -0.34], fixedPerks: ['memento', 'firefly'], flavor: 'Somebody glued a potato to it. It is load-bearing.' },
   ar: { id: 'ar', model: 'ar', name: 'Grindset', type: 'Auto Rifle', slot: 0, ammo: 'primary', rarity: 'legendary', kind: 'auto', dmg: 13, crit: 1.6, rof: 0.1, mag: 40, reload: 1.9, spread: 0.012, range: 90, falloff: [28, 60, 0.6], color: 0xfff0c0, sound: 'ar', kick: [0.009, 0.007, 0.35], aa: [1.6, 50], zoom: 62, adsZ: -0.42, hip: [0.13, -0.13, -0.32], flavor: 'Rise at 4am. Shoot. Cold shower. Shoot.' },
   pr: { id: 'pr', model: 'pr', name: 'Stonks Pulse', type: 'Pulse Rifle', slot: 0, ammo: 'primary', rarity: 'legendary', kind: 'burst', burst: 3, burstGap: 0.07, dmg: 19, crit: 1.7, rof: 0.42, mag: 36, reload: 2.0, spread: 0.006, range: 100, falloff: [35, 70, 0.6], color: 0x7dff9a, sound: 'pr', kick: [0.012, 0.006, 0.5], aa: [1.8, 60], zoom: 58, adsZ: -0.42, hip: [0.13, -0.13, -0.32], flavor: 'Number go up. Three times. Per trigger pull.' },
+  tg: { id: 'tg', model: 'tg', name: 'Touch of Grass', type: 'Scout Rifle', slot: 0, ammo: 'primary', rarity: 'exotic', questOnly: true, kind: 'single', dmg: 44, crit: 1.9, rof: 0.36, mag: 12, reload: 1.9, spread: 0.004, range: 170, falloff: [70, 130, 0.7], color: 0x8dff9a, sound: 'sr', kick: [0.024, 0.008, 0.8], aa: [1.5, 110], zoom: 40, adsZ: -0.38, hip: [0.13, -0.13, -0.32], fixedPerks: ['grassy', 'outlaw'], shader: 'grass', flavor: 'The raid exotic. It was outside the whole time.' },
   sr: { id: 'sr', model: 'sr', name: 'The Sus-pect', type: 'Scout Rifle', slot: 0, ammo: 'primary', rarity: 'legendary', kind: 'single', dmg: 46, crit: 1.85, rof: 0.38, mag: 14, reload: 2.0, spread: 0.004, range: 170, falloff: [70, 130, 0.7], color: 0xff8080, sound: 'sr', kick: [0.024, 0.008, 0.8], aa: [1.4, 110], zoom: 40, adsZ: -0.38, hip: [0.13, -0.13, -0.32], flavor: 'Seen venting. Shoots anyway.' },
   sg: { id: 'sg', model: 'sg', name: 'The Chaperwoof', type: 'Shotgun', slot: 1, ammo: 'special', rarity: 'legendary', kind: 'pellets', dmg: 15, pellets: 10, crit: 1.4, rof: 0.85, mag: 5, shellTime: 0.48, spread: 0.065, range: 32, falloff: [10, 26, 0.35], color: 0xa0fff0, sound: 'sg', kick: [0.06, 0.02, 1.6], aa: [3.5, 16], zoom: 64, adsZ: -0.4, hip: [0.12, -0.125, -0.3], brick: 4, maxRes: 25, flavor: 'Who let the dogs out? This did.' },
   sn: { id: 'sn', model: 'sn', name: 'Big Brain', type: 'Sniper Rifle', slot: 1, ammo: 'special', rarity: 'legendary', kind: 'sniper', dmg: 105, crit: 2.6, rof: 0.95, mag: 4, reload: 2.4, spread: 0.06, range: 260, falloff: [220, 260, 1], color: 0xc8e8ff, sound: 'sn', kick: [0.07, 0.012, 1.8], aa: [1.0, 220], zoom: 54, scope: 'sn', adsZ: -0.36, hip: [0.13, -0.14, -0.3], brick: 4, maxRes: 16, flavor: 'Galaxy brain. Galaxy damage.' },
@@ -56,6 +57,7 @@ export const PERKS = {
   // exotic traits
   wolfpack: { name: 'Wolfpack Rounds', icon: '🐺', col: 'x', desc: 'Rockets split into seeking mini-rockets on impact.' },
   memento: { name: 'Memento Potato', icon: '🥔', col: 'x', desc: 'Reloading after a kill empowers the next 6 shots (+25% damage).' },
+  grassy: { name: 'Touch of Grass', icon: '🌱', col: 'x', desc: 'The last 3 rounds in the mag deal +60% damage and grow back by themselves, at 4 health a shot (never lethal). Precision kills touch grass: health and shields back, and a stack of brainrot gone.' },
   mlg: { name: '360 No Scope', icon: '🎮', col: 'x', desc: 'Shots fired while airborne are perfectly accurate and deal double damage. Airborne kills: AIRHORN.' },
 };
 
@@ -68,7 +70,7 @@ export function rollPerks(def) {
   return [pick(pool('a')), pick(pool('b'))];
 }
 // every gun's element
-const ELEMENT_OF = { hc: 'solar', ar: 'arc', pr: 'void', sr: 'void', sg: 'arc', sn: 'solar', ns: 'arc', fr: 'void', rl: 'solar', mg: 'arc', gl: 'void' };
+const ELEMENT_OF = { tg: 'arc', hc: 'solar', ar: 'arc', pr: 'void', sr: 'void', sg: 'arc', sn: 'solar', ns: 'arc', fr: 'void', rl: 'solar', mg: 'arc', gl: 'void' };
 for (const id in DEFS) DEFS[id].element = ELEMENT_OF[id] || 'solar';
 
 export function makeItem(id, perks = null) { return { uid: 'w' + (uidN++).toString(36), id, perks: perks || rollPerks(DEFS[id]), isNew: true }; }
@@ -87,6 +89,7 @@ export const SHADERS = {
   grass: { name: 'Touch Grass', a: 0x8dff9a, b: 0x1e3a24, metal: 0.3, rough: 0.5 },
 };
 export function applyShader(group, key = INV.shader) {
+  if (group.userData?.fixedShader) key = group.userData.fixedShader; // (the raid exotic always looks like grass)
   const s = SHADERS[key] || SHADERS.default;
   group.traverse((o) => {
     if (!o.isMesh || !o.material?.isMeshStandardMaterial) return;
@@ -130,7 +133,7 @@ export function addItem(item) {
 // Loot roll. `exoticChance` rolls for an exotic you don't own yet.
 export function rollLoot({ exoticChance = 0, slot = null } = {}) {
   const owned = new Set(INV.items.map((i) => i.id));
-  const exotics = Object.values(DEFS).filter((d) => d.rarity === 'exotic' && !owned.has(d.id));
+  const exotics = Object.values(DEFS).filter((d) => d.rarity === 'exotic' && !d.questOnly && !owned.has(d.id));
   if (exotics.length && Math.random() < exoticChance) return addItem(makeItem(pick(exotics).id));
   const legs = Object.values(DEFS).filter((d) => d.rarity === 'legendary' && (slot == null || d.slot === slot));
   return addItem(makeItem(pick(legs).id));
@@ -177,6 +180,7 @@ export class PerkEngine {
     if (this.has(w, 'opening') && w.openingShot) m *= 1.25;
     if (this.has(w, 'memento') && w.memento > 0) m *= 1.25;
     if (this.has(w, 'mlg') && !p.onGround) m *= 2;
+    if (this.has(w, 'grassy') && w.grassShot) m *= 1.6;
     return m;
   }
   reloadMult(w) {
@@ -188,6 +192,13 @@ export class PerkEngine {
   onFire(w) {
     w.openingShot = G.time - (w.lastFire ?? -10) > 2; w.lastFire = G.time;
     if (w.memento > 0) w.memento--;
+    // Touch of Grass: the last three rounds come back, and they cost you
+    w.grassShot = this.has(w, 'grassy') && w.mag < 3;
+    if (w.grassShot) {
+      w.mag++;
+      const p = this.p; p.hp = Math.max(1, p.hp - 4); p.lastHurt = G.time;
+      if (Math.random() < 0.35) fxm.floatText(p.pos.clone().setY(p.pos.y + 2.1), '🌱', { height: 0.3, life: 0.6 });
+    }
   }
   onHit(w, e, crit) {
     if (this.has(w, 'stonks')) { w.stonks = Math.min(15, (w.stonks || 0) + 1); w.misses = 0; }
@@ -209,6 +220,11 @@ export class PerkEngine {
     if (this.has(w, 'vine_boom')) {
       this.boom(pos, 4.5, 70, 0x9a9488);
       playAt(pos, 'vineBoom', 1 + Math.random() * 0.3);
+    }
+    if (crit && this.has(w, 'grassy')) {
+      p.hp = Math.min(p.maxHp, p.hp + 30); p.shield = Math.min(p.maxShield, p.shield + 30);
+      if (G.encounter?.brainrot > 0) G.encounter.brainrot--;
+      fxm.floatText(p.pos.clone().setY(p.pos.y + 2.2), '*touches grass*', { height: 0.35, life: 0.9, color: '#9dff9d' });
     }
     if (this.has(w, 'touch_grass')) { p.hp = Math.min(p.maxHp, p.hp + 20); p.shield = Math.min(p.maxShield, p.shield + 25); fxm.floatText(p.pos.clone().setY(p.pos.y + 2.2), '🌱', { height: 0.4, life: 0.8 }); }
     if (this.has(w, 'rizz')) { p.addSuper(4); if (crit) p.grenadeCd = Math.max(0, p.grenadeCd - 2); }
@@ -243,9 +259,24 @@ const BX = (w, h, d) => bevelBox(w, h, d);
 const CY = (r, l, s = 14, r2 = r) => new THREE.CylinderGeometry(r, r2, l, s);
 
 // Left-hand placement per model (foregrip)
-export const LEFT_HAND = { ar: [0, -0.06, -0.26], pr: [0, -0.06, -0.24], sr: [0, -0.06, -0.28], sn: [0, -0.07, -0.3], ns: [0, -0.07, -0.3], fr: [0, -0.07, -0.25], mg: [0, -0.09, -0.3], gl: [0, -0.08, -0.22] };
+export const LEFT_HAND = { tg: [0, -0.06, -0.28], ar: [0, -0.06, -0.26], pr: [0, -0.06, -0.24], sr: [0, -0.06, -0.28], sn: [0, -0.07, -0.3], ns: [0, -0.07, -0.3], fr: [0, -0.07, -0.25], mg: [0, -0.09, -0.3], gl: [0, -0.08, -0.22] };
 
 export function buildModel(kind) {
+  if (kind === 'tg') {
+    const r = buildModel('sr'); r.kind = 'tg';
+    // a fine fuzz of grass along the top and sides (thin blades, a few shades of green)
+    const blades = [0x5fd35f, 0x7ee36a, 0x3fae4a].map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7, emissive: 0x1a5a1a, emissiveIntensity: 0.35 }));
+    const geo = new THREE.ConeGeometry(0.0025, 1, 3); geo.translate(0, 0.5, 0);
+    for (let i = 0; i < 60; i++) {
+      const h = 0.012 + Math.random() * 0.022, side = Math.random() < 0.7 ? 0 : Math.sign(Math.random() - 0.5);
+      const t = part(r.group, geo, blades[i % 3], side ? side * 0.028 : (Math.random() - 0.5) * 0.045, side ? Math.random() * 0.03 : 0.042, -0.4 + Math.random() * 0.5, (Math.random() - 0.5) * 0.5, 0, side ? side * -1.2 : (Math.random() - 0.5) * 0.5);
+      t.scale.set(1, h, 1); t.castShadow = false;
+    }
+    const core = M(0x103010, { emissive: 0x8dff9a, emissiveIntensity: 2.2, metalness: 0.2 });
+    part(r.group, CY(0.018, 0.12, 10), core, 0, 0.0, -0.22, Math.PI / 2);
+    r.group.userData.fixedShader = 'grass';
+    return r;
+  }
   const g = new THREE.Group(); const parts = {};
   const sight = new THREE.Object3D();
   let muzzleZ = -0.6;
