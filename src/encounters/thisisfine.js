@@ -1,5 +1,8 @@
 // Encounter 4: THIS IS FINE — the room is on fire. The Dog is in denial (immune) until the fire is too big to ignore.
 // Let it burn to break the denial, put it out with extinguishers before it takes everyone.
+// The twist at 30% health: the Dog finally agrees it is not fine and grabs his own extinguisher. Now HE puts
+// the fire out (and back into denial he goes), and the wall extinguisher is swapped for hot sauce that lights
+// the floor behind you. Keep it burning between 50% and 90%.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { G, rand, pick, after, dampAngle, distXZ, alivePlayers, players, playerById, local } from '../game.js';
@@ -487,14 +490,16 @@ export class ThisIsFine extends Encounter {
   // ---------- fire (host) ----------
   ignite(pos, radius = 0) {
     const c = tileOf(pos.x, pos.z);
-    if (c < 0) return;
+    if (c < 0) return 0;
     const cx = c % N, cz = Math.floor(c / N);
+    let n = 0;
     for (let dz = -radius; dz <= radius; dz++) for (let dx = -radius; dx <= radius; dx++) {
       const x = cx + dx, z = cz + dz;
       if (x < 0 || z < 0 || x >= N || z >= N) continue;
       const i = z * N + x;
-      if (this.fire[i] === 0) this.fire[i] = 1;
+      if (this.fire[i] === 0) { this.fire[i] = 1; n++; }
     }
+    return n;
   }
   hurt(q, amt, cause) { if (q === G.player) q.hurt(amt, cause); else G.net.sendTo(q.id, ['hurt', amt, cause]); }
   stepFire(dt) {
@@ -540,6 +545,23 @@ export class ThisIsFine extends Encounter {
     if (!b.alive) { this.won = true; return this.win(); }
     this.tileT += dt;
     if (this.tileT >= 0.25) { this.stepFire(this.tileT); this.tileT = 0; }
+    // the twist: under 30% he takes matters into his own paws
+    if (!this.reversed && b.hp / b.maxHp < 0.3) {
+      this.ev('reverse');
+      this.ghost('Wait. He has an extinguisher. He is putting it OUT. Guardian... we need the fire now. Light it back up!', 2.5);
+      this.mountT = Math.min(this.mountT, 1.5); // and here's your hot sauce
+    }
+    if (this.reversed) {
+      this.dogSprayT = (this.dogSprayT || 2) - dt;
+      if (this.dogSprayT <= 0) {
+        this.dogSprayT = 2.2;
+        // sweeps the room around him, closest fires first
+        this.dogA = (this.dogA || 0) + rand(0.8, 1.6);
+        const r = rand(4, 16), at = new THREE.Vector3(b.pos.x + Math.cos(this.dogA) * r, 0, b.pos.z + Math.sin(this.dogA) * r);
+        this.douse(at);
+        this.ev('dogSpray', { x: Math.round(at.x * 10) / 10, z: Math.round(at.z * 10) / 10 });
+      }
+    }
     // the denial breaks at 50% and comes back under 35%
     if (b.immune && this.frac >= DENIAL_BREAKS) {
       b.immune = false; this.phase = 'panic';
@@ -576,7 +598,10 @@ export class ThisIsFine extends Encounter {
       this.carryT -= dt;
       if (this.sprayT <= 0) {
         this.sprayT = 0.2;
-        this.charge -= this.douse(carrier.pos);
+        if (this.reversed) {
+          (this.trail ||= []).push(carrier.pos.clone());
+          if (this.trail.length > 4) { const back = this.trail.shift(); if (tileOf(back.x, back.z) !== tileOf(carrier.pos.x, carrier.pos.z)) this.charge -= this.ignite(back, 0) * 1.5 + 0.4; }
+        } else this.charge -= this.douse(carrier.pos);
         if (this.charge <= 0 || this.carryT <= 0) this.dropExtinguisher('empty');
       }
     } else if (this.mount < 0) {
@@ -584,17 +609,18 @@ export class ThisIsFine extends Encounter {
       if (this.mountT <= 0) {
         this.mount = Math.floor(Math.random() * this.mounts.length);
         play('chime', 2);
-        HUD.bigText('🧯 EXTINGUISHER READY', `${this.mount % 2 ? 'east' : 'west'} wall`, 2, 'good');
+        HUD.bigText(this.reversed ? '🌶️ HOT SAUCE READY' : '🧯 EXTINGUISHER READY', `${this.mount % 2 ? 'east' : 'west'} wall`, 2, 'good');
         G.waypoint = this.mounts[this.mount].pos.clone().setY(2);
       }
     } else {
       const m = this.mounts[this.mount];
       for (const q of alivePlayers()) {
         if (distXZ(q.pos, m.pos) < 2.2 && q.pos.y < 3) {
-          this.carrier = pid(q); this.charge = CHARGE; this.carryT = 40; this.mount = -1; G.waypoint = null;
+          this.carrier = pid(q); this.charge = CHARGE; this.carryT = 40; this.mount = -1; G.waypoint = null; this.trail = [];
           play('pickup');
           const who = q === G.player ? (G.net.active ? G.net.name : 'You') : q.name;
-          HUD.bigText(`${who} grabbed the 🧯`, 'walk through the fire to put it out. no shooting while you carry it.', 2.4, 'good');
+          if (this.reversed) HUD.bigText(`${who} grabbed the 🌶️`, 'it lights the floor behind you. keep the fire over 50%. no shooting while you carry it.', 2.6, 'good');
+          else HUD.bigText(`${who} grabbed the 🧯`, 'walk through the fire to put it out. no shooting while you carry it.', 2.4, 'good');
           break;
         }
       }
@@ -612,14 +638,48 @@ export class ThisIsFine extends Encounter {
     const pct = Math.round(this.frac * 100);
     const bar = '▰'.repeat(Math.round(this.frac * 10)) + '▱'.repeat(10 - Math.round(this.frac * 10));
     const mm = Math.floor(Math.max(0, this.enrageT) / 60), ss = String(Math.floor(Math.max(0, this.enrageT) % 60)).padStart(2, '0');
-    const ext = this.carrier ? `🧯 ${Math.max(0, Math.ceil(this.charge / CHARGE * 100))}% left` : this.mount >= 0 ? '🧯 extinguisher on the wall: go get it' : `🧯 next extinguisher in ${Math.ceil(this.mountT)}s`;
-    const hint = this.engulfT > 0 ? `⚠ EVERYTHING IS BURNING: ${Math.max(0, ENGULF_TIME - this.engulfT).toFixed(1)}s ⚠` : b.immune ? `Let it burn to ${DENIAL_BREAKS * 100}% to break his denial.` : `DAMAGE HIM! Keep the fire under ${ENGULF * 100}%.`;
+    const ic = this.reversed ? '🌶️' : '🧯', item = this.reversed ? 'hot sauce' : 'extinguisher';
+    const ext = this.carrier ? `${ic} ${Math.max(0, Math.ceil(this.charge / CHARGE * 100))}% left` : this.mount >= 0 ? `${ic} ${item} on the wall: go get it` : `${ic} next ${item} in ${Math.ceil(this.mountT)}s`;
+    const hint = this.engulfT > 0 ? `⚠ EVERYTHING IS BURNING: ${Math.max(0, ENGULF_TIME - this.engulfT).toFixed(1)}s ⚠`
+      : this.reversed ? (b.immune ? `He is putting it out! Light it back up to ${DENIAL_BREAKS * 100}%.` : `DAMAGE HIM! Keep the fire between ${DENIAL_BREAKS * 100}% and ${ENGULF * 100}%.`)
+      : b.immune ? `Let it burn to ${DENIAL_BREAKS * 100}% to break his denial.` : `DAMAGE HIM! Keep the fire under ${ENGULF * 100}%.`;
     HUD.objective(null, `🔥 FIRE ${pct}%  ${bar}\n${hint}\n${ext}\nThe coffee gets cold in ${mm}:${ss}`);
     HUD.boss(b.name, b.hp / b.maxHp, { immune: b.immune, sub: b.immune ? 'IN DENIAL: this is fine' : 'IT IS NOT FINE' });
   }
+  ev_reverse() {
+    this.reversed = true;
+    const b = this.boss || G.enemies.find((e) => e instanceof FineDog);
+    play('airhorn'); G.shake += 0.5;
+    HUD.bigText('THE DOG HAS DECIDED', 'that this is, in fact, not fine. he found an extinguisher.', 3.2, 'warn');
+    if (b) {
+      // his own little extinguisher, in the free paw
+      const ext = makeExtinguisher(); ext.scale.setScalar(1.6); ext.position.set(0.2, -0.9, 0.5); ext.rotation.x = 0.6;
+      b.model.userData.armL.add(ext); b.dogExt = ext;
+      b.say(100 + 4, 3); // "HELP" -> he's helping himself
+      fx.floatText(b.top().clone(), 'I WILL HANDLE THIS MYSELF', { height: 0.9, color: '#ffffff', life: 3 });
+    }
+    // the wall extinguishers are hot sauce now
+    const sauce = std(0xff5a14, { detail: false, roughness: 0.2, metalness: 0.1, emissive: 0x501000 });
+    this.vmExt?.traverse((o) => { if (o.isMesh && o.material?.color?.getHex() === 0xd01818) o.material = sauce; });
+    for (const m of this.mounts || []) {
+      m.ext.traverse((o) => { if (o.isMesh && o.material?.color?.getHex() === 0xd01818) o.material = sauce; });
+      const tag = textSprite('🌶️ HOT SAUCE', 0.38, { color: '#fff', bg: '#d2560a', pad: 10 }); tag.position.copy(m.tag.position);
+      m.g.remove(m.tag); m.g.add(tag); m.tag = tag;
+    }
+  }
+  ev_dogSpray({ x, z }) {
+    const b = this.boss || G.enemies.find((e) => e instanceof FineDog);
+    const at = new THREE.Vector3(x, 0.4, z);
+    playAt(at, 'spray');
+    local(() => {
+      for (let i = 0; i < 6; i++) fx.burst(at.clone().add(new THREE.Vector3(rand(-4, 4), 0, rand(-4, 4))), 0xf4f8ff, 4, 3, 0.35, 0.9, -1.5);
+      if (b) { const from = b.pos.clone().setY(4); for (let k = 1; k < 6; k++) fx.burst(from.clone().lerp(at, k / 6), 0xf4f8ff, 2, 1.2, 0.25, 0.5, 0); }
+    });
+  }
   dropExtinguisher(why) {
     this.carrier = null; this.charge = 0; this.mountT = why === 'empty' ? 6 : 4;
-    HUD.bigText(why === 'empty' ? '🧯 EMPTY' : '🧯 DROPPED', 'another one is coming', 1.6, 'warn');
+    const ic = this.reversed ? '🌶️' : '🧯';
+    HUD.bigText(why === 'empty' ? `${ic} EMPTY` : `${ic} DROPPED`, 'another one is coming', 1.6, 'warn');
   }
   ev_engulf(cause) {
     play('explosion', 1.6); G.shake += 1.5;
@@ -696,7 +756,7 @@ export class ThisIsFine extends Encounter {
       this.hissT = (this.hissT || 0) - dt;
       if (this.hissT <= 0) { this.hissT = 0.22; play('spray'); }
     }
-    if (me) HUD.setDebuff('ext', `🧯 CARRYING: walk over the fire (${Math.max(0, Math.ceil(this.charge / CHARGE * 100))}%) — can't shoot`);
+    if (me) HUD.setDebuff('ext', this.reversed ? `🌶️ HOT SAUCE: it lights the floor behind you (${Math.max(0, Math.ceil(this.charge / CHARGE * 100))}%) — can't shoot` : `🧯 CARRYING: walk over the fire (${Math.max(0, Math.ceil(this.charge / CHARGE * 100))}%) — can't shoot`);
     else HUD.clearDebuff('ext');
     // the spray + the tag over the carrier, for everyone
     const cq = this.carrier && playerById(this.carrier);
@@ -707,7 +767,7 @@ export class ThisIsFine extends Encounter {
       if (this.sprayFx <= 0) {
         this.sprayFx = 0.06;
         const a = Math.random() * Math.PI * 2, r = rand(0.5, 3.5);
-        local(() => fx.burst(new THREE.Vector3(cq.pos.x + Math.cos(a) * r, 0.4, cq.pos.z + Math.sin(a) * r), 0xf4f8ff, 3, 2.5, 0.3, 0.7, -1.5));
+        local(() => fx.burst(new THREE.Vector3(cq.pos.x + Math.cos(a) * r, 0.4, cq.pos.z + Math.sin(a) * r), this.reversed ? 0xff5a10 : 0xf4f8ff, 3, 2.5, 0.3, 0.7, -1.5));
       }
     }
   }
