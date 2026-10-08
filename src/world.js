@@ -114,6 +114,22 @@ export function pointLight(x, y, z, color, intensity = 30, dist = 25) {
 
 // Batch the static set dressing (meshes flagged userData.static) into one mesh per material, so a dressed
 // arena costs a few dozen draw calls instead of hundreds (each also gets drawn again for shadows and AO).
+// Tiny things (eyes, buttons, rivets, bolts) don't cast shadows: at shadow-map resolution they'd be a pixel
+// or two, but each one is a whole extra draw call in the shadow pass. Sizes are measured relative to `root`,
+// so an enemy still scaling in out of its portal doesn't count as small.
+const _ts1 = new THREE.Vector3(), _ts2 = new THREE.Vector3();
+export function trimShadows(root, minR = 0.15) {
+  root.updateMatrixWorld(true);
+  const rs = root.getWorldScale(_ts2).x || 1;
+  let n = 0;
+  root.traverse((o) => {
+    if (!o.isMesh || !o.castShadow || o.isInstancedMesh) return;
+    const g = o.geometry; if (!g.boundingSphere) g.computeBoundingSphere();
+    const s = o.getWorldScale(_ts1); const r = g.boundingSphere.radius * Math.max(s.x, s.y, s.z) / rs;
+    if (r < minR) { o.castShadow = false; n++; }
+  });
+  return n;
+}
 export function mergeStatic() {
   const groups = new Map();
   for (const m of [...G.worldGroup.children]) {

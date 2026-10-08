@@ -8,7 +8,7 @@ import { Player } from './player.js';
 import { updateEnemies, clearEnemies } from './enemies.js';
 import { updateCombat, clearCombat, Pickup } from './combat.js';
 import { updateFx, clearFx } from './fx.js';
-import { clearWorld, mergeStatic } from './world.js';
+import { clearWorld, mergeStatic, trimShadows } from './world.js';
 import { initRenderer, render, applyQuality, followSun, bakeEnvironment, wipeGrade } from './render.js';
 import { togglePhoto, photoUpdate } from './photo.js';
 import { updateDressing } from './dressing.js';
@@ -328,6 +328,7 @@ function loadEncounter(i) {
     G.nextNid = 1; // build() creates the same static actors with the same ids everywhere
     enc.build();
     mergeStatic();
+    trimShadows(G.worldGroup);
     bakeEnvironment();
     // each arena sounds like itself: its own reverb + background
     const snd = SOUNDSCAPES[E.name] || ['hall', null];

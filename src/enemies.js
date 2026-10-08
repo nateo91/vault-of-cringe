@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { G, rand, pick, after, clamp, damp, dampAngle, distXZ, distToSegment, nearestPlayer, hurtPlayer, playerById, players, local, ELEMENTS, ELEMENT_KEYS, modOn } from './game.js';
 import * as fx from './fx.js';
 import { play, playAt } from './audio.js';
-import { moveCollide, pointInWorld } from './world.js';
+import { moveCollide, pointInWorld, trimShadows } from './world.js';
 import { los, Projectile, Pickup, raycast, Shockwave } from './combat.js';
 import { HUD } from './hud.js';
 import { textSprite } from './textures.js';
@@ -220,6 +220,7 @@ export class Enemy {
 
   update(dt) {
     this.t += dt;
+    if (!this.shadowsTrimmed) { this.shadowsTrimmed = true; trimShadows(this.mesh); }
     if (this.shieldMesh) this.updateShield(dt);
     if (this.stunT > 0 && !G.net.isClient) { this.stunT -= dt; this.vel.set(0, this.vel.y, 0); this.physics?.(dt); this.animSpeed = 0; this.animate?.(dt); this.rig?.update(dt, { speed: 0 }); this.mesh.rotation.y = this.yaw; return; }
     if (G.net.isClient) this.proxyUpdate(dt);
