@@ -7,6 +7,7 @@ import { applyFx, dmgNumber, impact, superRing, crater, grenadeField, rally } fr
 import { play, playAt, say } from './audio.js';
 import { HUD } from './hud.js';
 import { BUILD } from './version.js';
+import { hasSeal } from './triumphs.js';
 // a build mismatch: in the killfeed mid-raid, and on the lobby line in the menu (where the killfeed isn't shown)
 function versionWarning(t) {
   HUD.killfeed(t);
@@ -57,8 +58,10 @@ function sendRaw(conn, msg) { try { if (conn.open) conn.send(msg); } catch (e) {
 Net.broadcast = (msg) => { for (const p of Net.peers.values()) sendRaw(p.conn, msg); };
 
 // ---------------- hosting ----------------
+// earned the TERMINALLY ONLINE seal? everyone sees the medal next to your name
+const titled = (name) => (hasSeal() ? `${String(name).slice(0, 16)} 🏅` : name);
 export function hostGame(name) {
-  Net.name = name;
+  Net.name = titled(name);
   return new Promise((resolve, reject) => {
     const tryCode = (attempt) => {
       const code = Array.from({ length: 5 }, () => pick(CODE_CHARS.split(''))).join('');
@@ -182,7 +185,7 @@ function hostTick() {
 
 // ---------------- joining ----------------
 export function joinGame(code, name) {
-  Net.name = name;
+  Net.name = titled(name);
   return new Promise((resolve, reject) => {
     const peer = new Peer({ debug: 1 });
     let done = false;
@@ -361,5 +364,5 @@ export function netUpdate(dt) {
 setInterval(() => { if (Net.active && document.hidden) netUpdate(TICK); }, 50);
 
 export function leave() { try { Net.peer?.destroy(); } catch (e) { /* ignore */ } }
-const clean = (n) => String(n || 'Guardian').replace(/[<>]/g, '').slice(0, 16) || 'Guardian';
+const clean = (n) => String(n || 'Guardian').replace(/[<>]/g, '').slice(0, 20) || 'Guardian'; // (16 + room for a seal medal)
 export { Net, clean };

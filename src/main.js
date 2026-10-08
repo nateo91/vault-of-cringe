@@ -6,7 +6,7 @@ import { initAudio, play, say, setVolume, startMusic, stopMusic, updateListener,
 import { HUD } from './hud.js';
 import { clearSecrets, updateSecrets, secretsFound, SECRETS } from './secrets.js';
 import { clearLore, updateLore } from './lore.js';
-import { unlock, renderTriumphs } from './triumphs.js';
+import { unlock, renderTriumphs, hasSeal } from './triumphs.js';
 import { applyColorblind } from './colorblind.js';
 import { BUILD, watchForUpdates } from './version.js';
 import { CAREER, newRun, bank, addTime, recordClear } from './career.js';
@@ -471,7 +471,7 @@ function onEncounterComplete() {
 function finishRun() {
   const r = G.run;
   if (!r) return null;
-  const team = [{ name: G.net.active ? G.net.name : (localStorage.getItem('voc-name') || 'Guardian'), cls: G.player.cls }, ...[...G.avatars.values()].map((a) => ({ name: a.name, cls: a.cls }))];
+  const team = [{ name: G.net.active ? G.net.name : (localStorage.getItem('voc-name') || 'Guardian') + (hasSeal() ? ' 🏅' : ''), cls: G.player.cls }, ...[...G.avatars.values()].map((a) => ({ name: a.name, cls: a.cls }))];
   const mods = Object.keys(MODS).filter((k) => G.settings.mods?.[k]);
   return { id: r.id, time: +r.clock.toFixed(2), date: Date.now(), team, wipes: r.wipes, kills: G.stats.kills, splits: r.splits, eligible: r.eligible, mods };
 }
