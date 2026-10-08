@@ -6,6 +6,7 @@ import { initAudio, play, say, setVolume, startMusic, stopMusic, updateListener,
 import { HUD } from './hud.js';
 import { clearSecrets, updateSecrets, secretsFound, SECRETS } from './secrets.js';
 import { unlock, renderTriumphs } from './triumphs.js';
+import { announceChallenge, weekly, doneThisWeek } from './challenges.js';
 import { Player } from './player.js';
 import { updateEnemies, clearEnemies } from './enemies.js';
 import { updateCombat, clearCombat, Pickup } from './combat.js';
@@ -79,6 +80,7 @@ function init() {
   setupCoop();
   G.onEngram = () => grantLoot({ exoticChance: 0.04 }, 'ENGRAM DECRYPTED');
   G.onSecret = () => grantLoot({ exoticChance: 0.35 }, 'SECRET CHEST');
+  G.onChallenge = () => grantLoot({ exoticChance: 0.5 }, 'WEEKLY CHALLENGE');
   // loot scales with how deep into the run you are (k), and the last encounter of the run pays a bonus
   G.onLoot = (i, k = i, last = i === ENCOUNTERS.length - 1) => { if (ENCOUNTERS[i]?.traversal) return; grantLoot({ exoticChance: [0, 0.05, 0.12, 0.2, 0.3, 0.5][k] ?? 0.1 }); if (last) after(1.2, () => grantLoot({ exoticChance: 0.2 })); };
   // skip a boss intro
@@ -151,6 +153,8 @@ function setupMenus() {
   const drawMods = () => { $('#mods').innerHTML = Object.entries(MODS).map(([k, m]) => `<button class="mod ${G.settings.mods[k] ? 'on' : ''}" data-mod="${k}" title="${m.desc}">${m.icon} ${m.name}</button>`).join(''); };
   drawMods();
   $('#mods').onclick = (e) => { const b = e.target.closest('[data-mod]'); if (!b) return; G.settings.mods[b.dataset.mod] = !G.settings.mods[b.dataset.mod]; try { localStorage.setItem('voc-settings', JSON.stringify(G.settings)); } catch (err) { /* fine */ } drawMods(); };
+  // this week's challenge, on the menu
+  { const c = weekly(), E = ENCOUNTERS.find((k) => k.name === c.enc); $('#weekly').innerHTML = `<span class="wk-l">🎯 THIS WEEK</span> <b>${E?.title || c.enc}</b> · ${c.name}: ${c.desc}${doneThisWeek() ? ' <span class="wk-done">✓ done</span>' : ''}`; }
   $('#triBtn').onclick = () => { renderTriumphs($('#triumphs')); $('#triumphs').classList.remove('hidden'); };
   $('#triClose').onclick = () => $('#triumphs').classList.add('hidden');
   $('#boardBtn').onclick = () => { renderBoard($('#leaderboard')); $('#leaderboard').classList.remove('hidden'); };
@@ -347,6 +351,7 @@ function loadEncounter(i) {
     local(() => HUD.objective(E.title, ''));
     G.nextNid = 1000; // anything spawned from here on gets its id from the host
     if (G.net.isClient) enc.clientStart(); else enc.start();
+    announceChallenge(enc);
     L.classList.add('hidden');
     HUD.show(!G.cine); // a boss intro keeps the HUD hidden until it ends
     G.state = 'playing';

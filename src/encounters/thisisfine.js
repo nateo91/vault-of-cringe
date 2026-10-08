@@ -12,6 +12,7 @@ import { setEnv, addBox, addCyl, add, std, pointLight } from '../world.js';
 import { addFur } from '../surface.js';
 import { addChest, addTrigger } from '../secrets.js';
 import { unlock } from '../triumphs.js';
+import { failChallenge } from '../challenges.js';
 import { tileTex, textSprite, emojiSprite, textTex, IMPACT } from '../textures.js';
 import { Enemy, Doge, Stonks, Boyfriend, registerNetType, applyMods } from '../enemies.js';
 import { Shockwave, Pickup } from '../combat.js';
@@ -591,6 +592,7 @@ export class ThisIsFine extends Encounter {
     }
     // too much fire: everyone burns
     this.engulfT = this.frac >= ENGULF ? this.engulfT + dt : Math.max(0, this.engulfT - dt * 2);
+    if (this.frac >= ENGULF) failChallenge(this, 'the room hit 90%');
     if (this.engulfT > 0 && Math.floor(this.engulfT * 2) !== this.lastWarn) { this.lastWarn = Math.floor(this.engulfT * 2); play('tick'); }
     if (this.engulfT >= ENGULF_TIME && this.phase !== 'engulfed') { this.phase = 'engulfed'; this.ev('engulf', 'the room (it was not fine)'); }
     this.enrageT -= dt;

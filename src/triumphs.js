@@ -15,6 +15,7 @@ export const TRIUMPHS = {
   secrets: { icon: '🔑', name: 'Secret Keeper', desc: 'Find all three secret chests.' },
   master: { icon: '⚔️', name: 'Master Raider', desc: 'Clear the raid with the Master modifier on.' },
   speed: { icon: '⏱️', name: 'Speedrunner', desc: 'A full run in under 15 minutes.' },
+  challenge: { icon: '🎯', name: 'Challenger', desc: "Complete a week's raid challenge." },
 };
 export const SEAL = 'TERMINALLY ONLINE';
 
@@ -24,7 +25,7 @@ export function earned() {
 export function hasSeal() { const e = earned(); return Object.keys(TRIUMPHS).every((k) => e.includes(k)); }
 
 let toastHost = null;
-function toast(html, seal = false) {
+export function toast(html, seal = false) {
   if (!toastHost) { toastHost = document.createElement('div'); toastHost.id = 'triumphToasts'; document.body.appendChild(toastHost); }
   const el = document.createElement('div');
   el.className = 'tri-toast' + (seal ? ' seal' : '');

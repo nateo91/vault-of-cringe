@@ -10,6 +10,7 @@ import { Enemy, Doge, Stonks, Nyan, Wizard, RickRoller, Boyfriend, spawnEnemy, r
 import { HUD } from '../hud.js';
 import { play, playAt } from '../audio.js';
 import { unlock } from '../triumphs.js';
+import { failChallenge } from '../challenges.js';
 import * as fx from '../fx.js';
 
 const AD_LEN = [30, 15]; // ad 1 of 2, ad 2 of 2
@@ -219,11 +220,11 @@ export class NormieGate extends Encounter {
       const elapsed = AD_LEN[this.adN - 1] - this.adT;
       if (this.adN === 1 && elapsed > 5 && !this.skipBtn) {
         // the Skip button pops out of the screen
-        this.skipBtn = spawnEnemy(SkipAd, 4.8, -47.5, 1.2, this); this.skipBtn.home = this.skipBtn.pos.clone();
+        this.skipBtn = spawnEnemy(SkipAd, 4.8, -47.5, 1.2, this); this.skipBtn.home = this.skipBtn.pos.clone(); this.skipAt = this.t;
         this.ghost('There! Skip it! SKIP IT!');
       }
       if (this.adT <= 0) {
-        if (this.adN === 1) { this.adN = 2; this.adT = AD_LEN[1]; this.ghost('...Ad 2 of 2. Of course there are two.'); play('wrong'); }
+        if (this.adN === 1) { failChallenge(this, 'you sat through the ad'); this.adN = 2; this.adT = AD_LEN[1]; this.ghost('...Ad 2 of 2. Of course there are two.'); play('wrong'); }
         else return this.openGate();
       }
       const m = Math.ceil(Math.max(0, this.adT));
@@ -245,7 +246,7 @@ export class NormieGate extends Encounter {
   ev_ad() { this.adScreen.visible = true; play('airhorn'); HUD.bigText('📺 A WORD FROM OUR SPONSOR', 'Your raid will resume after this message', 3, 'meme'); }
   onSkipDodge(stage) { if (stage === 1) this.ghost('It moved. Of course it moved.'); if (stage === 2) this.ghost('Smaller. It is getting smaller. Keep shooting!'); }
   ev_skipped() { unlock('adblock'); }
-  onSkipped() { if (this.phase === 'ad') { this.ev('skipped'); this.ghost('Skipped. You are a hero. Nobody has ever skipped an ad that fast.', 1.6); this.openGate(); } }
+  onSkipped() { if (this.phase === 'ad') { this.ev('skipped'); if (this.t - (this.skipAt ?? this.t) > 10) failChallenge(this, 'took more than 10s'); this.ghost('Skipped. You are a hero. Nobody has ever skipped an ad that fast.', 1.6); this.openGate(); } }
   // draws the ad (every machine; the timer comes from the host)
   drawAd() {
     const c = this.adCanvas, x = c.getContext('2d'), W = c.width, H = c.height;

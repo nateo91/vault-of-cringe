@@ -451,3 +451,9 @@ label { cursor: pointer; }
 @keyframes triIn { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: none; } }
 /* the menu shouldn't show through the full-screen panels */
 #triumphs.overlay, #leaderboard.overlay { background: radial-gradient(ellipse at 50% 30%, rgba(40,14,64,.97), rgba(4,4,10,.99)); backdrop-filter: blur(8px); }
+
+/* ---------- weekly challenge ---------- */
+#weekly { margin: -4px auto 12px; max-width: 760px; font-size: 14px; color: #ccd; }
+#weekly .wk-l { font-size: 11px; letter-spacing: .25em; color: #ffd23f; font-weight: 700; }
+#weekly b { color: #fff; }
+#weekly .wk-done { color: #7dff9a; font-weight: 700; }

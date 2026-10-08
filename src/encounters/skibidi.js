@@ -16,6 +16,7 @@ import { HUD } from '../hud.js';
 import { play, playAt, say } from '../audio.js';
 import * as fx from '../fx.js';
 import { unlock } from '../triumphs.js';
+import { failChallenge } from '../challenges.js';
 
 const _t = new THREE.Vector3(), _f = new THREE.Vector3();
 const BOSS_LINES = ['skibidi', 'you are not him', 'only in ohio', 'your aura is negative', 'ratio', 'mewing is mandatory', 'it is giving... defeat'];
@@ -303,6 +304,7 @@ export class SkibidiFinale extends Encounter {
   update(dt) {
     this.t += dt; this.host = true;
     if (this.done || this.won) return;
+    if (this.t > 240) failChallenge(this, 'over 4 minutes');
     const b = this.boss;
     if (!b.alive) { this.won = true; return this.win(); }
     const ratio = b.hp / b.maxHp;

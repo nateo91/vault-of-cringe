@@ -13,6 +13,7 @@ import * as M from '../models.js';
 import { rimify } from '../rigs.js';
 import { playCinematic } from '../cinematic.js';
 import { unlock } from '../triumphs.js';
+import { failChallenge } from '../challenges.js';
 import { HUD } from '../hud.js';
 import { play, playAt, say } from '../audio.js';
 import * as fx from '../fx.js';
@@ -317,6 +318,7 @@ export class VineBoomChamber extends Encounter {
   }
   ev_respect() { unlock('cheems'); }
   failSequence(title, sub) {
+    failChallenge(this, 'a sequence was failed');
     this.phase = 'fail'; this.awaiting = false;
     play('wrong'); say('bruh', 'bruh'); G.stats.bruh++;
     HUD.bigText(title, sub, 2.5, 'warn');

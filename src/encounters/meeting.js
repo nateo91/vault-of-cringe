@@ -13,6 +13,7 @@ import { CrewRig } from '../rigs.js';
 import { playCinematic } from '../cinematic.js';
 import { addChest, addTrigger } from '../secrets.js';
 import { unlock } from '../triumphs.js';
+import { failChallenge } from '../challenges.js';
 import { los } from '../combat.js';
 import { HUD } from '../hud.js';
 import { play, playAt, say } from '../audio.js';
@@ -441,6 +442,7 @@ export class EmergencyMeeting extends Encounter {
       });
     } else {
       c.state = 'ejected'; c.untargetable = true; c.tag.visible = false;
+      failChallenge(this, `${c.colorName} was innocent`);
       play('wrong'); play('alarm');
       HUD.bigText(`${c.colorName} was not The Impostor.`, 'bruh.', 3, 'eject');
       say('bruh', 'bruh');

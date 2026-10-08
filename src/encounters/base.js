@@ -3,6 +3,7 @@ import { G, rand, pick, distXZ, players, local } from '../game.js';
 import { spawnEnemy } from '../enemies.js';
 import { HUD } from '../hud.js';
 import * as fx from '../fx.js';
+import { challengeEvent, finishChallenge } from '../challenges.js';
 
 export class Encounter {
   constructor() { this.t = 0; this.done = false; this.spawn = new THREE.Vector3(0, 0.1, 30); this.spawnYaw = 0; }
@@ -19,6 +20,7 @@ export class Encounter {
     this['ev_' + name]?.(data);
     if (G.net.isHost) G.net.emit(['enc', name, data]);
   }
+  ev_chal(d) { challengeEvent(this, d); }
   runLocal(dt) { local(() => this.localUpdate(dt)); }
   onPlayerRespawn() {}
   hostiles(filter) { return G.enemies.filter((e) => e.alive && e.hostile && (!filter || filter(e))).length; }
@@ -33,6 +35,7 @@ export class Encounter {
   complete() {
     if (this.done) return;
     this.done = true;
+    finishChallenge(this);
     for (const e of G.enemies) if (e.alive && e.rank !== 'boss') { fx.burst(e.center(), 0xb06cff, 10, 5, 0.15, 0.6); e.remove(); }
     G.onEncounterComplete?.();
   }
