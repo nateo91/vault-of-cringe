@@ -9,6 +9,7 @@ import { tileTex, textSprite, IMPACT, emojiSprite, emojiTex } from '../textures.
 import { Enemy, Doge, Stonks, Nyan, Wizard, RickRoller, Boyfriend, spawnEnemy, registerNetType } from '../enemies.js';
 import { HUD } from '../hud.js';
 import { play, playAt } from '../audio.js';
+import { unlock } from '../triumphs.js';
 import * as fx from '../fx.js';
 
 const AD_LEN = [30, 15]; // ad 1 of 2, ad 2 of 2
@@ -243,7 +244,8 @@ export class NormieGate extends Encounter {
   }
   ev_ad() { this.adScreen.visible = true; play('airhorn'); HUD.bigText('📺 A WORD FROM OUR SPONSOR', 'Your raid will resume after this message', 3, 'meme'); }
   onSkipDodge(stage) { if (stage === 1) this.ghost('It moved. Of course it moved.'); if (stage === 2) this.ghost('Smaller. It is getting smaller. Keep shooting!'); }
-  onSkipped() { if (this.phase === 'ad') { this.ghost('Skipped. You are a hero. Nobody has ever skipped an ad that fast.', 1.6); this.openGate(); } }
+  ev_skipped() { unlock('adblock'); }
+  onSkipped() { if (this.phase === 'ad') { this.ev('skipped'); this.ghost('Skipped. You are a hero. Nobody has ever skipped an ad that fast.', 1.6); this.openGate(); } }
   // draws the ad (every machine; the timer comes from the host)
   drawAd() {
     const c = this.adCanvas, x = c.getContext('2d'), W = c.width, H = c.height;

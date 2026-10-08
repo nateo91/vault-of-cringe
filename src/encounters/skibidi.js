@@ -15,6 +15,7 @@ import { playCinematic } from '../cinematic.js';
 import { HUD } from '../hud.js';
 import { play, playAt, say } from '../audio.js';
 import * as fx from '../fx.js';
+import { unlock } from '../triumphs.js';
 
 const _t = new THREE.Vector3(), _f = new THREE.Vector3();
 const BOSS_LINES = ['skibidi', 'you are not him', 'only in ohio', 'your aura is negative', 'ratio', 'mewing is mandatory', 'it is giving... defeat'];
@@ -376,6 +377,7 @@ export class SkibidiFinale extends Encounter {
     this.myDance = 0;
   }
   ev_outvibed() {
+    unlock('vibes');
     play('airhorn'); play('correct');
     HUD.bigText('OUT-VIBED', 'skibidi could not handle that much rizz', 3, 'good');
   }

@@ -8,6 +8,7 @@ import { play } from './audio.js';
 import * as fx from './fx.js';
 import { add, std } from './world.js';
 import { down } from './input.js';
+import { unlock } from './triumphs.js';
 
 export const SECRETS = {
   approach: 'The Rock Nobody Checks',
@@ -70,6 +71,7 @@ function openChest(c) {
   fx.burst(c.pos.clone().setY(c.pos.y + 1), 0xffe9a0, 40, 7, 0.12, 1.1, 2);
   HUD.bigText('SECRET CHEST', `${SECRETS[c.id] || 'a secret'} · ${n}/${total} found${fresh ? ' (new!)' : ''}`, 3, 'good');
   G.onSecret?.(c.id);
+  if (n === total) unlock('secrets');
 }
 
 export function updateSecrets(dt) {

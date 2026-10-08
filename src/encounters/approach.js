@@ -12,6 +12,7 @@ import * as fx from '../fx.js';
 import * as D from '../dressing.js';
 import { playCinematic } from '../cinematic.js';
 import { addChest } from '../secrets.js';
+import { unlock } from '../triumphs.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const _e1 = new THREE.Vector3();
@@ -198,6 +199,7 @@ export class TheApproach extends Encounter {
       if (!this.windSaid) { this.windSaid = true; play('gust'); HUD.ghost('Whoa. That wind is not natural. Nobody is jumping this.'); }
       if (Math.random() < dt * 30) fx.burst(V(p.pos.x + rand(-3, 3), p.pos.y + rand(0, 2.5), p.pos.z - rand(2, 6)), 0xcfe8f4, 1, 2, 0.05, 0.35, 0);
     }
+    if (p.alive && p.onGround && p.pos.z < -106 && !this.shyChecked) { this.shyChecked = true; if (!this.gapFails) unlock('shy'); }
     if (p.alive && p.onGround && p.pos.z < -106 && !this.crossed && this.gapFails + (this.windSaid ? 1 : 0) > 0) {
       this.crossed = true;
       HUD.ghost(pick(['...Did you just moonwalk across an invisible bridge? I am not putting that in the report.', 'You crossed it. Do not tell anyone how. They will not believe you.']));

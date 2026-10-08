@@ -11,6 +11,7 @@ import { Encounter, weightedPick } from './base.js';
 import { setEnv, addBox, addCyl, add, std, pointLight } from '../world.js';
 import { addFur } from '../surface.js';
 import { addChest, addTrigger } from '../secrets.js';
+import { unlock } from '../triumphs.js';
 import { tileTex, textSprite, emojiSprite, textTex, IMPACT } from '../textures.js';
 import { Enemy, Doge, Stonks, Boyfriend, registerNetType, applyMods } from '../enemies.js';
 import { Shockwave, Pickup } from '../combat.js';
@@ -758,6 +759,7 @@ export class ThisIsFine extends Encounter {
     // carrying the extinguisher: no gun, spray instead
     const me = !!(this.carrier && this.carrier === G.net.myId && p.alive);
     p.carry = me ? 'extinguisher' : null;
+    if (me && this.reversed) unlock('spicy');
     this.vmExt.visible = me;
     if (me) {
       this.vmExt.position.y = -0.3 + Math.sin(G.time * 30) * 0.006;

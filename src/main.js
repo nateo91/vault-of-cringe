@@ -5,6 +5,7 @@ import { Input, initInput, lockPointer, endFrame, down, hit } from './input.js';
 import { initAudio, play, say, setVolume, startMusic, stopMusic, updateListener, setRoom, setAmbience, setMusicIntensity } from './audio.js';
 import { HUD } from './hud.js';
 import { clearSecrets, updateSecrets, secretsFound, SECRETS } from './secrets.js';
+import { unlock, renderTriumphs } from './triumphs.js';
 import { Player } from './player.js';
 import { updateEnemies, clearEnemies } from './enemies.js';
 import { updateCombat, clearCombat, Pickup } from './combat.js';
@@ -150,6 +151,8 @@ function setupMenus() {
   const drawMods = () => { $('#mods').innerHTML = Object.entries(MODS).map(([k, m]) => `<button class="mod ${G.settings.mods[k] ? 'on' : ''}" data-mod="${k}" title="${m.desc}">${m.icon} ${m.name}</button>`).join(''); };
   drawMods();
   $('#mods').onclick = (e) => { const b = e.target.closest('[data-mod]'); if (!b) return; G.settings.mods[b.dataset.mod] = !G.settings.mods[b.dataset.mod]; try { localStorage.setItem('voc-settings', JSON.stringify(G.settings)); } catch (err) { /* fine */ } drawMods(); };
+  $('#triBtn').onclick = () => { renderTriumphs($('#triumphs')); $('#triumphs').classList.remove('hidden'); };
+  $('#triClose').onclick = () => $('#triumphs').classList.add('hidden');
   $('#boardBtn').onclick = () => { renderBoard($('#leaderboard')); $('#leaderboard').classList.remove('hidden'); };
   $('#boardClose').onclick = () => $('#leaderboard').classList.add('hidden');
   $('#boardClear').onclick = () => { if (confirm('Delete every saved clear on this browser?')) { clearBoard(); renderBoard($('#leaderboard')); } };
@@ -447,6 +450,13 @@ function victory(run = null) {
   } else if (run) {
     L.innerHTML = `<div class="ct-label">PRACTICE RUN · ${formatTime(run.time)}</div><div class="ct-rank">${G.debug || run.startIdx !== 0 ? 'Start from The Approach' : 'No cheats'} to put a time on the leaderboard.</div>`;
   } else L.innerHTML = '';
+  // triumphs (each guardian judges their own run)
+  unlock('clear');
+  if (run && run.eligible) {
+    if (!G.stats.deaths && !run.wipes) unlock('flawless');
+    if (G.settings.mods?.master) unlock('master');
+    if (run.time < 15 * 60) unlock('speed');
+  }
   stopMusic();
   local(() => { play('fanfare'); play('airhorn'); say('raid complete. you are now terminally online.', 'ghost'); });
   document.exitPointerLock?.();

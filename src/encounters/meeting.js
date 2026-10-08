@@ -12,6 +12,7 @@ import * as M from '../models.js';
 import { CrewRig } from '../rigs.js';
 import { playCinematic } from '../cinematic.js';
 import { addChest, addTrigger } from '../secrets.js';
+import { unlock } from '../triumphs.js';
 import { los } from '../combat.js';
 import { HUD } from '../hud.js';
 import { play, playAt, say } from '../audio.js';
@@ -283,10 +284,12 @@ export class EmergencyMeeting extends Encounter {
     const pn = this.panels[this.panelI];
     const on = players().some((q) => q.alive && distXZ(q.pos, pn.pos) < 2.2);
     this.fixProg = on ? Math.min(1, this.fixProg + dt / 3.5) : Math.max(0, this.fixProg - dt / 12);
-    if (this.fixProg >= 1) { this.ev('lights', { on: 0 }); this.ghost(pick(['Lights fixed. Now: who was standing near the switch? ...It was you. Never mind.', 'And there was light. Somebody is still dead though, probably.'])); }
+    if (this.fixProg >= 1) { this.ev('lights', { on: 0, fixed: 1 }); this.ghost(pick(['Lights fixed. Now: who was standing near the switch? ...It was you. Never mind.', 'And there was light. Somebody is still dead though, probably.'])); }
   }
   // every machine: the lights going out / coming back
-  ev_lights({ on, i = 0 }) {
+  ev_lights({ on, i = 0, fixed = 0 }) {
+    // whoever was standing at the panel when it came back on did it
+    if (fixed && G.player.alive && distXZ(G.player.pos, this.panels[this.panelI].pos) < 2.5) unlock('sparky');
     this.dark = on ? 1 : 0; this.panelI = i; this.flickerT = 0.8;
     if (!on) this.fixProg = 0;
     play(on ? 'alarm' : 'correct');

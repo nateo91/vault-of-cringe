@@ -7,6 +7,7 @@ import { Input, down, hit } from './input.js';
 import { moveCollide, groundY } from './world.js';
 import { raycast, explode, Projectile, Pickup, los } from './combat.js';
 import { textSprite, IMPACT } from './textures.js';
+import { unlock } from './triumphs.js';
 import * as fxm from './fx.js';
 import { buildGuardian, poseEmote, EMOTES } from './avatars.js';
 import { play as rawPlay, say as rawSay } from './audio.js';
@@ -915,6 +916,8 @@ export class Player {
         fx.floatText(e.top().clone(), pick(['FINISHED', 'BONKED', 'L + RATIO', 'GET MOGGED', 'SIT.', 'DELETED']), { color: '#ffd23f', height: 0.75 });
         for (let i = 0; i < 2; i++) new Pickup('orb', c.clone().add(new THREE.Vector3(rand(-0.6, 0.6), 0.3, rand(-0.6, 0.6))));
         this.addSuper(5);
+        G.stats.finishers = (G.stats.finishers || 0) + 1;
+        if (G.stats.finishers >= 5) unlock('finisher');
       }
     }
     if (this.finisherT <= 0) { this.finTarget = null; }

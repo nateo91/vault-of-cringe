@@ -12,6 +12,7 @@ import { Projectile, Shockwave, Pickup, los } from '../combat.js';
 import * as M from '../models.js';
 import { rimify } from '../rigs.js';
 import { playCinematic } from '../cinematic.js';
+import { unlock } from '../triumphs.js';
 import { HUD } from '../hud.js';
 import { play, playAt, say } from '../audio.js';
 import * as fx from '../fx.js';
@@ -314,6 +315,7 @@ export class VineBoomChamber extends Encounter {
       if (this.input >= this.seq.length) this.startDps();
     } else this.failSequence('BRUH', `that was the ${st.def.name} Moai. disrespectful.`);
   }
+  ev_respect() { unlock('cheems'); }
   failSequence(title, sub) {
     this.phase = 'fail'; this.awaiting = false;
     play('wrong'); say('bruh', 'bruh'); G.stats.bruh++;
@@ -363,6 +365,7 @@ export class VineBoomChamber extends Encounter {
     if (this.phase === 'dps') { this.dpsT -= dt; if (this.dpsT <= 0) this.endDps(); }
     if (this.phase === 'input' && this.trick && (this.trickT -= dt) <= 0) {
       HUD.bigText('🗿 RESPECT 🗿', 'the Moai noticed you did not listen to Cheems', 2.2, 'good');
+      this.ev('respect');
       this.ghost(pick(['You ignored Cheems. The Moai are... proud? Chungus is open!', 'Restraint. The rarest thing in this raid. Go!']));
       this.startDps();
     }

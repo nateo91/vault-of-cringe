@@ -427,3 +427,27 @@ label { cursor: pointer; }
 #dmgdirs i { position: absolute; left: -130px; top: -130px; width: 260px; height: 260px; border-radius: 50%; opacity: 0;
   border: 7px solid transparent; border-top-color: rgba(255,40,30,.9); filter: drop-shadow(0 0 6px rgba(255,0,0,.7));
   -webkit-mask: conic-gradient(from -28deg, #000 0 56deg, transparent 56deg); mask: conic-gradient(from -28deg, #000 0 56deg, transparent 56deg); }
+
+/* ---------- triumphs ---------- */
+.tri-inner { max-width: 820px; }
+.tri-seal { margin: 6px auto 14px; max-width: 420px; }
+.tri-seal .ts-t { font-family: var(--impact); font-size: 26px; letter-spacing: .06em; color: #ffd23f; }
+.tri-seal .ts-bar { height: 6px; background: rgba(255,255,255,.1); margin: 6px 0; }
+.tri-seal .ts-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd23f, #ff4fd8); }
+.tri-seal .ts-c { font-size: 13px; color: #aab; letter-spacing: .1em; }
+.tri-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; text-align: left; margin-bottom: 16px; }
+.tri { display: flex; gap: 10px; align-items: center; padding: 10px 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); opacity: .55; }
+.tri.got { opacity: 1; border-color: rgba(255,210,63,.45); background: rgba(255,210,63,.08); }
+.tri .ti { font-size: 26px; width: 34px; text-align: center; }
+.tri .tn { font-weight: 700; letter-spacing: .04em; }
+.tri .td { font-size: 13px; color: #aab; }
+#triumphToasts { position: fixed; top: 16%; left: 50%; transform: translateX(-50%); z-index: 30; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.tri-toast { min-width: 300px; padding: 10px 16px; background: rgba(12,10,20,.88); border: 1px solid rgba(255,210,63,.6); box-shadow: 0 0 18px rgba(255,210,63,.25); text-align: center; animation: triIn .35s ease-out; transition: opacity .6s, transform .6s; }
+.tri-toast.out { opacity: 0; transform: translateY(-10px); }
+.tri-toast.seal { border-color: #ff4fd8; box-shadow: 0 0 30px rgba(255,79,216,.45); }
+.tri-toast .tt-h { font-size: 11px; letter-spacing: .3em; color: #ffd23f; }
+.tri-toast .tt-n { font-family: var(--impact); font-size: 24px; margin: 2px 0; }
+.tri-toast .tt-d { font-size: 13px; color: #ccd; }
+@keyframes triIn { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: none; } }
+/* the menu shouldn't show through the full-screen panels */
+#triumphs.overlay, #leaderboard.overlay { background: radial-gradient(ellipse at 50% 30%, rgba(40,14,64,.97), rgba(4,4,10,.99)); backdrop-filter: blur(8px); }
