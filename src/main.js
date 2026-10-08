@@ -18,6 +18,7 @@ import { updateFx, clearFx } from './fx.js';
 import { clearWorld, mergeStatic, trimShadows } from './world.js';
 import { initRenderer, render, applyQuality, followSun, bakeEnvironment, wipeGrade } from './render.js';
 import { togglePhoto, photoUpdate } from './photo.js';
+import { warmShaders } from './warmup.js';
 import { updateDressing } from './dressing.js';
 import { loadInventory, rollLoot, addItem, makeItem, INV, DEFS, PERKS } from './arsenal.js';
 import { loadArmor, rollArmor, grantArmor, ARMOR } from './armor.js';
@@ -413,6 +414,7 @@ function loadEncounter(i) {
     local(() => HUD.objective(E.title, ''));
     G.nextNid = 1000; // anything spawned from here on gets its id from the host
     if (G.net.isClient) enc.clientStart(); else enc.start();
+    G.warmMs = warmShaders(render); // compile this arena's shaders now, behind the loading screen, not mid-fight
     announceChallenge(enc);
     L.classList.add('hidden');
     HUD.show(!G.cine); // a boss intro keeps the HUD hidden until it ends

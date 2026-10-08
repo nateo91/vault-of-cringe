@@ -64,6 +64,21 @@ export function flashLight(pos, color, intensity = 30, range = 12, life = 0.15) 
   l.userData.life = l.userData.max = life; l.userData.base = intensity; l.intensity = intensity;
 }
 
+// A light an enemy carries around (a disco ball, a burning sign). It borrows a pooled light, refreshed every frame,
+// instead of owning a PointLight: a light per enemy would change the scene's light count every time one spawned
+// or died, and every material in view would recompile its shader (a visible hitch each time).
+export function carryLight(owner, pos, color, intensity, range) {
+  ensureLights();
+  let l = owner._poolLight;
+  if (!l || l.userData.owner !== owner) {
+    l = lightPool.find((q) => q.userData.life <= 0);
+    if (!l) return;
+    l.userData.owner = owner; owner._poolLight = l;
+  }
+  l.position.copy(pos); l.color.set(color); l.distance = range;
+  l.userData.life = l.userData.max = 0.12; l.userData.base = intensity; l.intensity = intensity;
+}
+
 // Sparks / energy: additive glow sprites. (Signature is shared over the network — keep it stable.)
 function _burst(pos, color = 0xffffff, count = 12, speed = 6, size = 0.15, life = 0.6, grav = 12) {
   for (let i = 0; i < count; i++) {

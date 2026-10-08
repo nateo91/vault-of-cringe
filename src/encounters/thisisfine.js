@@ -320,7 +320,6 @@ class HotTake extends Enemy {
     const { tex, aspect } = textTex(pick(TAKES), { font: IMPACT, weight: 'normal', color: '#111', bg: '#f4ecd8', stroke: null, px: 48 });
     const bw = Math.min(1.3, 0.42 * aspect), board = new THREE.Mesh(new THREE.BoxGeometry(bw, 0.42, 0.03), [wood, wood, wood, wood, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 }), wood]);
     board.position.y = 1.42; sign.add(board);
-    this.light = new THREE.PointLight(0xff6a10, 8, 6, 2); this.light.position.y = 1; this.model.add(this.light);
     this.hb(0, 0.8, 0, 0.6).hb(0, 1.15, 0.1, 0.32, true);
     this.burnT = rand(0.5, 1.2); this.emberT = 0;
   }
@@ -331,7 +330,7 @@ class HotTake extends Enemy {
     this.face.position.y = 0.82 + Math.sin(this.t * 7) * 0.03;
     this.mouth.scale.y = 0.7 + Math.abs(Math.sin(this.t * 11)) * 0.6; // yelling its take
     this.signG.rotation.z = -0.15 + Math.sin(this.t * 5) * 0.12;
-    this.light.intensity = 7 + Math.sin(this.t * 20) * 2;
+    if (this.alive) fx.carryLight(this, this.pos.clone().setY(this.pos.y + 1), 0xff6a10, 7 + Math.sin(this.t * 20) * 2, 6); // a pooled light, not its own
     if ((this.emberT -= dt) <= 0) { this.emberT = 0.12; local(() => fx.burst(this.pos.clone().add(new THREE.Vector3(rand(-0.3, 0.3), 1.6, rand(-0.3, 0.3))), 0xff8a20, 1, 1.2, 0.05, 0.8, -3)); }
   }
   think(dt) {

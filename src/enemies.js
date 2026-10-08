@@ -1100,7 +1100,7 @@ export class RickRoller extends Enemy {
     // a little sparkle on random facets
     const glint = new THREE.Sprite(new THREE.SpriteMaterial({ map: fx.glowTex, color: 0xffffff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
     glint.scale.setScalar(0.5); this.model.add(glint); this.glint = glint;
-    this.light = new THREE.PointLight(0xff4fd8, 6, 7, 2); this.light.position.y = 0.8; this.model.add(this.light);
+    this.lightCol = new THREE.Color(0xff4fd8); // its light is a pooled one (fx.carryLight)
     this.hb(0, 0.7, 0, 0.72).hb(0, 1.15, 0, 0.3, true);
     this.noteT = 0; this.roll = new THREE.Quaternion();
   }
@@ -1110,7 +1110,7 @@ export class RickRoller extends Enemy {
     if (sp > 0.1) { _t.set(v.z, 0, -v.x).normalize(); this.ball.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(_t, sp * dt / 0.7)); }
     else this.ball.rotation.y += dt * 1.5;
     const hue = (this.t * 0.6) % 1;
-    this.light.color.setHSL(hue, 1, 0.6); this.light.intensity = 5 + Math.sin(this.t * 16) * 2;
+    if (this.alive) fx.carryLight(this, _t.set(this.pos.x, this.pos.y + 0.8, this.pos.z), this.lightCol.setHSL(hue, 1, 0.6), 5 + Math.sin(this.t * 16) * 2, 7);
     this.glint.position.set(Math.sin(this.t * 7) * 0.45, 0.7 + Math.cos(this.t * 5) * 0.45, 0.55);
     this.glint.material.opacity = 0.5 + Math.sin(this.t * 23) * 0.5;
     if ((this.noteT -= dt) <= 0) { this.noteT = rand(0.3, 0.6); local(() => fx.floatText(this.top(_t).clone(), pick(['♪', '♫', '♬']), { height: 0.4, color: '#' + new THREE.Color().setHSL(hue, 1, 0.65).getHexString(), life: 1 })); }

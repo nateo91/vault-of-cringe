@@ -90,6 +90,12 @@ const GRADES = [
   { saturation: 2.6, contrast: 1.45, posterize: 18, tint: [1.12, 0.92, 0.98], aberration: 0.005, grain: 0.09 },
 ];
 
+// Hitching fix: disposing the last material that uses a shader makes three.js delete the compiled program, so the
+// next explosion / shield / beam compiles it all over again (tens to hundreds of ms on Windows). A material's
+// dispose() frees nothing else (textures and geometry are disposed separately), and there's a small fixed set of
+// shaders in the game, so materials never release their programs: each shader compiles once per session.
+THREE.Material.prototype.dispose = function () {};
+
 export function initRenderer(container) {
   const r = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
   r.setSize(innerWidth, innerHeight);
@@ -192,6 +198,15 @@ export function wipeGrade() {
 
 let hurtFx = 0;
 export function hurtPulse(amount) { hurtFx = Math.min(1, hurtFx + amount / 60); }
+
+// Compile every material in the arena (in view or not) for the target it'll really be drawn into: with the
+// post-processing chain that's the composer's buffer (linear, no tone mapping), which needs different
+// programs from the screen. Used by the loading-screen shader warm-up.
+export function compileAll(cam = G.camera) {
+  const r = G.renderer, prev = r.getRenderTarget();
+  if (composer) r.setRenderTarget(composer.readBuffer);
+  try { r.compile(G.scene, cam); r.compile(G.vmScene, G.vmCamera); } finally { r.setRenderTarget(prev); }
+}
 
 export function render(dt) {
   hurtFx = damp(hurtFx, 0, 4, dt);
