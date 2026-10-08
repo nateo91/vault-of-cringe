@@ -49,23 +49,44 @@ const fogTex = (() => {
   }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 })();
+// One instanced mesh of camera-facing quads for the whole fog layer: one draw call instead of one per puff.
+// Each instance's matrix carries its position and size; aRot spins the texture so puffs don't repeat.
 export function groundFog({ count = 40, min = [-40, -40], max = [40, 40], y = 0.6, color = 0xb8c0d8, opacity = 0.35, size = [10, 18] } = {}) {
-  const sprites = [];
+  const geo = new THREE.PlaneGeometry(1, 1);
+  const rot = new Float32Array(count); for (let i = 0; i < count; i++) rot[i] = rand(0, 6.28);
+  geo.setAttribute('aRot', new THREE.InstancedBufferAttribute(rot, 1));
+  const m = new THREE.MeshBasicMaterial({ map: fogTex, color, transparent: true, opacity, depthWrite: false, fog: true });
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float aRot;')
+      .replace('#include <project_vertex>', `
+        vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+        vec2 sc = vec2(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz));
+        float c = cos(aRot), s = sin(aRot);
+        vec2 q = position.xy * sc;
+        mvPosition.xy += vec2(q.x * c - q.y * s, q.x * s + q.y * c);
+        gl_Position = projectionMatrix * mvPosition;`);
+  };
+  m.customProgramCacheKey = () => 'fogBillboard';
+  const mesh = new THREE.InstancedMesh(geo, m, count);
+  mesh.frustumCulled = false; mesh.castShadow = false; mesh.receiveShadow = false;
+  const puffs = [];
+  const mtx = new THREE.Matrix4(), pos = new THREE.Vector3(), quat = new THREE.Quaternion(), scl = new THREE.Vector3();
   for (let i = 0; i < count; i++) {
-    const m = new THREE.SpriteMaterial({ map: fogTex, color, transparent: true, opacity, depthWrite: false, fog: true });
-    const s = new THREE.Sprite(m);
     const sz = rand(size[0], size[1]);
-    s.scale.set(sz, sz * 0.35, 1);
-    s.position.set(rand(min[0], max[0]), y + rand(-0.2, 0.6), rand(min[1], max[1]));
-    s.userData.v = rand(0.2, 0.6) * (Math.random() < 0.5 ? 1 : -1);
-    m.rotation = rand(0, 6);
-    add(s); sprites.push(s);
+    puffs.push({ x: rand(min[0], max[0]), y: y + rand(-0.2, 0.6), z: rand(min[1], max[1]), w: sz, h: sz * 0.35, v: rand(0.2, 0.6) * (Math.random() < 0.5 ? 1 : -1) });
   }
+  const write = () => {
+    puffs.forEach((p, i) => mesh.setMatrixAt(i, mtx.compose(pos.set(p.x, p.y, p.z), quat, scl.set(p.w, p.h, 1))));
+    mesh.instanceMatrix.needsUpdate = true;
+  };
+  write(); add(mesh);
   animate((dt) => {
-    for (const s of sprites) {
-      s.position.x += s.userData.v * dt;
-      if (s.position.x > max[0]) s.position.x = min[0]; if (s.position.x < min[0]) s.position.x = max[0];
+    for (const p of puffs) {
+      p.x += p.v * dt;
+      if (p.x > max[0]) p.x = min[0]; if (p.x < min[0]) p.x = max[0];
     }
+    write();
   });
 }
 

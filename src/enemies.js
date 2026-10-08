@@ -221,6 +221,7 @@ export class Enemy {
   update(dt) {
     this.t += dt;
     if (!this.shadowsTrimmed) { this.shadowsTrimmed = true; trimShadows(this.mesh); }
+    this.updateLod(dt);
     if (this.shieldMesh) this.updateShield(dt);
     if (this.stunT > 0 && !G.net.isClient) { this.stunT -= dt; this.vel.set(0, this.vel.y, 0); this.physics?.(dt); this.animSpeed = 0; this.animate?.(dt); this.rig?.update(dt, { speed: 0 }); this.mesh.rotation.y = this.yaw; return; }
     if (G.net.isClient) this.proxyUpdate(dt);
@@ -266,6 +267,28 @@ export class Enemy {
     }
   }
   think() {}
+  // Level of detail: far away (38 m+), fur shells and tiny parts (eyes, teeth, buttons) aren't drawn.
+  // Bosses and neutral actors are left alone (they animate some parts' visibility themselves).
+  updateLod(dt) {
+    if (this.rank === 'boss' || this.rank === 'neutral') return;
+    if ((this.lodT = (this.lodT ?? Math.random() * 0.3) - dt) > 0) return;
+    this.lodT = 0.3;
+    if (!this.lodParts) {
+      this.lodParts = [];
+      this.mesh.updateMatrixWorld(true);
+      const rs = this.mesh.getWorldScale(_t2).x || 1;
+      this.mesh.traverse((o) => {
+        if (!o.isMesh || o.isInstancedMesh || !o.visible || o === this.shieldMesh) return;
+        if (o.userData.fur) { this.lodParts.push(o); return; }
+        const g = o.geometry; if (!g.boundingSphere) g.computeBoundingSphere();
+        const sc = o.getWorldScale(_t); if (g.boundingSphere.radius * Math.max(sc.x, sc.y, sc.z) / rs < 0.12) this.lodParts.push(o);
+      });
+    }
+    const far = this.pos.distanceToSquared(G.camera.position) > 38 * 38;
+    if (far === this.lodFar) return;
+    this.lodFar = far;
+    for (const o of this.lodParts) o.visible = !far;
+  }
   // Dodging (opt-in: this.dodges = true): when a guardian puts their reticle on it, it sometimes
   // sidesteps, like a Vandal does. One roll per look, then a cooldown, so it's a read, not a coin-flip per frame.
   checkDodge(dt) {

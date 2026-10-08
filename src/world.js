@@ -130,11 +130,21 @@ export function trimShadows(root, minR = 0.15) {
   });
   return n;
 }
+// Static set dressing makes a fresh material per piece, so identical-looking pieces never shared one and never
+// merged. Opaque ones are grouped by what they look like instead (nothing outside the dressing kit holds on to
+// them, and the kit only ever animates transparent things, which keep their own identity).
+function matKey(m) {
+  if (m.transparent || !m.isMeshStandardMaterial) return m.uuid;
+  const hex = (c) => (c ? c.getHexString() : '-');
+  return ['std', hex(m.color), hex(m.emissive), m.emissiveIntensity.toFixed(2), m.roughness.toFixed(2), m.metalness.toFixed(2),
+    m.map?.uuid || '-', m.normalMap?.uuid || '-', m.roughnessMap?.uuid || '-', m.flatShading ? 'f' : '', m.side, m.vertexColors ? 'v' : '',
+    m.envMapIntensity.toFixed(2), m.onBeforeCompile ? String(m.onBeforeCompile).length + ':' + (m.customProgramCacheKey?.() || '') : '-'].join('|');
+}
 export function mergeStatic() {
   const groups = new Map();
   for (const m of [...G.worldGroup.children]) {
     if (!m.isMesh || m.isInstancedMesh || !m.userData.static || Array.isArray(m.material)) continue;
-    const k = m.material.uuid + (m.castShadow ? 's' : '') + (m.receiveShadow ? 'r' : '');
+    const k = matKey(m.material) + (m.castShadow ? 's' : '') + (m.receiveShadow ? 'r' : '');
     (groups.get(k) || groups.set(k, []).get(k)).push(m);
   }
   let saved = 0;
