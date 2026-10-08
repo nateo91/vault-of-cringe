@@ -1,4 +1,5 @@
 // DOM HUD in the style of a certain space-looter.
+import { ARMOR } from './armor.js';
 import { counterIcon } from './champions.js';
 import { G, share, shareable, local, ELEMENTS } from './game.js';
 import { say } from './audio.js';
@@ -117,6 +118,25 @@ export const HUD = {
     if (last.ft !== html) { last.ft = html; els.fireteam.innerHTML = html; }
   },
   // "LEGENDARY ACQUIRED" card that slides in on the right
+  // the exotic armor badge next to your abilities
+  exotic(p) {
+    this._exo = p?.armor;
+    const el = document.querySelector('#abilities .exo'); if (!el) return;
+    const a = ARMOR[p?.armor];
+    el.classList.toggle('hidden', !a);
+    if (a) { el.querySelector('span').textContent = a.icon; el.title = `${a.name}: ${a.desc}`; }
+  },
+  armorLoot(id) {
+    const a = ARMOR[id];
+    const el = document.createElement('div');
+    el.className = 'loot-toast exotic';
+    el.innerHTML = `<div class="lt-r">EXOTIC ARMOR ACQUIRED</div><div class="lt-n">${a.icon} ${a.name}</div><div class="lt-t">${a.piece}${a.cls === 'any' ? ' · any class' : ' · ' + a.cls}</div><div class="lt-p">${a.desc}</div><div class="lt-h">[TAB] to wear</div>`;
+    let host = document.getElementById('loottoasts');
+    if (!host) { host = document.createElement('div'); host.id = 'loottoasts'; els.hud.appendChild(host); }
+    host.appendChild(el);
+    setTimeout(() => el.classList.add('out'), 6200);
+    setTimeout(() => el.remove(), 7000);
+  },
   loot(item) {
     const d = DEFS[item.id];
     const el = document.createElement('div');
@@ -154,6 +174,7 @@ export const HUD = {
     els.gren.classList.toggle('ready', p.grenadeCd <= 0);
     set('mc', els.meleeCd, 'height', (p.meleeCd / p.meleeMax * 100) + '%');
     els.melee.classList.toggle('ready', p.meleeCd <= 0);
+    if (p.armor !== this._exo) this.exotic(p);
     // raid timer (the host's clock in co-op)
     const rc = G.net.isClient ? G.runView : G.run && [G.run.clock, G.run.eligible ? 1 : 0];
     if (rc) { text('rt', els.timer, (rc[1] ? '⏱ ' : '⏱ PRACTICE · ') + fmtClock(rc[0])); els.timer.classList.toggle('practice', !rc[1]); }

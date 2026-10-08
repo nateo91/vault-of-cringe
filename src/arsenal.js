@@ -51,6 +51,7 @@ export const PERKS = {
   stonks: { name: 'Stonks', icon: '📈', col: 'a', desc: 'Each consecutive hit: +3% damage (max +45%). Two misses in a row and the market crashes.' },
   ratio: { name: 'Ratio', icon: '💬', col: 'a', desc: 'Precision hits ratio the target: it takes +15% damage from you for 4s.', ok: PRECISION },
   tracking: { name: 'Tracking Module', icon: '🛰️', col: 'a', desc: 'Rockets home in on the nearest meme.', ok: (d) => d.kind === 'rocket' },
+  drip: { name: 'Drip Walkers', icon: '👟', col: 'armor', desc: '+20% weapon damage after a slide.' },
   archer: { name: "Archer's Tempo", icon: '🏹', col: 'a', desc: 'Precision hits make your next draws 60% faster for 4s.', ok: (d) => d.kind === 'bow' },
   vibe_check: { name: 'Vibe Check', icon: '✅', col: 'a', desc: 'Kills while sliding or airborne refill the magazine.' },
   bait: { name: 'Bait and Switch', icon: '🔄', col: 'b', desc: 'Damage memes with all three of your weapons within 3s: this one gets +35% damage for 10s.' },
@@ -210,6 +211,10 @@ export class PerkEngine {
     if (this.has(w, 'memento') && w.memento > 0) m *= 1.25;
     if (this.has(w, 'mlg') && !p.onGround) m *= 2;
     if (this.has(w, 'grassy') && w.grassShot) m *= 1.6;
+    // exotic armor
+    if (p.armor === 'drip' && this.n('drip')) m *= 1.2;
+    if (p.armor === 'lens' && e && e.lensUntil > G.time) m *= 1.2;
+    if (p.armor === 'treads' && p.stillT > 1) m *= 1.15;
     if (this.has(w, 'bait') && this.n('bait')) m *= 1.35;
     const sw = this.n('swashbuckler'); if (sw && this.has(w, 'swashbuckler')) m *= 1 + 0.066 * sw;
     return m;
@@ -233,6 +238,7 @@ export class PerkEngine {
   }
   onHit(w, e, crit) {
     if (crit && this.has(w, 'archer')) this.buff('archer', 4);
+    if (crit && this.p.armor === 'lens' && e) { if (!(e.lensUntil > G.time)) fxm.floatText(e.top(), '🕶️', { height: 0.4, life: 0.7 }); e.lensUntil = G.time + 4; }
     if (w.def.kind === 'pellets' && this.has(w, 'one_two')) this.buff('one_two', 1.5);
 
     if (this.has(w, 'rizzrunner') && this.n('rizzrunner') && e) {

@@ -14,6 +14,7 @@ import { play as rawPlay, say as rawSay } from './audio.js';
 import { HUD } from './hud.js';
 import { hurtPulse } from './render.js';
 import { DEFS, PERKS, PerkEngine, equippedItem, buildModel, LEFT_HAND, applyShader } from './arsenal.js';
+import { armorOn } from './armor.js';
 
 // Your own guns/abilities are cosmetic-local: teammates see them via explicit 'shot'/'proj'/'pfx' events instead.
 const play = (...a) => local(() => rawPlay(...a));
@@ -210,6 +211,7 @@ export class Player {
     this.perks = new PerkEngine(this);
     this.wpn = [0, 1, 2].map((s) => this.makeSlot(equippedItem(s) || { uid: 'x' + s, id: WEAPONS[s].id, perks: WEAPONS[s].fixedPerks || [] }));
     this.grenadeMax = 11; this.meleeMax = 0.9;
+    this.setArmor(armorOn(cls));
     this.superCharge = 40;
     this.revives = 3;
     this.vm = new THREE.Group();
@@ -283,8 +285,15 @@ export class Player {
     const take = w.def.ammo === 'primary' ? need : Math.min(need, w.reserve);
     w.mag += take; if (w.def.ammo !== 'primary') w.reserve -= take;
   }
+  // exotic armor (see armor.js); the Armory calls this when you swap pieces mid-raid
+  setArmor(id) {
+    this.armor = id; this.stillT = 0;
+    this.grenadeMax = id === 'galaxy' ? 6.6 : 11;
+    this.grenadeCd = Math.min(this.grenadeCd || 0, this.grenadeMax);
+  }
   addSuper(n) {
     if (this.superActive) return;
+    if (this.armor === 'mask') n *= 1.4;
     const was = this.superCharge;
     this.superCharge = Math.min(100, this.superCharge + n);
     if (was < 100 && this.superCharge >= 100) { play('superReady'); lhud('killfeed', `Super ready: ${this.clsDef.superName} [F]`); }
@@ -298,6 +307,7 @@ export class Player {
     if (this.finisherT > 0) return;
     if (this.superActive === 'slam') amount *= 0.3;
     if (this.superActive === 'gg') amount *= 0.6;
+    if (this.armor === 'unbothered' && (this.sprinting || this.slideT > 0)) amount *= 0.75;
     this.lastHurt = G.time;
     let a = amount;
     if (this.shield > 0) {
@@ -380,7 +390,17 @@ export class Player {
     // regen: health first, then shields (like the real thing, roughly)
     if (G.time - this.lastHurt > 3.2) {
       if (this.hp < this.maxHp) this.hp = Math.min(this.maxHp, this.hp + 45 * dt);
-      else this.shield = Math.min(this.maxShield, this.shield + 70 * dt);
+      else this.shield = Math.min(this.maxShield, this.shield + (this.armor === 'unbothered' ? 140 : 70) * dt);
+    }
+    // Touch Grass Treads: a pocket rift while you stand still on the ground
+    if (this.armor === 'treads') {
+      const still = this.alive && this.onGround && Math.hypot(this.vel.x, this.vel.z) < 0.6;
+      this.stillT = still ? this.stillT + dt : 0;
+      if (this.stillT > 1) {
+        if (this.hp < this.maxHp) this.hp = Math.min(this.maxHp, this.hp + 30 * dt);
+        else this.shield = Math.min(this.maxShield, this.shield + 45 * dt);
+        if (Math.random() < dt * 3) fx.burst(this.pos.clone().add(new THREE.Vector3(rand(-0.8, 0.8), 0.1, rand(-0.8, 0.8))), 0x7dff8a, 1, 1.2, 0.06, 0.6, 2);
+      }
     }
     if (!this.superActive) this.addSuper(dt * 0.75);
     this.perks.tick(dt);
@@ -416,6 +436,10 @@ export class Player {
       this.slideT = 0.75; this.slideCd = 1.1;
       this.vel.x = _f.x * 13.5; this.vel.z = _f.z * 13.5;
       play('slide');
+      if (this.armor === 'drip') {
+        this.slideCd = 0.6; this.perks.buff('drip', 3);
+        const w = this.wpn[this.cur]; if (w && w.mag < w.def.mag && !this.superActive) { this.reloadT = 0; this.reloadKind = null; this.refill(w); play('shellIn'); }
+      }
     }
     if (this.slideT > 0) {
       this.slideT -= dt;
@@ -997,6 +1021,7 @@ export class Player {
       play('click');
       this.kickRV.x -= 6;
       this.perks.onGrenade();
+      if (this.armor === 'galaxy') this.addSuper(6);
     }
     if (hit('KeyV') && this.meleeCd <= 0) {
       this.meleeCd = this.meleeMax; this.punchT = 0.3;
@@ -1010,10 +1035,11 @@ export class Player {
       }
       if (best) {
         const wasAlive = best.alive;
-        const punch = this.perks.n('one_two') ? 2.5 : 1; // One-Two Punch
+        const oneTwo = this.perks.n('one_two') > 0;
+        const punch = (oneTwo ? 2.5 : 1) * (this.armor === 'gigachad' ? 3 : 1); // One-Two Punch, Gigachad Gauntlets
         best.takeDamage(120 * punch, false, { melee: true });
-        if (punch > 1) { this.perks.buffs.one_two.t = 0; fx.floatText(best.top().clone(), 'ONE-TWO', { height: 0.5, color: '#ffd23f' }); }
-        if (wasAlive && !best.alive) this.perks.onMeleeKill();
+        if (oneTwo) { this.perks.buffs.one_two.t = 0; fx.floatText(best.top().clone(), 'ONE-TWO', { height: 0.5, color: '#ffd23f' }); }
+        if (wasAlive && !best.alive) { this.perks.onMeleeKill(); if (this.armor === 'gigachad' && this.grenadeCd > 0) { this.grenadeCd = 0; play('abilityReady', 0); } }
         if (best.rank !== 'boss' && best.knockable !== false && !best.proxy) { best.vel.addScaledVector(_f, 10); best.vel.y += 4; }
         this.vel.addScaledVector(_f, 5);
         play('bonk'); HUD.hitmarker(false, wasAlive && !best.alive);
@@ -1085,6 +1111,7 @@ export class Player {
   }
   castSuper() {
     this.superCharge = 0;
+    if (this.armor === 'mask') { this.grenadeCd = 0; this.meleeCd = 0; }
     play('superCast');
     lhud('bigText', this.clsDef.superName, this.clsDef.superSub, 1.6, 'meme');
     G.shake += 0.4;

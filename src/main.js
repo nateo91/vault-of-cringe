@@ -20,6 +20,7 @@ import { initRenderer, render, applyQuality, followSun, bakeEnvironment, wipeGra
 import { togglePhoto, photoUpdate } from './photo.js';
 import { updateDressing } from './dressing.js';
 import { loadInventory, rollLoot, addItem, makeItem, INV, DEFS, PERKS } from './arsenal.js';
+import { loadArmor, rollArmor, grantArmor, ARMOR } from './armor.js';
 import { initArmory, openArmory, closeArmory, isOpen as armoryOpen } from './inventory.js';
 import { recordRun, formatTime, renderBoard, clearBoard, shareText } from './leaderboard.js';
 import { hostGame, joinGame, netUpdate, resetClientWorld, leave, clean } from './net.js';
@@ -79,7 +80,7 @@ function init() {
   G.scene.add(G.worldGroup, G.entities, G.fxGroup, G.avatarGroup);
   HUD.init();
   initInput(canvas, onLockChange);
-  loadInventory();
+  loadInventory(); loadArmor();
   initArmory(onArmoryClosed);
   setupMenus();
   setupCoop();
@@ -277,6 +278,15 @@ const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '
 
 // Personal loot: rolled on each player's own machine, saved to their own inventory.
 function grantLoot(opts, label) {
+  // an exotic roll can be a piece of exotic armor instead (half the time, while there are pieces left to find)
+  if (opts.exoticChance && Math.random() < opts.exoticChance * 0.5) {
+    const id = rollArmor(G.player?.cls || G.cls);
+    if (id && grantArmor(id)) {
+      local(() => { play('exotic'); HUD.armorLoot(id); if (label) HUD.killfeed(`${label}: ${ARMOR[id].name}`); });
+      (G.runArmor ||= []).push(id);
+      return;
+    }
+  }
   const item = rollLoot(opts);
   local(() => {
     play(DEFS[item.id].rarity === 'exotic' ? 'exotic' : 'engram');
@@ -302,7 +312,7 @@ function onLockChange(locked) {
 function resume() { G.paused = false; $('#pause').classList.add('hidden'); speechSynthesis?.resume(); }
 
 function createPlayer() {
-  G.runLoot = [];
+  G.runLoot = []; G.runArmor = [];
   if (G.stats) bank(); // whatever the last run hadn't banked yet
   G.stats = { kills: 0, crits: 0, deaths: 0, wipes: 0, shots: 0, hits: 0, start: performance.now(), bruh: 0 };
   newRun();
@@ -537,6 +547,7 @@ function victory(run = null) {
   ].map(([k, v]) => `<div>${k}<b>${v}</b></div>`).join('');
   // what you actually got this run (it's already in your armory), plus one bit of flavor
   const got = (G.runLoot || []).map((it) => { const d = DEFS[it.id]; return `<div class="item ${d.rarity === 'exotic' ? '' : 'leg'}"><b>${d.name}</b><div>${d.rarity === 'exotic' ? 'Exotic' : 'Legendary'} ${d.type} · ${it.perks.map((k) => PERKS[k].icon + ' ' + PERKS[k].name).join(' · ')}</div></div>`; });
+  for (const id of G.runArmor || []) got.unshift(`<div class="item"><b>${ARMOR[id].icon} ${ARMOR[id].name}</b><div>Exotic armor (${ARMOR[id].piece}) · ${ARMOR[id].desc}</div></div>`);
   const flavor = pick(LOOT);
   V.querySelector('.loot').innerHTML = got.join('') + `<div class="item"><b>${flavor[0]}</b><div>${flavor[1]}</div></div>`;
   $('#again').textContent = G.net.isClient ? 'WAITING FOR HOST' : 'RUN IT BACK';
@@ -631,7 +642,7 @@ function padMenu() {
   if (!ov) { if (padSel) { padSel.classList.remove('pad-sel'); padSel = null; } return; }
   if (ov.id === 'credits') { if (nav.a || nav.b) closeCredits(); return; }
   if (nav.b && BACK[ov.id]) { ov.querySelector(BACK[ov.id])?.click(); return; }
-  const items = [...ov.querySelectorAll('button, input, select, .arm-card')].filter((el) => el.offsetParent && !el.disabled && el.getBoundingClientRect().width > 0);
+  const items = [...ov.querySelectorAll('button, input, select, .arm-card, .arm-ex:not(.locked)')].filter((el) => el.offsetParent && !el.disabled && el.getBoundingClientRect().width > 0);
   if (!items.length) return;
   if (!items.includes(padSel)) { padSel?.classList.remove('pad-sel'); padSel = null; }
   const select = (el) => {

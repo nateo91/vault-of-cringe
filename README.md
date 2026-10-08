@@ -180,6 +180,20 @@ The perk pool has D2 classics and meme perks:
 - **Memes:** Stonks, Ratio, Vine Boom, Touch Grass, Rizz, Vibe Check (airborne or sliding kills refill the mag).
 - **Exotic signature perks:** Wolfpack Rounds, Memento Potato, 360 No Scope, Ooh Shiny, Rizzrunner, Mogged, Touch of Grass.
 
+### Exotic armor
+
+Each class wears one piece of exotic armor, picked in the Armory (its badge sits next to your grenade and melee). Everyone starts with the Main Character Mask. The others drop from exotic rolls: any drop that could be an exotic weapon can be a piece of armor instead, usually one for the class you're playing.
+
+| Class | Piece | What it does |
+|---|---|---|
+| Hunter | 👟 Drip Walkers | Sliding reloads your gun and gives +20% weapon damage for 3 s. You can slide again sooner. |
+| Hunter | 🕶️ Rizz Lens | Precision hits mark the target for 4 s: it takes 20% more damage from you. |
+| Titan | 💪 Gigachad Gauntlets | Melee hits three times as hard, and a melee kill gives your grenade back. |
+| Titan | 🧱 Unbothered Plate | 25% less damage taken while sprinting or sliding. Shields recharge twice as fast. |
+| Warlock | 🧠 Galaxy Brain Bond | Grenade recharges 40% faster, and each throw gives 6% super. |
+| Warlock | 🌱 Touch Grass Treads | Stand still on the ground for a second: fast healing, even under fire, and +15% weapon damage. |
+| Any | 🎭 Main Character Mask | Super charges 40% faster. Casting your super refreshes your grenade and melee. |
+
 ## Triumphs, secrets and the weekly challenge
 
 - **🎖️ Triumphs** (main menu): fifteen raid achievements, from *Raid Clear* and *Flawless* to one for each encounter's twist. Get them all for the **TERMINALLY ONLINE** seal: a 🏅 next to your name that the whole fireteam sees (lobby, nameplate, leaderboard). Everyone earns their own.
@@ -252,6 +266,7 @@ Both the main menu and the pause menu have:
 - `src/net.js`: co-op networking (host snapshots, client hits, event mirroring)
 - `src/avatars.js`: your teammates' guardians
 - `src/player.js`: movement, firing, abilities, supers, viewmodel animation
+- `src/armor.js`: exotic armor pieces, drops and what each class is wearing
 - `src/arsenal.js`: weapon definitions, perks + perk engine, loot rolls, saved inventory, new gun models
 - `src/inventory.js`: the Armory screen
 - `src/leaderboard.js`: clear times, splits, and the leaderboard screen
