@@ -1,6 +1,6 @@
 // Enemy base class + the common meme roster.
 import * as THREE from 'three';
-import { G, rand, pick, clamp, damp, dampAngle, distXZ, distToSegment, nearestPlayer, hurtPlayer, playerById, local, ELEMENTS, ELEMENT_KEYS, modOn } from './game.js';
+import { G, rand, pick, after, clamp, damp, dampAngle, distXZ, distToSegment, nearestPlayer, hurtPlayer, playerById, players, local, ELEMENTS, ELEMENT_KEYS, modOn } from './game.js';
 import * as fx from './fx.js';
 import { play, playAt } from './audio.js';
 import { moveCollide, pointInWorld } from './world.js';
@@ -233,6 +233,7 @@ export class Enemy {
         const p = this.target;
         this.canSee = p.alive && los(this.center(_t), _t2.set(p.pos.x, p.pos.y + 1.5, p.pos.z));
       }
+      if (this.dodges) this.checkDodge(dt);
       this.think(dt);
       this.animSpeed = Math.hypot(this.vel.x, this.vel.z);
       if (this.pos.y < -40) this.die();
@@ -264,6 +265,30 @@ export class Enemy {
     }
   }
   think() {}
+  // Dodging (opt-in: this.dodges = true): when a guardian puts their reticle on it, it sometimes
+  // sidesteps, like a Vandal does. One roll per look, then a cooldown, so it's a read, not a coin-flip per frame.
+  checkDodge(dt) {
+    this.dodgeCd = (this.dodgeCd ?? rand(1, 3)) - dt;
+    if (this.dodgeCd > 0 || !this.onGround || this.stunT > 0) return;
+    const c = this.center(_t);
+    for (const q of players()) {
+      if (!q.alive) continue;
+      const cp = Math.cos(q.pitch || 0);
+      const fx_ = -Math.sin(q.yaw) * cp, fy = Math.sin(q.pitch || 0), fz = -Math.cos(q.yaw) * cp;
+      const dx = c.x - q.pos.x, dy = c.y - (q.pos.y + 1.6), dz = c.z - q.pos.z, d = Math.hypot(dx, dy, dz);
+      if (d > 45 || d < 3) continue;
+      if ((dx * fx_ + dy * fy + dz * fz) / d < Math.cos(Math.atan((this.radius + 0.4) / d))) continue;
+      this.dodgeCd = rand(2.5, 4);
+      if (Math.random() > 0.35) return;
+      // sidestep across their line of fire
+      const s = Math.random() < 0.5 ? 1 : -1, l = Math.hypot(dx, dz) || 1;
+      this.dodgeV = new THREE.Vector3(-dz / l * s * 9, 0, dx / l * s * 9);
+      this.dodgeT = 0.28;
+      playAt(this.pos, 'whoosh', 0.5);
+      local(() => fx.burst(this.pos.clone().setY(this.pos.y + 0.1), 0xbfb6a8, 6, 2.5, 0.08, 0.4, -2));
+      return;
+    }
+  }
   tgt() { return this.target || G.player; }
   // leashed enemies hold their post until a guardian comes within range (or shoots them), then they're in for good
   leashed() {
@@ -328,7 +353,8 @@ export class Enemy {
       const od = Math.hypot(ox, oz), min = this.radius + o.radius + 0.3;
       if (od < min && od > 0.001) { wx += ox / od * (min - od) * 6; wz += oz / od * (min - od) * 6; }
     }
-    const k = 1 - Math.exp(-accel * dt);
+    let k = 1 - Math.exp(-accel * dt);
+    if (this.dodgeT > 0) { this.dodgeT -= dt; wx = this.dodgeV.x; wz = this.dodgeV.z; k = 1; }
     this.vel.x += (wx - this.vel.x) * k;
     this.vel.z += (wz - this.vel.z) * k;
     this.physics(dt);
@@ -363,6 +389,28 @@ export class Enemy {
     const vel = dir.multiplyScalar(speed);
     if (o.gravity) vel.y += 0.5 * o.gravity * (dist / speed);
     return new Projectile({ pos: from, vel, owner: 'enemy', source: o.source || this.name, target: o.homing ? p : null, ...o });
+  }
+  // Flush you out: hide from it long enough and it lobs a grenade at where you are. The landing spot gets a
+  // red warning ring for the whole flight, so a guardian paying attention can always get out of it.
+  flushOut(dt, { every = 7, splash = 3.2, dmg = 32, color = 0xff6a2a, source = this.name + ' (a grenade: you were camping)', words = ['incoming', 'yeet'] } = {}) {
+    const p = this.tgt();
+    if (!p?.alive) return;
+    this.hiddenT = this.canSee ? 0 : (this.hiddenT || 0) + dt;
+    this.nadeCd = (this.nadeCd ?? rand(3, 6)) - dt;
+    if (this.hiddenT < 2.5 || this.nadeCd > 0 || !this.onGround) return;
+    const d = this.distToPlayer();
+    if (d > 28 || d < 5) return;
+    this.nadeCd = every * rand(0.8, 1.3); this.hiddenT = 0;
+    const from = this.muzzle(0.25, 2.0, 0.3);
+    const to = new THREE.Vector3(p.pos.x + rand(-0.8, 0.8), p.pos.y + 0.15, p.pos.z + rand(-0.8, 0.8));
+    const T = 1.0 + d / 45, g = 20;
+    const vel = to.clone().sub(from).divideScalar(T); vel.y += 0.5 * g * T;
+    new Projectile({ pos: from, vel, owner: 'enemy', gravity: g, dmg: 0, splash, splashDmg: dmg, color, size: 0.2, trail: color, explodeColor: color, life: T + 1.5, source });
+    fx.ringFx(to.clone().setY(p.pos.y + 0.08), splash, 0xff2a1a, T);
+    playAt(to, 'tick', 1.4); after(T * 0.5, () => playAt(to, 'tick', 1.6)); // the 'grenade at your feet' beeps
+    this.doAct?.('fire', 0.3); this.aimT = 0.4;
+    playAt(this.pos, 'whoosh', 0.6);
+    fx.floatText(this.top(_t).clone(), pick(words), { height: 0.4, color: '#ffb080' });
   }
   muzzle(x = 0, y = 1.4, z = 0.6) { return this.hbWorld({ off: _t2.set(x, y, z) }, new THREE.Vector3()); }
 }
@@ -413,6 +461,7 @@ export class Doge extends Enemy {
 export class Stonks extends Enemy {
   constructor() {
     super({ name: 'Stonks Acolyte', hp: 140, radius: 0.45, height: 2.0, speed: 4.5, gib: 0x22dd55, deathLines: [': NOT STONKS 📉', 'sold the dip', 'got margin called'] });
+    this.dodges = true;
     this.useRig(R.stonksRig());
     this.hb(0, 1.2, 0, 0.45).hb(0, 0.6, 0, 0.3).hb(0, 1.93, 0.02, 0.24, true);
     this.hbBase = this.hitboxes.map((h) => h.off.y);
@@ -454,6 +503,7 @@ export class Stonks extends Enemy {
     return !los(_t.set(this.pos.x, this.pos.y + 0.9, this.pos.z), _t2.set(t.x, t.y + 1.2, t.z));
   }
   think(dt) {
+    this.flushOut(dt, { color: 0x22dd55, words: ['📉 SELL SELL SELL', 'market correction incoming', 'yeet'], source: 'a Stonks Acolyte (market crash grenade)' });
     const p = this.tgt();
     this.aimT = Math.max(0, (this.aimT || 0) - dt);
     let crouch = 0;
@@ -745,6 +795,7 @@ export class Wizard extends Enemy {
 export class Sigma extends Enemy {
   constructor() {
     super({ name: 'Sigma', hp: 260, radius: 0.45, height: 2.0, speed: 5, rank: 'major', gib: 0x222222, deathLines: ['lost the grindset', 'got mogged', 'forgot to mew'] });
+    this.dodges = true;
     this.addShield('solar');
     this.useRig(R.sigmaRig());
     this.hb(0, 1.2, 0, 0.45).hb(0, 0.6, 0, 0.3).hb(0, 1.98, 0.02, 0.27, true);
@@ -752,6 +803,7 @@ export class Sigma extends Enemy {
   }
   pose() { return { mew: this.mewing > 0, aim: this.aimT > 0 }; }
   think(dt) {
+    this.flushOut(dt, { every: 9, color: 0x666666, words: ['sigma grindset: grenade', 'you are not him'], source: 'a Sigma (it was a grindset grenade)' });
     const p = this.tgt();
     const d = this.distToPlayer();
     this.aimT = Math.max(0, (this.aimT || 0) - dt);
@@ -789,6 +841,7 @@ export const NET_TYPES = {};
 export class Boyfriend extends Enemy {
   constructor() {
     super({ name: 'Distracted Boyfriend', hp: 240, radius: 0.45, height: 2.0, speed: 4.2, rank: 'major', gib: 0x3d63a8, deathLines: ['went back to his girlfriend', 'was not, in fact, single', 'got caught looking'] });
+    this.dodges = true;
     this.useRig(R.boyfriendRig());
     this.hb(0, 1.2, 0, 0.42).hb(0, 0.6, 0, 0.3).hb(0, 1.93, 0.02, 0.24, true);
     this.beam = new fx.Beam(0xff6fb0, 0.035, 0.55);
