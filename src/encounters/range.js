@@ -9,6 +9,7 @@ import { Enemy, Doge, Stonks, MoaiKnight, Wizard, Sigma, RickRoller, Troll, Boyf
 import { hit } from '../input.js';
 import { play } from '../audio.js';
 import { HUD } from '../hud.js';
+import { makeChampion } from '../champions.js';
 import * as fx from '../fx.js';
 
 // A stand-in for a meme: takes damage, never dies, regrows its shield, and keeps a damage log for the DPS meter.
@@ -53,6 +54,7 @@ const WAVES = [
   { name: 'PROBLEM?', spawn: [[Troll, 3]] },
   { name: 'DISTRACTED', spawn: [[Boyfriend, 1], [Doge, 4], [Stonks, 2]] },
   { name: 'FOR YOU', spawn: [[Algorithm, 2], [Doge, 3]] },
+  { name: 'CHAMPIONS', spawn: [[Sigma, 1], [MoaiKnight, 1], [Boyfriend, 1]], champs: ['barrier', 'overload', 'unstoppable'] },
   { name: 'EVERYTHING', spawn: [[Doge, 4], [Stonks, 2], [MoaiKnight, 1], [Sigma, 1]] },
 ];
 
@@ -102,6 +104,7 @@ export class FiringRange extends Encounter {
     this.waveEnemies = [];
     for (const [T, n] of W.spawn) for (let i = 0; i < n; i++, k++) this.waveEnemies.push(spawnEnemy(T, -18 + (k % 8) * 5, -44 - (k % 2) * 4, T === Wizard ? 4 : T === Algorithm ? 6 : null));
     for (const e of this.waveEnemies) e.drops = false; // practice: no loot farming
+    if (W.champs) this.waveEnemies.forEach((e, i) => W.champs[i] && makeChampion(e, W.champs[i]));
     this.waveT = 0; this.waveDone = false;
     play('alarm'); HUD.bigText(`WAVE: ${W.name}`, 'incoming', 1.6, 'warn');
   }

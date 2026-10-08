@@ -122,7 +122,11 @@ Toggle these on the main menu for extra challenge (they're remembered; the leade
 - 💨 **Caffeinated**: enemies move 30% faster
 - 🪙 **Glass Cannon**: you deal +50% damage and take double
 - 🎈 **Big Head**: enemy heads (and their crit spots) are 1.6x bigger
-- ⚔️ **Master**: enemies (bosses too) have +60% health and hit 40% harder
+- ⚔️ **Master**: enemies (bosses too) have +60% health and hit 40% harder, and some majors become **Champions**:
+  - 🛡️ **Barrier**: raises an immune, healing barrier at 66% and 33% health. Pulse rifles, scouts and bows break it (and stun it).
+  - ⚡ **Overload**: regenerates health fast. Autos, SMGs, machine guns and trace rifles disrupt it (no regen for 6 s).
+  - 🦬 **Unstoppable**: takes half damage. Hand cannons, sidearms, snipers and fusions stagger it (4 s stunned, full damage).
+  Each gun's HUD row shows which Champion it counters; the range has a CHAMPIONS wave to practise on.
 - 🔀 **Shuffle**: after The Approach, the five encounters come in a random order
 
 In co-op the host's toggles decide the enemy-side ones; Glass Cannon and One Life follow each player's own menu.

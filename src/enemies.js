@@ -7,6 +7,7 @@ import { moveCollide, pointInWorld, trimShadows } from './world.js';
 import { los, Projectile, Pickup, raycast, Shockwave } from './combat.js';
 import { HUD } from './hud.js';
 import { textSprite } from './textures.js';
+import { makeChampion, champHit, champAfterHit, champUpdate, champRow, applyChampRow } from './champions.js';
 import * as M from './models.js';
 import * as R from './rigs.js';
 
@@ -95,6 +96,7 @@ export class Enemy {
     if (this.immune || this.untargetable) { if (mine) fx.dmgNumber(this.top(_t), 'IMMUNE', 'immune'); return 0; }
     if (mine && modOn('glass')) dmg *= 1.5;
     if (info.weapon) { this.lastWeapon = info.weapon; if (mine) G.player?.perks?.noteHit(info.weapon); }
+    if (this.champ) { dmg = champHit(this, dmg, info, mine, this.top(_t)); if (dmg <= 0) return 0; }
     if (this.shieldHp > 0) return this.hitShield(dmg, info, mine);
     dmg = Math.max(1, Math.round(dmg));
     this.hp -= dmg; this.pop = 1; this.aggro = true;
@@ -109,6 +111,7 @@ export class Enemy {
     if (crit && mine) G.stats.crits++;
     this.onHurt?.(dmg, crit, info);
     if (this.hp <= 0) { this.hp = 0; this.die(info); }
+    else if (this.champ) champAfterHit(this);
     return dmg;
   }
 
@@ -223,6 +226,7 @@ export class Enemy {
     this.t += dt;
     if (!this.shadowsTrimmed) { this.shadowsTrimmed = true; trimShadows(this.mesh); }
     this.updateLod(dt);
+    if (this.champ) champUpdate(this, dt);
     if (this.shieldMesh) this.updateShield(dt);
     if (this.stunT > 0 && !G.net.isClient) { this.stunT -= dt; this.vel.set(0, this.vel.y, 0); this.physics?.(dt); this.animSpeed = 0; this.animate?.(dt); this.rig?.update(dt, { speed: 0 }); this.mesh.rotation.y = this.yaw; return; }
     if (G.net.isClient) this.proxyUpdate(dt);
@@ -340,11 +344,12 @@ export class Enemy {
     return [this.nid, this.netType, this.netArgs, r2(this.pos.x), r2(this.pos.y), r2(this.pos.z), r2(this.yaw), Math.ceil(this.hp), this.maxHp,
       (this.immune ? 1 : 0) | (this.untargetable ? 2 : 0) | (this.hostile ? 4 : 0), this.netVis?.() ?? 0, this.rank,
       this.actN || 0, this.actName || 0, this.actDur || 0, ps ? [ps.aim ? 1 : 0, ps.mew ? 1 : 0, ps.task ? 1 : 0, r2(ps.windup || 0), r2(ps.crouch || 0)] : 0,
-      this.shieldMax ? [Math.max(0, Math.ceil(this.shieldHp)), this.shieldMax, ELEMENT_KEYS.indexOf(this.shieldEl), this.stunT > 0 ? 1 : 0] : 0];
+      this.shieldMax ? [Math.max(0, Math.ceil(this.shieldHp)), this.shieldMax, ELEMENT_KEYS.indexOf(this.shieldEl), this.stunT > 0 ? 1 : 0] : 0, champRow(this)];
   }
   applyRow(a) {
     if (!this.netPos) { this.netPos = new THREE.Vector3(a[3], a[4], a[5]); this.pos.copy(this.netPos); this.yaw = a[6]; }
     this.netPos.set(a[3], a[4], a[5]); this.netYaw = a[6];
+    if (a[17]) applyChampRow(this, a[17]);
     this.hp = a[7]; this.maxHp = a[8];
     this.immune = !!(a[9] & 1); this.untargetable = !!(a[9] & 2); this.hostile = !!(a[9] & 4);
     if (a[10]) this.applyVis?.(a[10]);
@@ -1097,6 +1102,7 @@ export function applyMods(e) {
   if (e.rank === 'neutral' || e.modded) return e;
   e.modded = true;
   if (modOn('master') && e.hostile !== false) { e.maxHp = e.hp = Math.round(e.maxHp * 1.6); e.master = true; }
+  if (modOn('master') && e.rank === 'major' && e.hostile !== false && !G.net.isClient && Math.random() < 0.4) makeChampion(e);
   if (e.rank === 'boss') return e;
   if (modOn('speedy')) e.speed *= 1.3;
   if (modOn('bighead')) {
