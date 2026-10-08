@@ -47,7 +47,27 @@ How it works:
 | B / N / J / K | Emotes: dance / sit / dab / take the L (third-person; move or shoot to stop) |
 | P | Photo mode: freeze (solo), free camera (WASD, Space/C, Shift, wheel zoom), depth of field |
 | Q / V / F | grenade / melee / super |
+| V near a weakened enemy | finisher (look for the ◆ [V] FINISH marker) |
+| E (hold) | interact: revive a teammate, open things |
 | Esc | pause |
+
+### Controller
+
+Plug one in and press any button; it works alongside mouse and keyboard, menus included (the d-pad moves a highlight, A clicks, B backs out).
+
+| | |
+|---|---|
+| Left stick / L3 | move / sprint (stays on while you push forward) |
+| Right stick | look (there's a response curve; the Sensitivity slider scales it) |
+| RT / LT | fire / aim |
+| A / B | jump / slide |
+| X | reload; hold to interact |
+| Y | swap weapon |
+| LB / RB / both | grenade / melee / super |
+| D-pad | emotes |
+| View / Start | Armory / pause |
+
+You can't type a name or a join code on a controller, so whoever joins a co-op game needs a keyboard for the code.
 
 ## The raid
 
@@ -74,9 +94,21 @@ How it works:
    - Vibe checks: don't move, look away, or jump.
    - At 50% health the toilets multiply. At 15% the floor is lava.
 
+Every encounter also has a twist that isn't in its description. They're more fun found than read, so they're in the spoiler section below.
+
 Big Chungus, the Dog and Skibidi get cinematic boss intros on your first attempt, and each impostor gets a reveal cutscene (full the first time, a quick cut after that). Press Space, Enter or click to skip.
 
 You get 3 revives per encounter. Run out and the squad wipes, which restarts the encounter. You can start from any encounter in the main menu to practice.
+
+## How the fights feel
+
+The gunplay borrows the bits that make Destiny's feel good:
+- The reticle turns **red** when it's over an enemy within your gun's aim-assist range.
+- Red **damage arcs** around the reticle point at whatever just hit you, and keep pointing at it as you turn.
+- **Finishers:** a weakened enemy (not a boss) in reach gets a ◆ [V] FINISH marker. Melee lunges you onto it for a takedown; you can't be hurt mid-finisher, and it drops orbs.
+- A soft chime when your grenade or melee is back.
+- Stonks Acolytes, Sigmas and the Boyfriend **sidestep** when you put your reticle on them.
+- Hide behind cover too long and Stonks and Sigmas **lob grenades** at you. A red ring and two beeps mark where it'll land.
 
 ## Firing Range
 
@@ -90,6 +122,7 @@ Toggle these on the main menu for extra challenge (they're remembered; the leade
 - 💨 **Caffeinated**: enemies move 30% faster
 - 🪙 **Glass Cannon**: you deal +50% damage and take double
 - 🎈 **Big Head**: enemy heads (and their crit spots) are 1.6x bigger
+- ⚔️ **Master**: enemies (bosses too) have +60% health and hit 40% harder
 - 🔀 **Shuffle**: after The Approach, the five encounters come in a random order
 
 In co-op the host's toggles decide the enemy-side ones; Glass Cannon and One Life follow each player's own menu.
@@ -129,7 +162,7 @@ Open the **Armory** (Tab mid-raid, or from the main menu) to swap guns. A turnta
 
 | Slot | Weapons |
 |---|---|
-| Kinetic | Ace of Spuds (exotic hand cannon), Grindset (auto), Stonks Pulse (3-burst pulse), The Sus-pect (scout) |
+| Kinetic | Ace of Spuds (exotic hand cannon), Grindset (auto), Stonks Pulse (3-burst pulse), The Sus-pect (scout), and a raid exotic you have to earn |
 | Energy | The Chaperwoof (shotgun), Big Brain (sniper), No Scope 360 (exotic sniper), Bruh Fusion (fusion) |
 | Power | Gjallarhorn't (exotic rocket), Vine Boom Deluxe (machine gun), Bonk Launcher (grenade launcher) |
 
@@ -138,6 +171,12 @@ The perk pool has D2 classics and meme perks:
 - **Classics:** Outlaw, Rampage, Kill Clip, Firefly, Subsistence, Feeding Frenzy, Triple Tap, Vorpal, Demolitionist, Auto-Loading Holster, Overflow, Snapshot, Opening Shot, Tracking Module, Cluster Bombs, Spike Grenades.
 - **Memes:** Stonks, Ratio, Vine Boom, Touch Grass, Rizz.
 - **Exotic signature perks:** Wolfpack Rounds, Memento Potato, 360 No Scope.
+
+## Triumphs, secrets and the weekly challenge
+
+- **🎖️ Triumphs** (main menu): thirteen raid achievements, from *Raid Clear* and *Flawless* to one for each encounter's twist. Get them all for the **TERMINALLY ONLINE** seal. Everyone earns their own.
+- **Secret chests:** three are hidden off the main path. No waypoint, no objective text. Each player loots their own, and the victory screen counts how many you've ever found. Find all three for the raid exotic.
+- **🎯 Weekly challenge:** each week (resetting on Tuesday) one encounter gets an extra condition, shown on the main menu and in the encounter. Clear that encounter without breaking it for a once-a-week reward with a high exotic chance.
 
 ## Leaderboard
 
@@ -172,7 +211,26 @@ Both the main menu and the pause menu have:
 ## Cheats / debug
 
 - Open the console during a run and type `G.godMode = true`. That run won't count for the leaderboard.
-- `?debug` in the URL skips pause-on-unfocus and adds console helpers (`startAt(n)`, `drive(seconds, fn)`, `autoShoot`).
+- `?debug` in the URL skips pause-on-unfocus and adds console helpers (`startAt(n)`, `drive(seconds, fn)`, `autoShoot`), plus two-tab co-op testing (`coopHost()`, `coopJoin(code)`, `coopLaunch(n)`) and `G.forceChallenge = 'id'`.
+
+## Spoilers
+
+<details>
+<summary>The twists, the secrets and the raid exotic (click to reveal)</summary>
+
+**Twists**
+- **The Approach:** the chasm ends at a gap nobody can jump, and a headwind shoves anyone in the air back. There's a glass bridge across, but it's shy: it only exists while nobody is looking at it. Walk it backwards, or staring at the sky. In co-op, a teammate looking at it makes it vanish under you.
+- **The Normie Gate:** holding all three plates doesn't open the gate. It plays a mid-roll ad. Shoot the Skip Ad button (it dodges and shrinks, three hits), or sit through both ads.
+- **Emergency Meeting:** from round 2 the impostor sabotages the lights. Vision shrinks, name tags vanish, and the next kill comes sooner. Hold the panel in Electrical to fix them.
+- **The Vine Boom Chamber:** from the third sequence, Cheems sometimes calls the pattern ("🐕 CHEEMS SAYS"). It's Simon Says: copying it fails, holding fire for the whole turn opens Chungus up.
+- **This Is Fine:** at 30% the Dog grabs his own extinguisher and puts the fire out himself, and the wall extinguishers turn into hot sauce that lights the floor behind you. Keep the fire between 50% and 90%.
+- **Skibidi:** his first death doesn't stick. He rises again, immune, and every guardian has to out-vibe him: dance (B) or dab (J) for 4 seconds between shockwaves.
+
+**Secret chests:** a rock past the lore platform out over the Approach's chasm; the actual EMERGENCY button in the Meeting's cafeteria; the crooked 🌻 painting in This Is Fine.
+
+**Raid exotic: Touch of Grass** (scout rifle). The last three rounds in the mag deal +60% damage and grow back by themselves, at 4 health a shot (never lethal). Precision kills heal you and clear brainrot. It drops once, for finding all three secrets.
+
+</details>
 
 ## Code map
 
@@ -191,4 +249,6 @@ Both the main menu and the pause menu have:
 - `src/audio.js`: synthesized SFX (yes, including the vine boom), 3D positional audio (HRTF panning, distance falloff, air absorption), procedural music, TTS
 - `src/cinematic.js`: boss intro system (letterbox, camera paths, title cards; the choreography lives in each encounter)
 - `src/render.js`: post-processing, sky domes, the separate viewmodel layer, quality settings
+- `src/secrets.js`, `src/triumphs.js`, `src/challenges.js`: secret chests, triumphs + the seal, weekly challenges
+- `src/input.js`: keyboard, mouse and controller
 - `src/combat.js`, `src/fx.js`, `src/world.js`, `src/hud.js`: the plumbing

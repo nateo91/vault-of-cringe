@@ -389,7 +389,9 @@ export class Player {
     this.scoped = this.ads && !!this.def.scope && this.adsK > 0.85;
     this.scopeType = this.def.scope;
     if (this.scoped) this.range = raycast(cam.position, this.aimDir(0), 300).dist;
-    const targetFov = this.scoped ? (this.def.kind === 'sniper' ? 16 : 30) : this.ads ? this.def.zoom : this.sprinting ? 82 : this.slideT > 0 ? 84 : 74;
+    // the FOV slider sets the base; sprint / slide kick out from it, ADS keeps the same magnification
+    const base = G.settings.fov ?? 74;
+    const targetFov = this.scoped ? (this.def.kind === 'sniper' ? 16 : 30) : this.ads ? this.def.zoom * base / 74 : this.sprinting ? base + 8 : this.slideT > 0 ? base + 10 : base;
     this.fov = damp(this.fov, targetFov, 14, dt);
     if (Math.abs(cam.fov - this.fov) > 0.01) { cam.fov = this.fov; cam.updateProjectionMatrix(); }
     this.animateViewmodel(dt);

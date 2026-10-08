@@ -129,6 +129,7 @@ function setupMenus() {
   });
   const syncSettings = () => {
     document.querySelectorAll('.sens').forEach((e) => (e.value = G.settings.sens));
+    document.querySelectorAll('.fov').forEach((e) => (e.value = G.settings.fov ?? 74));
     document.querySelectorAll('.vol').forEach((e) => (e.value = G.settings.volume));
     document.querySelectorAll('.voice').forEach((e) => (e.checked = G.settings.voice));
     document.querySelectorAll('.music').forEach((e) => (e.checked = G.settings.music));
@@ -138,6 +139,7 @@ function setupMenus() {
   syncSettings();
   const save = () => { try { localStorage.setItem('voc-settings', JSON.stringify(G.settings)); } catch (e) { /* fine */ } syncSettings(); };
   document.querySelectorAll('.sens').forEach((e) => (e.oninput = () => { G.settings.sens = +e.value; save(); }));
+  document.querySelectorAll('.fov').forEach((e) => (e.oninput = () => { G.settings.fov = +e.value; document.querySelectorAll('.fov').forEach((o) => (o.value = e.value)); save(); }));
   document.querySelectorAll('.vol').forEach((e) => (e.oninput = () => { G.settings.volume = +e.value; setVolume(G.settings.volume); save(); }));
   document.querySelectorAll('.voice').forEach((e) => (e.onchange = () => { G.settings.voice = e.checked; if (!e.checked) speechSynthesis?.cancel(); save(); }));
   document.querySelectorAll('.quality').forEach((e) => (e.onchange = () => { G.settings.quality = e.value; G.settings.qualityPicked = true; save(); applyQuality(); }));
