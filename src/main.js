@@ -137,6 +137,7 @@ function setupMenus() {
     document.querySelectorAll('.fov').forEach((e) => (e.value = G.settings.fov ?? 74));
     document.querySelectorAll('.vol').forEach((e) => (e.value = G.settings.volume));
     document.querySelectorAll('.voice').forEach((e) => (e.checked = G.settings.voice));
+    document.querySelectorAll('.padon').forEach((e) => (e.checked = G.settings.pad !== false));
     document.querySelectorAll('.music').forEach((e) => (e.checked = G.settings.music));
     document.querySelectorAll('.quality').forEach((e) => (e.value = G.settings.quality || 'high'));
     document.querySelectorAll('.cvd').forEach((e) => (e.value = G.settings.cvd || 'off'));
@@ -148,6 +149,7 @@ function setupMenus() {
   document.querySelectorAll('.sens').forEach((e) => (e.oninput = () => { G.settings.sens = +e.value; save(); }));
   document.querySelectorAll('.fov').forEach((e) => (e.oninput = () => { G.settings.fov = +e.value; document.querySelectorAll('.fov').forEach((o) => (o.value = e.value)); save(); }));
   document.querySelectorAll('.vol').forEach((e) => (e.oninput = () => { G.settings.volume = +e.value; setVolume(G.settings.volume); save(); }));
+  document.querySelectorAll('.padon').forEach((e) => (e.onchange = () => { G.settings.pad = e.checked; document.querySelectorAll('.padon').forEach((o) => (o.checked = e.checked)); save(); }));
   document.querySelectorAll('.voice').forEach((e) => (e.onchange = () => { G.settings.voice = e.checked; if (!e.checked) speechSynthesis?.cancel(); save(); }));
   document.querySelectorAll('.cvd').forEach((e) => (e.onchange = () => { G.settings.cvd = e.value; document.querySelectorAll('.cvd').forEach((o) => (o.value = e.value)); save(); applyColorblind(e.value); }));
   document.querySelectorAll('.quality').forEach((e) => (e.onchange = () => { G.settings.quality = e.value; G.settings.qualityPicked = true; save(); applyQuality(); }));
@@ -542,7 +544,7 @@ function coopFrame(dt) {
 function frame() {
   requestAnimationFrame(frame);
   const raw = clock.getDelta();
-  pollPad(Math.min(raw, 1 / 20), G.settings.sens ?? 1);
+  pollPad(Math.min(raw, 1 / 20), G.settings.sens ?? 1, G.settings.pad !== false);
   // Start pauses / resumes (a controller can't press Esc)
   if (Pad.startPressed && G.state === 'playing') {
     if ($('#pause').classList.contains('hidden')) { if (!G.net.active) G.paused = true; $('#pause').classList.remove('hidden'); $('#restartEnc').classList.toggle('hidden', G.net.isClient); document.exitPointerLock?.(); }

@@ -1,6 +1,6 @@
 // The build stamp. Bump BUILD with every push: the menu shows it, running games notice a newer one, and co-op
 // warns when a fireteam is on different builds.
-export const BUILD = '2026.10.08.2';
+export const BUILD = '2026.10.08.3';
 
 // what's on the server right now (no-cache, so it's the real latest)
 export async function latestBuild() {

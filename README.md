@@ -53,7 +53,7 @@ How it works:
 
 ### Controller
 
-Plug one in and press any button; it works alongside mouse and keyboard, menus included (the d-pad moves a highlight, A clicks, B backs out).
+Plug one in and press any button; it works alongside mouse and keyboard, menus included (the d-pad moves a highlight, A clicks, B backs out). Only standard game controllers (Xbox, PlayStation, Switch Pro) are used; racing wheels, pedals and flight sticks are ignored so their resting axes can't steer you. There's also a **Controller** on/off checkbox in the settings.
 
 | | |
 |---|---|

@@ -59,10 +59,13 @@ export const Pad = { active: false, startPressed: false, nav: {} };
 const navHeld = {}, navRepeat = {};
 const dz = (v, d = 0.14) => (Math.abs(v) < d ? 0 : Math.sign(v) * (Math.abs(v) - d) / (1 - d));
 
-export function pollPad(dt, lookSpeed = 1) {
+export function pollPad(dt, lookSpeed = 1, enabled = true) {
   Pad.startPressed = false; Pad.nav = {};
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-  const gp = [...pads].find((p) => p && p.connected && p.mapping === 'standard') || [...pads].find((p) => p && p.connected);
+  // Only real game controllers: the browser reports Xbox / PlayStation / Switch Pro pads with the 'standard'
+  // layout. Pedals, wheels, flight sticks and button boxes are non-standard, and their resting axes (often a
+  // pedal sitting at -1) would read as a stick held over: walking, spinning, menus running away on their own.
+  const gp = enabled ? [...pads].find((p) => p && p.connected && p.mapping === 'standard' && p.buttons.length >= 16 && p.axes.length >= 4) : null;
   if (!gp) { if (Pad.active) release(); return; }
   const b = (i) => !!gp.buttons[i]?.pressed, val = (i) => gp.buttons[i]?.value || 0;
   const lx = dz(gp.axes[0] || 0), ly = dz(gp.axes[1] || 0), rx = dz(gp.axes[2] || 0), ry = dz(gp.axes[3] || 0);
