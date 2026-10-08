@@ -37,8 +37,8 @@ How it works:
 
 | | |
 |---|---|
-| WASD / Shift | move / sprint |
-| Shift + C (or Ctrl) | slide |
+| WASD / Shift | move / sprint (tap Shift: you keep sprinting until you stop moving forward, aim or shoot. Settings has a hold-to-sprint option) |
+| C (or Ctrl) while sprinting | slide |
 | Space | jump, then again in the air (Hunter: triple jump, Titan: double, Warlock: hold to glide) |
 | Mouse L / R | shoot / aim down sights |
 | R, 1 2 3, wheel | reload, swap weapons |
@@ -73,7 +73,7 @@ Press A on the name or code box for an on-screen keyboard, so a co-op game can b
 
 0. **The Approach** (raid entry, no wipes). Your jumpship drops you at a landing pad above a misty chasm.
    - Fight past doge patrols on the causeway.
-   - Platform-jump across the chasm. Some platforms bob and slide, and they carry you.
+   - Platform-jump across the chasm. It is absurdly long: 34 more platforms after the warm-up, the gaps growing from 2.5 m to 9 m (the late ones need a double jump or a glide) while the platforms shrink and more of them bob and slide (and carry you). Signs track your progress, not always honestly, and there is a checkpoint halfway. The waypoint hops to the next platform ahead.
    - Clear the guards in the plaza so the Vault's gate opens.
    - Miss a jump in the chasm and your Ghost catches you, putting you back on the last platform you stood on.
    - Falling anywhere else sends you back to the last checkpoint.

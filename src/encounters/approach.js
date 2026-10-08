@@ -1,4 +1,4 @@
-// The Approach: the raid's walk-in. Land, cross the causeway, jump the chasm, cross the Shy Bridge, clear the plaza, open the Vault.
+// The Approach: the raid's walk-in. Land, cross the causeway, jump the (very, very long) chasm, cross the Shy Bridge, clear the plaza, open the Vault.
 // Traversal rules: no wipes here, falling just puts you back at the last checkpoint.
 import * as THREE from 'three';
 import { G, rand, pick, after, players, distXZ, local } from '../game.js';
@@ -77,8 +77,7 @@ export class TheApproach extends Encounter {
       const edge = addBox(x, y - 0.65, z, w + 0.1, 0.08, d + 0.1, trim, { collide: false });
       this.platforms.push({ m, edge, box: m.userData.box, base: V(x, y - 0.6, z), w, h: 0.6, d, motion, last: V(x, y - 0.6, z) });
     };
-    // big platforms, ~1.5 m gaps, small steps: a stroll with some style, not a skill check
-    // big platforms, ~1 m gaps, small steps. Spaced so an over-eager sprint jump lands on the *next-but-one*.
+    // the first few: big platforms, ~1 m gaps, a warm-up (it does not stay like this)
     plat(0, 0, -65.75, 5.5, 5.5, null);
     plat(1.2, 0.5, -72.45, 5.5, 5.5, { bob: 0.25, speed: 0.9 });
     plat(-0.8, 1.0, -79.15, 5.5, 5.5, { slide: 1.2, speed: 0.4 });
@@ -87,17 +86,46 @@ export class TheApproach extends Encounter {
     plat(-13.6, 1.3, -88.6, 3.2, 3.2, null);
     addChest('approach', V(-13.6, 1.3, -88.9), { yaw: Math.PI * 0.75 });
     plat(0.8, 1.4, -85.85, 5.5, 5.5, { bob: 0.3, speed: 1.0, phase: 1 });
-    plat(0, 0, -92.2, 6, 5, null); // the last ledge. After it: an 11 m gap and a sign.
+    // THE GAUNTLET. It keeps going. The gaps keep growing (2.5 m up to 9: late ones need a double jump or a glide),
+    // the platforms keep shrinking, and more of them move. Seeded, so every machine in co-op builds the same one.
+    const rnd = seeded(4242);
+    const R = (a, b) => a + rnd() * (b - a);
+    const N = 34;
+    let edge = -85.85 - 2.75, x = 0.8, y = 1.4;
+    this.gauntlet = [];
+    const notes = { 4: ['CHASM PROGRESS: 9%', 'you are doing great (relatively)'], 9: ['CHASM PROGRESS: 23%', 'the Ghost has started a podcast'], 15: ['HALFWAY', 'this is not the halfway point'], 19: ['CHASM PROGRESS: 61%', 'your ancestors are watching. they are bored'], 24: ['CHASM PROGRESS: 74%', 'almost there (lie)'], 29: ['CHASM PROGRESS: 88%', 'ok this time it really is almost there'], 33: ['CHASM PROGRESS: 99%', 'the last one. probably.'] };
+    for (let i = 0; i < N; i++) {
+      const t = i / (N - 1);
+      const gap = 2.5 + t * 6.5 + R(-0.4, 0.4);
+      const d = 4.6 - t * 1.6, w = 4.6 - t * 1.3;
+      const dy = gap > 7 ? R(-1.2, 0.2) : R(-0.9, 0.9);
+      y = Math.max(-0.4, Math.min(3.2, y + dy));
+      x = Math.max(-6, Math.min(6, x + R(-3.2, 3.2)));
+      const z = edge - gap - d / 2;
+      const motion = i > 3 && i % 5 === 2 ? { slide: R(1.2, 1.8 + t * 1.6), speed: 0.45 + t * 0.4, phase: R(0, 6) } : i % 3 === 1 ? { bob: R(0.15, 0.4), speed: R(0.7, 1.2), phase: R(0, 6) } : null;
+      plat(x, y, z, w, d, motion);
+      this.gauntlet.push(this.platforms[this.platforms.length - 1]);
+      if (notes[i]) {
+        const sg = textSprite(notes[i][0], 0.5, { font: IMPACT, weight: 'normal', color: '#ffcc33' }); sg.position.set(x, y + 2.6, z); add(sg);
+        const sb = textSprite(notes[i][1], 0.24, { color: '#9fe2ff', font: 'Rajdhani, sans-serif' }); sb.position.set(x, y + 2.15, z); add(sb);
+        this.platforms[this.platforms.length - 1].note = i;
+      }
+      edge = z - d / 2;
+    }
+    // the last ledge. After it: an 11 m gap and a sign. Everything past here sits S metres further out than it used to.
+    const lastZ = edge - 3.5 - 2.5;
+    plat(0, 0, lastZ, 6, 5, null);
+    const S = this.off = lastZ + 92.2;
     this.buildShyBridge(trim);
-    for (let i = 0; i < 18; i++) { const r = new THREE.Mesh(new THREE.DodecahedronGeometry(rand(1, 3.5), 0), rough); r.position.set(rand(-30, 30), rand(-30, -8), rand(-110, -55)); r.rotation.set(rand(0, 6), rand(0, 6), 0); add(r); }
+    for (let i = 0; i < 60; i++) { const r = new THREE.Mesh(new THREE.DodecahedronGeometry(rand(1, 3.5), 0), rough); r.position.set(rand(-34, 34), rand(-34, -8), rand(-110 + S, -55)); r.rotation.set(rand(0, 6), rand(0, 6), 0); add(r); }
     // 4) the plaza
-    addBox(0, -2, -128, 36, 2, 44, stone);
-    for (const [x, z, w, h, d] of [[-9, -118, 4, 2, 2.5], [9, -118, 4, 2, 2.5], [-13, -134, 2.5, 2.4, 5], [13, -134, 2.5, 2.4, 5], [0, -126, 6, 1.4, 1.6]]) { addBox(x, 0, z, w, h, d, rough); D.barrier(x, z, w, h, d); }
-    for (const [x, z] of [[-16.5, -120], [16.5, -120], [-16.5, -138], [16.5, -138]]) D.column(x, z, { h: 9, r: 1.0, color: 0x5d646c, accent: 0x5fd8ff });
-    for (const [x, z] of [[-15, -110], [15, -110], [-15, -146], [15, -146]]) D.brazier(x, z, { color: 0xff7a20 });
-    D.rubble(-6, -140, { n: 7 }); D.rubble(8, -112, { n: 5 });
+    addBox(0, -2, -128 + S, 36, 2, 44, stone);
+    for (const [x, z, w, h, d] of [[-9, -118, 4, 2, 2.5], [9, -118, 4, 2, 2.5], [-13, -134, 2.5, 2.4, 5], [13, -134, 2.5, 2.4, 5], [0, -126, 6, 1.4, 1.6]]) { addBox(x, 0, z + S, w, h, d, rough); D.barrier(x, z + S, w, h, d); }
+    for (const [x, z] of [[-16.5, -120], [16.5, -120], [-16.5, -138], [16.5, -138]]) D.column(x, z + S, { h: 9, r: 1.0, color: 0x5d646c, accent: 0x5fd8ff });
+    for (const [x, z] of [[-15, -110], [15, -110], [-15, -146], [15, -146]]) D.brazier(x, z + S, { color: 0xff7a20 });
+    D.rubble(-6, -140 + S, { n: 7 }); D.rubble(8, -112 + S, { n: 5 });
     // secret: a patch of reality that didn't load. Slide into it.
-    this.glitchPos = V(-17.4, 0, -122);
+    this.glitchPos = V(-17.4, 0, -122 + S);
     const gl = document.createElement('canvas'); gl.width = gl.height = 64;
     const gx = gl.getContext('2d'); gx.fillStyle = '#c9b46a'; gx.fillRect(0, 0, 64, 64); gx.strokeStyle = 'rgba(120,100,40,.4)'; gx.lineWidth = 2; for (let i = 0; i < 64; i += 8) { gx.beginPath(); gx.moveTo(i, 0); gx.lineTo(i, 64); gx.stroke(); }
     const glTex = new THREE.CanvasTexture(gl); glTex.colorSpace = THREE.SRGBColorSpace;
@@ -105,26 +133,28 @@ export class TheApproach extends Encounter {
     this.glitch = addBox(this.glitchPos.x, 0, this.glitchPos.z, 0.25, 3, 2.4, this.glitchMat);
     // 5) the gate of the Vault
     const gateM = std(0x3a3f46, { roughness: 0.9, flatShading: true });
-    addBox(-11.5, 0, -150, 13, 18, 3, gateM); addBox(11.5, 0, -150, 13, 18, 3, gateM); addBox(0, 12, -150, 10, 6, 3, gateM);
-    this.door = addBox(0, 0, -150, 10, 12, 1.6, std(0x55303a, { metalness: 0.6, roughness: 0.35, emissive: 0x330010 }));
+    addBox(-11.5, 0, -150 + S, 13, 18, 3, gateM); addBox(11.5, 0, -150 + S, 13, 18, 3, gateM); addBox(0, 12, -150 + S, 10, 6, 3, gateM);
+    this.door = addBox(0, 0, -150 + S, 10, 12, 1.6, std(0x55303a, { metalness: 0.6, roughness: 0.35, emissive: 0x330010 }));
     const doorRunes = new THREE.Mesh(new THREE.PlaneGeometry(8, 9), new THREE.MeshBasicMaterial({ map: emojiRunes(), transparent: true }));
-    doorRunes.position.set(0, 6, -149.15); this.door.add(doorRunes); doorRunes.position.set(0, 0, 0.82);
-    const title = textSprite('VAULT OF CRINGE', 2.2, { font: IMPACT, weight: 'normal', color: '#ff4fd8' }); title.position.set(0, 19.5, -148.3); add(title);
+    doorRunes.position.set(0, 6, -149.15 + S); this.door.add(doorRunes); doorRunes.position.set(0, 0, 0.82);
+    const title = textSprite('VAULT OF CRINGE', 2.2, { font: IMPACT, weight: 'normal', color: '#ff4fd8' }); title.position.set(0, 19.5, -148.3 + S); add(title);
     // a monumental arch around the door, pilasters along the gate wall
-    D.archway(0, -148.4, 10, 12, { depth: 1.4, color: 0x454b53, accent: 0xff4fd8 });
-    D.wallDress(-18, -148.5, -7.6, -148.5, { inward: 1, h: 18, every: 5, color: 0x3f454d, accent: 0x5fd8ff });
-    D.wallDress(7.6, -148.5, 18, -148.5, { inward: 1, h: 18, every: 5, color: 0x3f454d, accent: 0x5fd8ff });
-    pointLight(0, 9, -146, 0xff4fd8, 40, 26);
-    D.banner(-8.5, 8, -148.3, 0, { color: 0x5a1030, emblem: '▶', text: 'SUBSCRIBE', h: 6 });
-    D.banner(8.5, 8, -148.3, 0, { color: 0x5a1030, emblem: '🔔', text: 'THE BELL', h: 6 });
-    addBox(0, -2, -162, 10, 2, 22, stone); addBox(-5.5, 0, -162, 1, 12, 22, gateM); addBox(5.5, 0, -162, 1, 12, 22, gateM);
-    pointLight(0, 5, -160, 0xb06cff, 30, 20);
+    D.archway(0, -148.4 + S, 10, 12, { depth: 1.4, color: 0x454b53, accent: 0xff4fd8 });
+    D.wallDress(-18, -148.5 + S, -7.6, -148.5 + S, { inward: 1, h: 18, every: 5, color: 0x3f454d, accent: 0x5fd8ff });
+    D.wallDress(7.6, -148.5 + S, 18, -148.5 + S, { inward: 1, h: 18, every: 5, color: 0x3f454d, accent: 0x5fd8ff });
+    pointLight(0, 9, -146 + S, 0xff4fd8, 40, 26);
+    D.banner(-8.5, 8, -148.3 + S, 0, { color: 0x5a1030, emblem: '▶', text: 'SUBSCRIBE', h: 6 });
+    D.banner(8.5, 8, -148.3 + S, 0, { color: 0x5a1030, emblem: '🔔', text: 'THE BELL', h: 6 });
+    addBox(0, -2, -162 + S, 10, 2, 22, stone); addBox(-5.5, 0, -162 + S, 1, 12, 22, gateM); addBox(5.5, 0, -162 + S, 1, 12, 22, gateM);
+    pointLight(0, 5, -160 + S, 0xb06cff, 30, 20);
     // atmosphere
-    D.dust({ min: [-18, 0.3, -150], max: [18, 10, 10], color: 0xcff4ff, count: 900 });
-    D.groundFog({ min: [-20, -160], max: [20, 10], y: 0.4, color: 0x8fb8c8, opacity: 0.3, count: 40 });
-    D.groundFog({ min: [-30, -110], max: [30, -56], y: -6, color: 0x9fc8d8, opacity: 0.45, count: 30, size: [18, 30] }); // mist down in the chasm
-    D.lightShaft(0, 30, -128, { height: 30, top: 3, bottom: 9, color: 0xcff4ff, opacity: 0.12 });
-    D.birds({ center: [0, 0, -80], count: 14, radius: [18, 50], height: [10, 26], color: 0x22262c });
+    D.dust({ min: [-18, 0.3, -62], max: [18, 10, 10], color: 0xcff4ff, count: 400 });
+    D.dust({ min: [-18, 0.3, -150 + S], max: [18, 10, -106 + S], color: 0xcff4ff, count: 500 });
+    D.groundFog({ min: [-20, -62], max: [20, 10], y: 0.4, color: 0x8fb8c8, opacity: 0.3, count: 20 });
+    D.groundFog({ min: [-20, -160 + S], max: [20, -106 + S], y: 0.4, color: 0x8fb8c8, opacity: 0.3, count: 20 });
+    D.groundFog({ min: [-34, -110 + S], max: [34, -56], y: -6, color: 0x9fc8d8, opacity: 0.45, count: 70, size: [18, 30] }); // mist down in the chasm
+    D.lightShaft(0, 30, -128 + S, { height: 30, top: 3, bottom: 9, color: 0xcff4ff, opacity: 0.12 });
+    D.birds({ center: [0, 0, -80 + S / 2], count: 14, radius: [18, 50], height: [10, 26], color: 0x22262c });
     // a storm rolls in over the Vault
     D.weather('rain', { color: 0xb8c8dc, wind: [3, -1], speed: 24, opacity: 0.4 });
     D.lightning({ every: [9, 20] });
@@ -132,15 +162,15 @@ export class TheApproach extends Encounter {
     // the ship that dropped you off
     this.ship = makeJumpship(); this.ship.position.set(0, 3.5, 6); add(this.ship);
     // lore Ghosts
-    [V(7, 1.3, -40), V(-8, 2.9, -82.5), V(14, 1.3, -147)].forEach((p, i) => addLoreGhost(i, p));
-    this.tt = 0; this.gateT = -1; this.section = 0;
+    [V(7, 1.3, -40), V(-8, 2.9, -82.5), V(14, 1.3, -147 + S)].forEach((p, i) => addLoreGhost(i, p));
+    this.tt = 0; this.gateT = -1; this.section = 0; this.chasmCp = false;
   }
   // THE SHY BRIDGE. The gap is too wide to jump, and a howling headwind shoves anyone airborne back.
   // There *is* a glass bridge, but it only exists while nobody is looking at it: look at a panel and it
   // fades out and stops being solid. Cross it backwards (moonwalk), or staring at the sky.
   buildShyBridge(trim) {
     this.bridge = [];
-    const z0 = -94.7, z1 = -106, n = 9, len = (z0 - z1) / n;
+    const S = this.off, z0 = -94.7 + S, z1 = -106 + S, n = 9, len = (z0 - z1) / n;
     for (let i = 0; i < n; i++) {
       const z = z0 - len * (i + 0.5);
       const m = new THREE.MeshStandardMaterial({ color: 0xbfefff, emissive: 0x5fd8ff, emissiveIntensity: 1.2, metalness: 0.2, roughness: 0.05, transparent: true, opacity: 0, depthWrite: false });
@@ -150,11 +180,11 @@ export class TheApproach extends Encounter {
       this.bridge.push({ mesh, m, box: mesh.userData.box, c: V(0, -0.1, z), solid: false, vis: 0 });
     }
     // two posts where the bridge "used to be", and a sign
-    for (const s of [-1, 1]) { addBox(s * 1.5, 0, -94.4, 0.25, 1.2, 0.25, std(0x3a3f46, { roughness: 0.9 })); addBox(s * 1.5, 1.2, -94.4, 0.35, 0.1, 0.35, trim, { collide: false }); }
+    for (const s of [-1, 1]) { addBox(s * 1.5, 0, -94.4 + S, 0.25, 1.2, 0.25, std(0x3a3f46, { roughness: 0.9 })); addBox(s * 1.5, 1.2, -94.4 + S, 0.35, 0.1, 0.35, trim, { collide: false }); }
     const wood = std(0x4a3828, { roughness: 0.95 });
-    addBox(-2.4, 0, -94.42, 0.12, 1.2, 0.12, wood); addBox(-2.4, 1.15, -94.42, 2.3, 0.85, 0.08, wood, { collide: false });
-    const sign = textSprite('BRIDGE OUT', 0.45, { font: IMPACT, weight: 'normal', color: '#ffcc33' }); sign.position.set(-2.4, 1.72, -94.2); add(sign);
-    const sub = textSprite("it's only there when you're not", 0.2, { color: '#9fe2ff', font: 'Rajdhani, sans-serif' }); sub.position.set(-2.4, 1.36, -94.2); add(sub);
+    addBox(-2.4, 0, -94.42 + S, 0.12, 1.2, 0.12, wood); addBox(-2.4, 1.15, -94.42 + S, 2.3, 0.85, 0.08, wood, { collide: false });
+    const sign = textSprite('BRIDGE OUT', 0.45, { font: IMPACT, weight: 'normal', color: '#ffcc33' }); sign.position.set(-2.4, 1.72, -94.2 + S); add(sign);
+    const sub = textSprite("it's only there when you're not", 0.2, { color: '#9fe2ff', font: 'Rajdhani, sans-serif' }); sub.position.set(-2.4, 1.36, -94.2 + S); add(sub);
     this.tinkT = 0; this.gapFails = 0;
   }
   // is any guardian looking its way? Anything ahead of you (within ~53 degrees either side) counts, even
@@ -191,14 +221,14 @@ export class TheApproach extends Encounter {
       b.mesh.visible = b.vis > 0.01;
     }
     // the headwind: only while you're in the air over the gap
-    const inGap = p.pos.z < -94.7 && p.pos.z > -106 && Math.abs(p.pos.x) < 20;
+    const S = this.off, inGap = p.pos.z < -94.7 + S && p.pos.z > -106 + S && Math.abs(p.pos.x) < 20;
     if (p.alive && inGap && !p.onGround) {
       p.vel.z += 45 * dt; p.vel.x *= 1 - Math.min(1, dt * 1.5);
       if (!this.windSaid) { this.windSaid = true; play('gust'); HUD.ghost('Whoa. That wind is not natural. Nobody is jumping this.'); }
       if (Math.random() < dt * 30) fx.burst(V(p.pos.x + rand(-3, 3), p.pos.y + rand(0, 2.5), p.pos.z - rand(2, 6)), 0xcfe8f4, 1, 2, 0.05, 0.35, 0);
     }
-    if (p.alive && p.onGround && p.pos.z < -106 && !this.shyChecked) { this.shyChecked = true; if (!this.gapFails) unlock('shy'); }
-    if (p.alive && p.onGround && p.pos.z < -106 && !this.crossed && this.gapFails + (this.windSaid ? 1 : 0) > 0) {
+    if (p.alive && p.onGround && p.pos.z < -106 + S && !this.shyChecked) { this.shyChecked = true; if (!this.gapFails) unlock('shy'); }
+    if (p.alive && p.onGround && p.pos.z < -106 + S && !this.crossed && this.gapFails + (this.windSaid ? 1 : 0) > 0) {
       this.crossed = true;
       HUD.ghost(pick(['...Did you just moonwalk across an invisible bridge? I am not putting that in the report.', 'You crossed it. Do not tell anyone how. They will not believe you.']));
     }
@@ -226,9 +256,10 @@ export class TheApproach extends Encounter {
     const put = (T, x, z, group) => { const e = spawnEnemy(T, x, z); e.leash = 32; if (group) group.push(e); return e; };
     put(Doge, -2, -28); put(Doge, 2, -30); put(Stonks, 0, -38);
     put(Doge, -2, -50); put(Doge, 1, -52); put(Doge, 3, -49);
-    put(MoaiKnight, 0, -138, this.plazaGroup); put(Stonks, -8, -130, this.plazaGroup); put(Stonks, 8, -130, this.plazaGroup);
-    put(Doge, -4, -120, this.plazaGroup); put(Doge, 4, -121, this.plazaGroup);
-    const nyan = spawnEnemy(Nyan, 0, -132, 6); nyan.leash = 32; this.plazaGroup.push(nyan);
+    const S = this.off;
+    put(MoaiKnight, 0, -138 + S, this.plazaGroup); put(Stonks, -8, -130 + S, this.plazaGroup); put(Stonks, 8, -130 + S, this.plazaGroup);
+    put(Doge, -4, -120 + S, this.plazaGroup); put(Doge, 4, -121 + S, this.plazaGroup);
+    const nyan = spawnEnemy(Nyan, 0, -132 + S, 6); nyan.leash = 32; this.plazaGroup.push(nyan);
     if (!G.introsSeen.has('approach')) { G.introsSeen.add('approach'); this.ev('arrive'); }
     else this.shipLeaveT = 0;
     after(0.5, () => this.ghost('We are here, Guardian. The Vault of Cringe. Every cursed thing the internet ever made ends up behind that door.'));
@@ -298,9 +329,10 @@ export class TheApproach extends Encounter {
       }
     }
     // missed a jump? your Ghost catches you and puts you back on the last platform you stood on
-    if (p.alive && p.pos.y < -5 && p.pos.z < -60 && p.pos.z > -108) {
+    const S = this.off;
+    if (p.alive && p.pos.y < -5 && p.pos.z < -60 && p.pos.z > -108 + S) {
       const b = this.lastPlat?.box, back = b ? V((b.min.x + b.max.x) / 2, b.max.y + 0.05, (b.min.z + b.max.z) / 2) : V(0, 0.1, -58);
-      const fellInGap = p.pos.z < -94;
+      const fellInGap = p.pos.z < -94 + S;
       p.pos.copy(back); p.vel.set(0, 0, 0);
       fx.spawnFx(p.pos); play('orb');
       this.catches = (this.catches || 0) + 1;
@@ -310,11 +342,23 @@ export class TheApproach extends Encounter {
     // checkpoints: falling just sends you back to the last one you reached
     if (p.alive && p.onGround) {
       if (p.pos.z < -58 && this.spawn.z > -55) { this.spawn.set(0, 0.1, -55); HUD.killfeed('Checkpoint reached: The Chasm'); }
-      if (p.pos.z < -106 && this.spawn.z > -110) { this.spawn.set(0, 0.1, -110); HUD.killfeed('Checkpoint reached: The Plaza'); }
+      const mid = this.gauntlet[17]?.box;
+      if (mid && !this.chasmCp && p.pos.z < mid.max.z && this.lastPlat?.box === mid) { this.chasmCp = true; this.spawn.set((mid.min.x + mid.max.x) / 2, mid.max.y + 0.1, (mid.min.z + mid.max.z) / 2); HUD.killfeed('Checkpoint reached: The Chasm (somehow still)'); }
+      if (p.pos.z < -106 + S && this.spawn.z > -110 + S) { this.spawn.set(0, 0.1, -110 + S); HUD.killfeed('Checkpoint reached: The Plaza'); }
     }
     // waypoint + objective by section
     const z = p.pos.z;
-    G.waypoint = this.gateT >= 0 ? V(0, 3, -152) : z > -60 ? V(0, 1.5, -64) : z > -104 ? V(0, 1.5, -108) : V(0, 4, -150);
+    // in the chasm the marker hops to the next platform ahead of you (there are a lot of them)
+    let next = null;
+    if (z <= -60 && z > -92 + S) for (const pl of this.platforms) if (pl.box.max.z < z - 0.5 && (!next || pl.box.max.z > next.box.max.z) && Math.abs(pl.base.x) < 9) next = pl;
+    G.waypoint = this.gateT >= 0 ? V(0, 3, -152 + S) : z > -60 ? V(0, 1.5, -64) : next ? V((next.box.min.x + next.box.max.x) / 2, next.box.max.y + 1.2, (next.box.min.z + next.box.max.z) / 2) : z > -104 + S ? V(0, 1.5, -108 + S) : V(0, 4, -150 + S);
+    // the Ghost has opinions about the milestones
+    const lp = this.lastPlat;
+    if (p.alive && p.onGround && lp?.note != null && !(this.noted ||= new Set()).has(lp.note)) {
+      this.noted.add(lp.note);
+      const lines = { 4: 'Good. Only... a lot more to go.', 9: 'Guardian, I have been counting. Do not ask me the number.', 15: 'This is the halfway point. I checked. ...I did not check.', 19: 'Who builds a raid entrance like this? Who approved this?', 24: 'I can see the end. I think. It might be fog.', 29: 'The jumps are getting bigger. Double jump. Glide. Pray.', 33: 'The last one. I would cry, but I am a sphere.' };
+      if (lines[lp.note]) HUD.ghost(lines[lp.note]);
+    }
     // the ship heads home once you're on your way
     if (this.shipLeaveT != null) {
       this.shipLeaveT += dt;
@@ -335,7 +379,8 @@ export class TheApproach extends Encounter {
     this.t += dt;
     if (this.done) return;
     const p = G.player;
-    const sec = this.gateT >= 0 ? 3 : this.plazaGroup.every((e) => !e.alive) ? 2 : players().some((q) => q.pos.z < -104) ? 2 : players().some((q) => q.pos.z < -58) ? 1 : 0;
+    const S = this.off;
+    const sec = this.gateT >= 0 ? 3 : this.plazaGroup.every((e) => !e.alive) ? 2 : players().some((q) => q.pos.z < -104 + S) ? 2 : players().some((q) => q.pos.z < -58) ? 1 : 0;
     const texts = ['Find the entrance to the Vault.', 'Cross the chasm.', 'Clear the plaza.', 'The Vault is open. Enter.'];
     const plazaLeft = this.plazaGroup.filter((e) => e.alive).length;
     HUD.objective(null, sec === 2 && plazaLeft ? `${texts[2]}\nGuardians remaining: ${plazaLeft}` : texts[sec]);
@@ -343,17 +388,23 @@ export class TheApproach extends Encounter {
       this.openGate();
       this.ghost('That is the door. Guardian... it is opening. Of course it is opening. Nothing good ever stays closed.');
     }
-    if (this.gateT >= 2.5 && players().some((q) => q.alive && q.pos.z < -153)) this.complete();
-    if (p.alive && p.pos.z < -100 && !this.plazaWarned) { this.plazaWarned = true; this.ghost('Hostiles in the plaza. They are guarding the door.'); }
+    if (this.gateT >= 2.5 && players().some((q) => q.alive && q.pos.z < -153 + S)) this.complete();
+    if (p.alive && p.pos.z < -100 + S && !this.plazaWarned) { this.plazaWarned = true; this.ghost('Hostiles in the plaza. They are guarding the door.'); }
   }
   openGate(fromNet = false) {
     if (this.gateT >= 0) return;
     this.gateT = 0;
     removeCollider(this.door.userData.box);
-    if (!fromNet) { playAt(V(0, 6, -150), 'rumble', 3.5); playAt(V(0, 6, -150), 'vineBoom', 0.5); }
-    else local(() => playAt(V(0, 6, -150), 'rumble', 3.5));
+    const g = V(0, 6, -150 + this.off);
+    if (!fromNet) { playAt(g, 'rumble', 3.5); playAt(g, 'vineBoom', 0.5); }
+    else local(() => playAt(g, 'rumble', 3.5));
   }
   cleanup() { G.waypoint = null; document.getElementById('lore')?.classList.add('hidden'); }
+}
+
+// a tiny seeded RNG (mulberry32) so the gauntlet is the same on every machine
+function seeded(a) {
+  return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
 // rows of emoji runes carved on the door

@@ -212,6 +212,13 @@ export function pointInWorld(p) {
   return false;
 }
 
+// Highest floor top under (x, z) at or below fromY, or -Infinity over a drop.
+export function floorAt(x, z, fromY) {
+  let best = -Infinity;
+  for (const b of G.colliders) if (x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z && b.max.y <= fromY && b.max.y > best) best = b.max.y;
+  return best;
+}
+
 // Highest floor top below a point (for spawning things on the ground).
 export function groundY(x, z, fromY = 50) {
   let best = -Infinity;

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { G, rand, pick, after, clamp, damp, dampAngle, distXZ, distToSegment, nearestPlayer, hurtPlayer, playerById, players, local, ELEMENTS, ELEMENT_KEYS, modOn } from './game.js';
 import * as fx from './fx.js';
 import { play, playAt } from './audio.js';
-import { moveCollide, pointInWorld, trimShadows } from './world.js';
+import { moveCollide, pointInWorld, trimShadows, floorAt } from './world.js';
 import { los, Projectile, Pickup, raycast, Shockwave } from './combat.js';
 import { HUD } from './hud.js';
 import { textSprite } from './textures.js';
@@ -17,6 +17,7 @@ const barMinorMat = new THREE.MeshBasicMaterial({ color: 0xff4a4a, depthTest: fa
 const barMajorMat = new THREE.MeshBasicMaterial({ color: 0xffb21e, depthTest: false });
 const barImmuneMat = new THREE.MeshBasicMaterial({ color: 0x9a9a9a, depthTest: false });
 const _t = new THREE.Vector3(), _t2 = new THREE.Vector3(), _prev = new THREE.Vector3();
+const r0Ground = (e) => e.onGround !== false && e.vel.y <= 0.5; // standing (not mid-jump)
 const r2 = (n) => Math.round(n * 100) / 100;
 
 // ---- elemental shields: a fresnel bubble with a hex shimmer that flares when hit ----
@@ -95,6 +96,7 @@ export class Enemy {
     const mine = !info.from; // damage numbers only for your own shots, like the real game
     if (this.immune || this.untargetable) { if (mine) fx.dmgNumber(this.top(_t), 'IMMUNE', 'immune'); return 0; }
     if (mine && modOn('glass')) dmg *= 1.5;
+    this.lastHitT = G.time;
     if (info.weapon) { this.lastWeapon = info.weapon; if (mine) G.player?.perks?.noteHit(info.weapon); }
     if (this.champ) { dmg = champHit(this, dmg, info, mine, this.top(_t)); if (dmg <= 0) return 0; }
     if (this.shieldHp > 0) return this.hitShield(dmg, info, mine);
@@ -365,6 +367,18 @@ export class Enemy {
   }
 
   // --- helpers ---
+  // Flyers don't collide, so an orbit around the player would happily pass through walls and out of the arena.
+  // This shrinks the orbit (k) while the spot it wants isn't in plain view of the player, and lets it grow back after.
+  fitOrbit(dt, p, tx, ty, tz) {
+    this.orbitK ??= 1; this.fitT = (this.fitT ?? 0) - dt;
+    if (this.fitT <= 0) {
+      this.fitT = 0.3;
+      const eye = _t2.set(p.pos.x, p.pos.y + 1.5, p.pos.z), k = Math.min(1, this.orbitK * 1.15);
+      const q = _prev.set(p.pos.x + (tx - p.pos.x) * k, ty, p.pos.z + (tz - p.pos.z) * k);
+      if (los(eye, q) && !pointInWorld(q)) this.orbitK = k; else this.orbitK = Math.max(0.2, this.orbitK * 0.7);
+    }
+    return this.orbitK;
+  }
   steer(tx, tz, speed, dt, { stopDist = 0, accel = 8 } = {}) {
     let dx = tx - this.pos.x, dz = tz - this.pos.z;
     const d = Math.hypot(dx, dz);
@@ -394,8 +408,26 @@ export class Enemy {
   physics(dt) {
     if (this.flying) { this.pos.addScaledVector(this.vel, dt); return; }
     this.vel.y -= 25 * dt;
+    // ledges: walking enemies stop at the edge of a drop instead of following you off it
+    // (getting knocked off is still fair game: that skips the check for a moment after a hit)
+    if (this.onGround && !this.ledgeOk && G.time - (this.lastHitT ?? -9) > 0.8) {
+      const hs = Math.hypot(this.vel.x, this.vel.z);
+      if (hs > 0.3) {
+        const look = this.radius + 0.35 + hs * 0.12, nx = this.pos.x + this.vel.x / hs * look, nz = this.pos.z + this.vel.z / hs * look;
+        if (floorAt(nx, nz, this.pos.y + 0.6) < this.pos.y - 2.2) {
+          this.vel.x = 0; this.vel.z = 0;
+          if (!(this.detourT > 0)) { this.detourT = rand(0.5, 1); this.detourSign = Math.random() < 0.5 ? 1 : -1; }
+        }
+      }
+    }
     const r = moveCollide(this.pos, this.vel, dt, this.radius, this.height);
     this.onGround = r.ground;
+    // remember solid footing; anything that drops way below it without being hit gets put back
+    if (r.ground) { (this.safePos ||= new THREE.Vector3()).copy(this.pos); }
+    else if (this.safePos && this.pos.y < this.safePos.y - 10 && G.time - (this.lastHitT ?? -9) > 2.5 && !this.ledgeOk) {
+      this.pos.copy(this.safePos); this.vel.set(0, 0, 0);
+      fx.burst(this.center(_t), 0xffffff, 10, 3, 0.1, 0.4);
+    }
     if (r.wall && r.ground) {
       if (Math.random() < 0.08) this.vel.y = 9;
       if (!(this.detourT > 0)) { this.detourT = rand(0.6, 1.2); this.detourSign = Math.random() < 0.5 ? 1 : -1; }
@@ -599,7 +631,8 @@ export class Nyan extends Enemy {
   think(dt) {
     const p = this.tgt();
     this.ang += dt * 0.6 * this.dir;
-    const tx = p.pos.x + Math.cos(this.ang) * this.orbitR, tz = p.pos.z + Math.sin(this.ang) * this.orbitR, ty = p.pos.y + this.alt;
+    let tx = p.pos.x + Math.cos(this.ang) * this.orbitR, tz = p.pos.z + Math.sin(this.ang) * this.orbitR, ty = p.pos.y + this.alt;
+    const ok = this.fitOrbit(dt, p, tx, ty, tz); tx = p.pos.x + (tx - p.pos.x) * ok; tz = p.pos.z + (tz - p.pos.z) * ok;
     _t.set(tx - this.pos.x, ty - this.pos.y, tz - this.pos.z);
     const len = _t.length();
     if (len > 0.01) _t.multiplyScalar(Math.min(this.speed, len * 1.5) / len);
@@ -781,8 +814,14 @@ export class MoaiKnight extends Enemy {
       this.chargeT -= dt;
       this.vel.x = this.chargeDir.x * 15; this.vel.z = this.chargeDir.z * 15;
       this.yaw = Math.atan2(this.chargeDir.x, this.chargeDir.z);
+      // skid to a stop at the edge of a drop rather than charging into the void
+      if (r0Ground(this) && floorAt(this.pos.x + this.chargeDir.x * (this.radius + 1.2), this.pos.z + this.chargeDir.z * (this.radius + 1.2), this.pos.y + 0.6) < this.pos.y - 2.2) {
+        this.chargeState = null; this.vel.x = 0; this.vel.z = 0;
+        fx.floatText(this.top(_t).clone(), '!?', { height: 0.6, color: '#ffffff' });
+        return true;
+      }
       const r = moveCollide(this.pos, this.vel, dt, this.radius, this.height);
-      this.vel.y = r.ground ? 0 : this.vel.y - 25 * dt;
+      this.vel.y = r.ground ? 0 : this.vel.y - 25 * dt; this.onGround = r.ground;
       this.stepAcc = (this.stepAcc || 0) + dt * 15;
       for (const q of [G.player, ...G.avatars.values()]) {
         if (!q?.alive || this.hitThisCharge) continue;
@@ -868,8 +907,9 @@ export class Wizard extends Enemy {
     this.blinkCd -= dt;
     if (this.blinkDmg > 110 && this.blinkCd <= 0) { this.blinkDmg = 0; this.blinkCd = 4; this.blink(p); }
     this.wander += dt * 0.3;
-    const tx = p.pos.x + Math.cos(this.wander) * 16, tz = p.pos.z + Math.sin(this.wander) * 16;
-    _t.set(tx - this.pos.x, (p.pos.y + 2.5 + Math.sin(this.t * 2) * 0.6) - this.pos.y, tz - this.pos.z);
+    const ty = p.pos.y + 2.5 + Math.sin(this.t * 2) * 0.6, ok = this.fitOrbit(dt, p, p.pos.x + Math.cos(this.wander) * 16, ty, p.pos.z + Math.sin(this.wander) * 16);
+    const tx = p.pos.x + Math.cos(this.wander) * 16 * ok, tz = p.pos.z + Math.sin(this.wander) * 16 * ok;
+    _t.set(tx - this.pos.x, ty - this.pos.y, tz - this.pos.z);
     const len = _t.length();
     if (len > 0.01) _t.multiplyScalar(Math.min(this.speed, len) / len);
     this.vel.lerp(_t, 1 - Math.exp(-2 * dt));

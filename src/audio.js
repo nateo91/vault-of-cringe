@@ -265,6 +265,9 @@ export const sfxs = {
   hcOpen() { noise({ dur: 0.06, freq: 3000, type: 'bandpass', q: 6, gain: 0.4 }); tone({ type: 'triangle', freq: 900, freqEnd: 600, dur: 0.08, gain: 0.08 }); },
   hcClose() { noise({ dur: 0.05, freq: 2200, type: 'bandpass', q: 5, gain: 0.5 }); tone({ type: 'triangle', freq: 500, dur: 0.05, gain: 0.1 }); noise({ dur: 0.05, freq: 3500, type: 'bandpass', q: 8, gain: 0.3, delay: 0.12 }); },
   rlLoad() { noise({ dur: 0.18, freq: 600, freqEnd: 1600, type: 'bandpass', q: 2, gain: 0.5 }); tone({ type: 'square', freq: 130, dur: 0.06, gain: 0.15, delay: 0.2 }); },
+  magOut() { noise({ dur: 0.04, freq: 2600, type: 'bandpass', q: 6, gain: 0.35 }); noise({ dur: 0.07, freq: 900, type: 'bandpass', q: 3, gain: 0.25, delay: 0.04 }); },
+  magIn() { noise({ dur: 0.05, freq: 1500, type: 'bandpass', q: 4, gain: 0.5 }); tone({ type: 'triangle', freq: 260, dur: 0.06, gain: 0.12 }); noise({ dur: 0.03, freq: 3800, type: 'bandpass', q: 8, gain: 0.3, delay: 0.05 }); },
+  rack() { noise({ dur: 0.06, freq: 2000, freqEnd: 1200, type: 'bandpass', q: 4, gain: 0.45 }); noise({ dur: 0.05, freq: 3200, type: 'bandpass', q: 6, gain: 0.45, delay: 0.11 }); tone({ type: 'triangle', freq: 700, dur: 0.04, gain: 0.08, delay: 0.11 }); },
   clink() { tone({ type: 'triangle', freq: 2400 + Math.random() * 1200, dur: 0.06, gain: 0.05 }); },
   // footsteps by floor: stone scuffs, metal clanks, wood knocks, tile clicks (alternating feet, slightly panned)
   step(surface = 'stone', side = 1) {

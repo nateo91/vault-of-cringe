@@ -429,7 +429,14 @@ export class Player {
     if (down('KeyA') || down('ArrowLeft')) mx -= 1;
     const len = Math.hypot(mx, mz) || 1;
     this.ads = Input.right && this.alive && this.reloadKind !== 'hc' && !this.carry;
-    this.sprinting = (down('ShiftLeft') || down('ShiftRight')) && mz > 0 && !this.ads && !Input.left && this.slideT <= 0;
+    // sprint: Shift toggles it on, and it stays on until you stop pushing forward, aim or shoot (or hold it, in Settings)
+    const shift = down('ShiftLeft') || down('ShiftRight');
+    if (G.settings.sprintHold) this.sprintOn = shift;
+    else {
+      if (hit('ShiftLeft') || hit('ShiftRight')) this.sprintOn = true;
+      if (mz <= 0 || this.ads || Input.left || !this.alive || this.carry) this.sprintOn = false;
+    }
+    this.sprinting = !!this.sprintOn && mz > 0 && !this.ads && !Input.left && this.slideT <= 0;
     // slide: crouch while sprinting
     this.slideCd -= dt;
     if ((hit('KeyC') || hit('ControlLeft')) && this.sprinting && this.onGround && this.slideCd <= 0) {
@@ -766,12 +773,36 @@ export class Player {
     fx.casing(p, _r.clone().multiplyScalar(rand(2, 3.2)).add(new THREE.Vector3(0, rand(1.5, 2.5), 0)), color);
   }
 
+  // the spent mag leaves the gun and tumbles out of view (in viewmodel space, so it falls past the camera)
+  dropMag() {
+    const m = this.rig?.parts.mag; if (!m) return;
+    const c = m.clone(); c.visible = true;
+    m.updateWorldMatrix(true, false);
+    m.matrixWorld.decompose(c.position, c.quaternion, c.scale);
+    this.vm.worldToLocal(c.position);
+    c.quaternion.premultiply(this.vm.getWorldQuaternion(new THREE.Quaternion()).invert());
+    c.scale.divideScalar(VM_SCALE);
+    this.vm.add(c);
+    (this.droppedMags ||= []).push({ m: c, v: new THREE.Vector3(rand(-0.2, 0.1), -0.4, rand(0, 0.3)), spin: new THREE.Vector3(rand(-6, 6), rand(-3, 3), rand(-8, -3)), t: 0 });
+  }
+  updateDroppedMags(dt) {
+    if (!this.droppedMags?.length) return;
+    for (let i = this.droppedMags.length - 1; i >= 0; i--) {
+      const d = this.droppedMags[i];
+      d.t += dt; d.v.y -= 9 * dt;
+      d.m.position.addScaledVector(d.v, dt);
+      d.m.rotation.x += d.spin.x * dt; d.m.rotation.y += d.spin.y * dt; d.m.rotation.z += d.spin.z * dt;
+      if (d.t > 0.9) { this.vm.remove(d.m); this.droppedMags.splice(i, 1); }
+    }
+  }
+
   // ---------------------------------------------------------------- reloading
   startReload() {
     const w = this.wpn[this.cur], d = w.def;
     if (this.reloadT > 0 || w.mag >= d.mag || this.superActive === 'gg') return;
     if (d.ammo !== 'primary' && w.reserve <= 0) return;
     this.reloadKind = ['hc', 'sg', 'rl', 'gl'].includes(d.model) ? d.model : 'mag'; this.reloadFx = {};
+    this.reloadEmpty = w.mag <= 0 && this.reloadKind === 'mag' && !!this.rig?.parts.mag;
     this.reloadT = this.reloadMax = (d.kind === 'pellets' ? d.shellTime + 0.15 : d.reload) * this.perks.reloadMult(w);
     play('click');
   }
@@ -786,9 +817,13 @@ export class Player {
       if (u > 0.78 && !f.close) { f.close = true; play('hcClose'); }
     } else if (d.id === 'rl') {
       if (u > 0.55 && !f.load) { f.load = true; play('rlLoad'); }
+    } else if (this.rig?.parts.mag && this.reloadKind === 'mag') {
+      if (u > 0.3 && !f.out) { f.out = true; play('magOut'); this.dropMag(); }
+      if (u > 0.64 && !f.in) { f.in = true; play('magIn'); this.kickRV.x -= 5; this.kickPV.y += 0.5; }
+      if (this.reloadEmpty && u > 0.82 && !f.rack) { f.rack = true; play('rack'); this.kickRV.z += 4; }
     } else {
       if (u > 0.25 && !f.out) { f.out = true; play('hcOpen'); }
-      if (u > 0.7 && !f.in) { f.in = true; play('hcClose'); }
+      if (u > 0.7 && !f.in) { f.in = true; play('hcClose'); this.kickRV.x -= 3; }
     }
     if (this.reloadT > 0) return;
     if (d.kind === 'pellets') {
@@ -852,25 +887,57 @@ export class Player {
         const open = u < 0.22 ? 0 : u < 0.32 ? ease((u - 0.22) / 0.1) : u < 0.75 ? 1 : u < 0.82 ? 1 - ease((u - 0.75) / 0.07) : 0;
         if (r.parts.crane) r.parts.crane.rotation.z = open * 1.3;
         if (r.parts.cyl && u > 0.75) r.parts.cyl.rotation.y += dt * 22;
-        if (u > 0.35 && u < 0.75) left.y = -0.05 + Math.sin(((u - 0.35) / 0.4) * Math.PI) * 0.06;
+        // off hand: down for a speedloader, up into the open cylinder, push, back to the grip
+        const fetch = u < 0.3 ? 0 : u < 0.42 ? ease((u - 0.3) / 0.12) : u < 0.5 ? 1 : u < 0.62 ? 1 - ease((u - 0.5) / 0.12) : 0;
+        const feed = u < 0.5 ? 0 : u < 0.62 ? ease((u - 0.5) / 0.12) : u < 0.74 ? 1 : u < 0.84 ? 1 - ease((u - 0.74) / 0.1) : 0;
+        left.set(-fetch * 0.05 + feed * 0.07, -fetch * 0.3 + feed * 0.1, fetch * 0.12 - feed * 0.04);
+        if (u > 0.66 && u < 0.72) left.z -= Math.sin(((u - 0.66) / 0.06) * Math.PI) * 0.03; // the push
       } else if (rk === 'sg') {
-        rz += 0.45; rx += 0.12; px -= 0.03;
-        left.set(0, -0.06 + Math.sin(u * Math.PI) * 0.05, 0.08);
+        rz += 0.5; rx += 0.14; px -= 0.03;
+        const up = u < 0.55 ? ease(u / 0.55) : 1, push = u > 0.55 ? Math.sin(((u - 0.55) / 0.45) * Math.PI) : 0;
+        left.set(-0.01, -0.16 + up * 0.12, 0.2 - up * 0.08 - push * 0.06);
       } else if (rk === 'rl') {
         const dip = Math.sin(u * Math.PI);
         rx -= dip * 0.5; py -= dip * 0.12; rz += dip * 0.3;
         left.set(0, -dip * 0.08, dip * 0.1);
+      } else if ((rk === 'mag' || rk === 'gl') && r.parts.mag) {
+        // tilt the gun, off hand to the mag, the old one drops away, a fresh one comes up and gets slapped in,
+        // and (if you ran it dry) a rack of the charging handle before the gun comes back level
+        const end = this.reloadEmpty ? 0.9 : 0.8;
+        const tilt = u < 0.14 ? ease(u / 0.14) : u > end ? ease((1 - u) / (1 - end)) : 1;
+        rz += tilt * 0.55; rx += tilt * 0.18; px -= tilt * 0.035; py += tilt * 0.01;
+        const mag = r.parts.mag, ud = mag.userData;
+        ud.y0 ??= mag.position.y; ud.z0 ??= mag.position.z;
+        const lh = LEFT_HAND[d.model] || [-0.01, -0.13, -0.2];
+        const toMag = [-lh[0], ud.y0 - 0.04 - lh[1], ud.z0 - lh[2]]; // from the foregrip to the bottom of the mag
+        const k = (a0, a1) => (u < a0 ? 0 : u > a1 ? 1 : ease((u - a0) / (a1 - a0)));
+        const reach = k(0.12, 0.26) * (1 - k(0.64, 0.76));       // hand on the mag
+        const fetch = k(0.32, 0.44) * (1 - k(0.5, 0.64));        // hand down below the screen for a fresh one
+        left.set(toMag[0] * reach - fetch * 0.04, toMag[1] * reach - fetch * 0.3, toMag[2] * reach + fetch * 0.1);
+        // the mag: pulled out an inch (0.26-0.3), gone, then rides up in the hand and seats (0.58-0.64)
+        ud.x0 ??= mag.position.x;
+        const f = u >= 0.5 ? fetch : 0, pulled = u < 0.3 ? k(0.26, 0.3) * 0.05 : 0;
+        mag.visible = !(u >= 0.3 && u < 0.5);
+        mag.position.set(ud.x0 - f * 0.04, ud.y0 - pulled - f * 0.3, ud.z0 + f * 0.1);
+        if (u > 0.64 && u < 0.7) rx -= Math.sin(((u - 0.64) / 0.06) * Math.PI) * 0.1; // the slap
+        // the rack: off hand up to the side of the receiver, a sharp pull back, let go
+        if (this.reloadEmpty) {
+          const rk1 = k(0.74, 0.8) * (1 - k(0.86, 0.92)), pull = u > 0.8 && u < 0.86 ? Math.sin(((u - 0.8) / 0.06) * Math.PI) : 0;
+          left.x += rk1 * 0.07; left.y += rk1 * 0.16; left.z += rk1 * 0.12 + pull * 0.07;
+          rz += rk1 * 0.12; ry -= rk1 * 0.12;
+        }
+        if (r.parts.drum) r.parts.drum.rotation.y += dt * 9 * tilt;
       } else if (rk === 'mag' || rk === 'gl') {
-        // tilt, drop the mag, slap a new one in
+        // no magazine to swap (bows, fusions, traces): a quick tilt and a slap on the battery
         const tilt = u < 0.15 ? ease(u / 0.15) : u > 0.85 ? ease((1 - u) / 0.15) : 1;
         rz += tilt * 0.5; rx += tilt * 0.15; px -= tilt * 0.03;
         const magOut = u < 0.25 ? 0 : u < 0.4 ? ease((u - 0.25) / 0.15) : u < 0.62 ? 1 : u < 0.72 ? 1 - ease((u - 0.62) / 0.1) : 0;
-        if (r.parts.mag) { r.parts.mag.userData.y0 ??= r.parts.mag.position.y; r.parts.mag.position.y = r.parts.mag.userData.y0 - magOut * 0.25; r.parts.mag.visible = !(u > 0.38 && u < 0.5); }
         if (r.parts.drum) r.parts.drum.rotation.y += dt * 9 * tilt;
         left.set(0, -magOut * 0.12, magOut * 0.15);
         if (u > 0.72 && u < 0.8) { rx -= 0.08; } // the slap
       }
-    } else if (r.parts.mag?.userData.y0 != null) { r.parts.mag.position.y = r.parts.mag.userData.y0; r.parts.mag.visible = true; }
+    } else if (r.parts.mag?.userData.y0 != null) { const ud = r.parts.mag.userData; r.parts.mag.position.set(ud.x0 ?? r.parts.mag.position.x, ud.y0, ud.z0 ?? r.parts.mag.position.z); r.parts.mag.visible = true; }
+    this.updateDroppedMags(dt);
     if (r.parts.charge) {
       const c = this.chargeT / (d.charge || 1);
       r.parts.charge.scale.setScalar(1 + c * 0.7); r.parts.charge.material.emissiveIntensity = 0.8 + c * 1.6;

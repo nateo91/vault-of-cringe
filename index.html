@@ -127,8 +127,8 @@
     <button id="triBtn" class="btn ghostbtn inline">🎖️ TRIUMPHS</button>
     <button id="reportBtn" class="btn ghostbtn inline">📊 RAID REPORT</button>
     <div class="controls">
-      <b>WASD</b> move · <b>SHIFT</b> sprint · <b>SPACE</b> jump (again in air!) · <b>MOUSE</b> shoot / aim ·
-      <b>SHIFT+C</b> slide · <b>R</b> reload · <b>T</b> inspect · <b>TAB</b> armory · <b>1 2 3</b> / wheel swap · <b>Q</b> grenade · <b>V</b> melee · <b>F</b> super · <b>B N J K</b> emotes · <b>P</b> photo mode · <b>ESC</b> pause<br>
+      <b>WASD</b> move · <b>SHIFT</b> sprint (tap) · <b>SPACE</b> jump (again in air!) · <b>MOUSE</b> shoot / aim ·
+      <b>C</b> slide (while sprinting) · <b>R</b> reload · <b>T</b> inspect · <b>TAB</b> armory · <b>1 2 3</b> / wheel swap · <b>Q</b> grenade · <b>V</b> melee · <b>F</b> super · <b>B N J K</b> emotes · <b>P</b> photo mode · <b>ESC</b> pause<br>
       🎮 <b>Controller</b>: just press a button. <b>RT</b> fire · <b>LT</b> aim · <b>A</b> jump · <b>B</b> slide · <b>X</b> reload (hold: interact) · <b>Y</b> swap · <b>LB</b> grenade · <b>RB</b> melee · <b>LB+RB</b> super · <b>L3</b> sprint · <b>D-pad</b> emotes · <b>START</b> pause
     </div>
     <div class="settings-mini">
@@ -136,6 +136,7 @@
       <label>FOV <input type="range" class="fov" min="60" max="100" step="1" value="74"></label>
       <label>Volume <input type="range" class="vol" min="0" max="1" step="0.05" value="0.6"></label>
       <label><input type="checkbox" class="voice" checked> Ghost voice (TTS)</label>
+      <label><input type="checkbox" class="sprinthold"> Hold to sprint (off: Shift toggles)</label>
       <label><input type="checkbox" class="padon" checked> Controller</label>
       <label><input type="checkbox" class="music" checked> Music</label>
       <label><input type="checkbox" class="aimassist" checked> Aim assist</label>
@@ -199,6 +200,7 @@
       <label>FOV <input type="range" class="fov" min="60" max="100" step="1" value="74"></label>
       <label>Volume <input type="range" class="vol" min="0" max="1" step="0.05" value="0.6"></label>
       <label><input type="checkbox" class="voice" checked> Ghost voice (TTS)</label>
+      <label><input type="checkbox" class="sprinthold"> Hold to sprint (off: Shift toggles)</label>
       <label><input type="checkbox" class="padon" checked> Controller</label>
       <label><input type="checkbox" class="music" checked> Music</label>
       <label><input type="checkbox" class="aimassist" checked> Aim assist</label>
