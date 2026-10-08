@@ -166,15 +166,15 @@ Open the **Armory** (Tab mid-raid, or from the main menu) to swap guns. A turnta
 
 | Slot | Weapons |
 |---|---|
-| Kinetic | Ace of Spuds (exotic hand cannon), Grindset (auto), Stonks Pulse (3-burst pulse), The Sus-pect (scout), and a raid exotic you have to earn |
-| Energy | The Chaperwoof (shotgun), Big Brain (sniper), No Scope 360 (exotic sniper), Bruh Fusion (fusion) |
-| Power | Gjallarhorn't (exotic rocket), Vine Boom Deluxe (machine gun), Bonk Launcher (grenade launcher) |
+| Kinetic | Ace of Spuds (exotic hand cannon), Grindset (auto), Stonks Pulse (3-burst pulse), The Sus-pect (scout), Skibidi Spray (SMG), Cupid's Ratio (combat bow: hold to draw, release at full draw), and a raid exotic you have to earn |
+| Energy | The Chaperwoof (shotgun), Big Brain (sniper), No Scope 360 (exotic sniper), Bruh Fusion (fusion), Pocket Pickle (sidearm), Laser Pointer (exotic trace rifle: a beam that ramps up and distracts minors) |
+| Power | Gjallarhorn't (exotic rocket), Vine Boom Deluxe (machine gun), Bonk Launcher (grenade launcher), Main Character Beam (linear fusion: charge, then one rail shot) |
 
 The perk pool has D2 classics and meme perks:
 
 - **Classics:** Outlaw, Rampage, Kill Clip, Firefly, Subsistence, Feeding Frenzy, Triple Tap, Vorpal, Demolitionist, Auto-Loading Holster, Overflow, Snapshot, Opening Shot, Tracking Module, Cluster Bombs, Spike Grenades.
 - **Memes:** Stonks, Ratio, Vine Boom, Touch Grass, Rizz.
-- **Exotic signature perks:** Wolfpack Rounds, Memento Potato, 360 No Scope.
+- **Exotic signature perks:** Wolfpack Rounds, Memento Potato, 360 No Scope, Ooh Shiny, Touch of Grass.
 
 ## Triumphs, secrets and the weekly challenge
 

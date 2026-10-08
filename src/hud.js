@@ -171,8 +171,8 @@ export const HUD = {
     } else if (!els.wp.classList.contains('hidden')) els.wp.classList.add('hidden');
     // crosshair: per-weapon style, spread from movement + recent shots
     const cd = p.wpn[p.cur].def;
-    const wid = p.superActive === 'gg' ? 'gg' : { single: 'hc', sniper: 'hc', auto: 'ar', burst: 'ar', pellets: 'sg', fusion: 'sg', rocket: 'rl', gl: 'rl' }[cd.kind];
-    const base = p.superActive === 'gg' ? 9 : { single: 7, auto: 9, burst: 8, sniper: 20, pellets: 24, fusion: 18 + (1 - Math.min(1, p.chargeT / (cd.charge || 1))) * 10, rocket: 9, gl: 10 }[cd.kind];
+    const wid = p.superActive === 'gg' ? 'gg' : { single: 'hc', sniper: 'hc', auto: 'ar', burst: 'ar', pellets: 'sg', fusion: 'sg', rocket: 'rl', gl: 'rl', bow: 'hc', trace: 'ar', linear: 'hc' }[cd.kind];
+    const base = p.superActive === 'gg' ? 9 : { single: 7, auto: 9, burst: 8, sniper: 20, pellets: 24, fusion: 18 + (1 - Math.min(1, p.chargeT / (cd.charge || 1))) * 10, rocket: 9, gl: 10, bow: 16 - Math.min(1, (p.drawT || 0) / (cd.charge || 1)) * 12, trace: 5, linear: 14 - Math.min(1, p.chargeT / (cd.charge || 1)) * 10 }[cd.kind];
     const move = Math.min(1, Math.hypot(p.vel.x, p.vel.z) / 8) + (p.onGround ? 0 : 0.6);
     const sp = (base + move * 7 + p.bloomK * 14) * (p.ads ? 0.45 : 1);
     const spv = sp.toFixed(1) + 'px';

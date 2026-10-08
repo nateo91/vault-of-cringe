@@ -564,8 +564,29 @@ export class Player {
     const origin = G.camera.position;
     this.checkFriction(origin, this.aimDir(0));
 
-    // fusion rifles charge while you hold the trigger
-    if (d.kind === 'fusion') {
+    // the trace rifle's beam: a solid laser while it's firing (hidden the moment it isn't, whatever you swapped to)
+    if (!this.traceBeam?.m.parent) this.traceBeam = new fxm.Beam(0xff2a3a, 0.04, 0.9);
+    if (d.kind === 'trace' && this.traceHit && G.time - (this.traceAt || -1) < 0.09) {
+      this.traceBeam.set(this.muzzleWorld(), this.traceHit, 0.035 + Math.min(1, (w.traceHeld || 0) / 1.5) * 0.03 + Math.random() * 0.01);
+    } else this.traceBeam.hide();
+    // bows: hold to draw, release to loose. A full draw is the real shot; a quick flick is weak and wide.
+    if (d.kind === 'bow') {
+      const ready = this.switchT <= 0 && this.reloadT <= 0 && w.mag > 0 && this.slideT <= 0.5 && this.superActive !== 'gg';
+      if (Input.left && ready && G.time >= this.nextFire) {
+        if (!this.drawT) play('bowDraw');
+        this.drawT = Math.min(d.charge, (this.drawT || 0) + dt);
+        if (this.drawT >= d.charge && !this.drawFull) { this.drawFull = true; play('click'); } // the "perfect draw" tick
+      } else if (this.drawT > 0) {
+        w.drawK = this.drawT / d.charge; this.drawT = 0; this.drawFull = false;
+        if (ready) this.shoot(w, d);
+      }
+      if (w.mag <= 0 && this.reloadT <= 0) this.startReload();
+      return;
+    }
+    // trace rifles ramp up the longer the beam stays on, and the beam itself is a solid laser while it fires
+    if (d.kind === 'trace') w.traceHeld = Input.left && w.mag > 0 && this.reloadT <= 0 ? (w.traceHeld || 0) + dt : 0;
+    // fusion rifles charge while you hold the trigger (and linear fusions: one precise rail shot)
+    if (d.kind === 'fusion' || d.kind === 'linear') {
       const ready = this.switchT <= 0 && this.reloadT <= 0 && G.time >= this.nextFire && w.mag > 0 && this.slideT <= 0.5 && this.superActive !== 'gg';
       if (Input.left && ready) {
         if (this.chargeT === 0) play('frCharge');
@@ -591,6 +612,7 @@ export class Player {
       for (let i = 0; i < d.burst; i++) after(i * d.burstGap, () => { if (w.mag > 0 && this.alive && this.wpn[this.cur] === w) this.fireRound(w, d); });
       return;
     }
+    if (d.kind === 'linear') { this.fireRound(w, d); G.shake += 0.2; return; }
     if (d.kind === 'fusion') {
       w.mag--; this.perks.onFire(w); G.stats.shots++;
       play('fr');
@@ -607,7 +629,7 @@ export class Player {
     if (!bolt) { w.mag--; this.perks.onFire(w); G.stats.shots++; }
     this.recoilKick(bolt ? [d.kick[0] / 4, d.kick[1] / 3, d.kick[2] / 4] : d.kick);
     this.flashMuzzle(d.kind === 'pellets' ? 1.5 : d.kind === 'rocket' || d.kind === 'gl' ? 1.8 : d.kind === 'sniper' ? 1.6 : d.kind === 'fusion' ? 0.9 : d.kind === 'auto' ? 0.8 : 1);
-    if (!bolt) play(d.sound);
+    if (!bolt && !(d.kind === 'trace' && this.traceSndT)) play(d.sound);
     const muzzle = this.muzzleWorld();
     if (d.kind === 'rocket') {
       const aim = raycast(origin, this.aimDir(0), 200);
@@ -632,6 +654,8 @@ export class Player {
       const airMlg = this.perks.has(w, 'mlg') && !this.onGround;
       let spread = d.spread * (1 + (d.kind === 'auto' ? this.bloomK * 1.4 : 0));
       if (d.kind === 'sniper') spread = this.ads || airMlg ? 0 : d.spread;
+      else if (d.kind === 'bow') spread = w.drawK >= 1 ? (this.ads ? 0 : d.spread) : 0.03 * (1 - w.drawK * 0.6);
+      else if (d.kind === 'trace' || d.kind === 'linear') spread = 0;
       else spread *= this.ads ? (d.pellets ? 0.7 : 0.12) : 1;
       if (airMlg) spread = 0;
       const base = this.magnetize(origin, this.aimDir(0), d);
@@ -640,14 +664,17 @@ export class Player {
       for (let i = 0; i < (d.pellets || 1); i++) {
         const dir = spread > 0 ? jitter(base, spread) : base;
         const h = raycast(origin, dir, d.range);
-        const wide = d.kind === 'sniper' ? 0.05 : d.pellets ? 0.012 : d.kind === 'fusion' ? 0.03 : 0.022;
-        if (!d.pellets || i < 4) fx.tracer(muzzle, h.point, d.color, wide, d.kind === 'sniper' ? 0.18 : 0.05);
+        const wide = d.kind === 'sniper' || d.kind === 'linear' ? 0.05 : d.kind === 'bow' ? 0.03 : d.kind === 'trace' ? 0.035 : d.pellets ? 0.012 : d.kind === 'fusion' ? 0.03 : 0.022;
+        if (d.kind === 'trace') { this.traceHit = h.point.clone(); this.traceAt = G.time; }
+        if (!d.pellets || i < 4) fx.tracer(muzzle, h.point, d.color, wide, d.kind === 'sniper' || d.kind === 'linear' ? 0.22 : d.kind === 'bow' ? 0.12 : d.kind === 'trace' ? 0.06 : 0.05);
         if (i < 3) G.net.playerEv(['shot', v3(muzzle), v3(h.point), d.color, wide, i === 0 && !bolt ? d.sound : 0]);
         if (h.enemy) {
           anyHit = true;
           let dmg = d.dmg;
           if (h.dist > d.falloff[0]) dmg *= 1 - (1 - d.falloff[2]) * clamp((h.dist - d.falloff[0]) / (d.falloff[1] - d.falloff[0]), 0, 1);
           if (h.crit) dmg *= d.crit;
+          if (d.kind === 'bow') dmg *= w.drawK >= 1 ? 1 : 0.3 + 0.4 * w.drawK;
+          if (d.kind === 'trace') dmg *= 1 + Math.min(1, (w.traceHeld || 0) / 1.5);
           const e = hits.get(h.enemy) || { dmg: 0, crit: false, point: h.point };
           e.dmg += dmg; e.crit = e.crit || h.crit; hits.set(h.enemy, e);
         } else if (h.dist < d.range - 0.1) {
@@ -664,6 +691,7 @@ export class Player {
       if (d.kind === 'sniper') G.shake += 0.15;
     }
     if (w.mag === 0 && !bolt && d.kind !== 'fusion') after(0.18, () => this.startReload());
+    if (d.kind === 'trace' && !this.traceSndT) { this.traceSndT = 1; after(0.1, () => (this.traceSndT = 0)); }
   }
   // nearest enemy inside a cone (tracking rockets)
   coneTarget(origin, dir, maxAngle, range) {
@@ -824,6 +852,19 @@ export class Player {
       px += rand(-1, 1) * 0.003 * c; py += rand(-1, 1) * 0.003 * c;
     }
     if (r.parts.drum && this.drumSpin > 0) { this.drumSpin = Math.max(0, this.drumSpin - dt * 4); r.parts.drum.rotation.y += dt * 12 * this.drumSpin; }
+    // the bow: the nock (and the arrow on it) comes back as you draw; the two string halves follow it
+    if (r.parts.nock) {
+      const k = this.wpn[this.cur].def.kind === 'bow' ? Math.min(1, (this.drawT || 0) / (this.wpn[this.cur].def.charge || 1)) : 0;
+      r.parts.nock.position.z = 0.02 + k * 0.17;
+      r.parts.arrow.visible = this.wpn[this.cur].mag > 0 && this.reloadT <= 0;
+      r.parts.strings.forEach((m, i) => {
+        const tip = r.parts.bowTips[i], nz = r.parts.nock.position.z;
+        const dy = -tip.y, dz = nz - tip.z, len = Math.hypot(dy, dz);
+        m.position.set(0, tip.y + dy / 2, tip.z + dz / 2); m.scale.set(1, len, 1); m.rotation.set(Math.atan2(dz, dy), 0, 0);
+      });
+    }
+    // the linear fusion's coils light up as it charges
+    if (r.parts.coils) { const k = Math.min(1, this.chargeT / (this.wpn[this.cur].def.charge || 1)); r.parts.coils.forEach((c, i) => { c.material.emissiveIntensity = 0.8 + k * 3 * (k > i / 3 ? 1 : 0.2); }); }
     // pump action
     if (r.parts.pump) {
       this.pumpT = Math.max(0, this.pumpT - dt);

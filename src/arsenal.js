@@ -18,6 +18,11 @@ export const DEFS = {
   ar: { id: 'ar', model: 'ar', name: 'Grindset', type: 'Auto Rifle', slot: 0, ammo: 'primary', rarity: 'legendary', kind: 'auto', dmg: 13, crit: 1.6, rof: 0.1, mag: 40, reload: 1.9, spread: 0.012, range: 90, falloff: [28, 60, 0.6], color: 0xfff0c0, sound: 'ar', kick: [0.009, 0.007, 0.35], aa: [1.6, 50], zoom: 62, adsZ: -0.42, hip: [0.13, -0.13, -0.32], flavor: 'Rise at 4am. Shoot. Cold shower. Shoot.' },
   pr: { id: 'pr', model: 'pr', name: 'Stonks Pulse', type: 'Pulse Rifle', slot: 0, ammo: 'primary', rarity: 'legendary', kind: 'burst', burst: 3, burstGap: 0.07, dmg: 19, crit: 1.7, rof: 0.42, mag: 36, reload: 2.0, spread: 0.006, range: 100, falloff: [35, 70, 0.6], color: 0x7dff9a, sound: 'pr', kick: [0.012, 0.006, 0.5], aa: [1.8, 60], zoom: 58, adsZ: -0.42, hip: [0.13, -0.13, -0.32], flavor: 'Number go up. Three times. Per trigger pull.' },
   tg: { id: 'tg', model: 'tg', name: 'Touch of Grass', type: 'Scout Rifle', slot: 0, ammo: 'primary', rarity: 'exotic', questOnly: true, kind: 'single', dmg: 44, crit: 1.9, rof: 0.36, mag: 12, reload: 1.9, spread: 0.004, range: 170, falloff: [70, 130, 0.7], color: 0x8dff9a, sound: 'sr', kick: [0.024, 0.008, 0.8], aa: [1.5, 110], zoom: 40, adsZ: -0.38, hip: [0.13, -0.13, -0.32], fixedPerks: ['grassy', 'outlaw'], shader: 'grass', flavor: 'The raid exotic. It was outside the whole time.' },
+  smg: { id: 'smg', model: 'smg', name: 'Skibidi Spray', type: 'Submachine Gun', slot: 0, ammo: 'primary', rarity: 'legendary', kind: 'auto', dmg: 9, crit: 1.5, rof: 0.065, mag: 36, reload: 1.6, spread: 0.022, range: 60, falloff: [16, 36, 0.5], color: 0xc8ff7a, sound: 'smg', kick: [0.006, 0.006, 0.25], aa: [2.0, 40], zoom: 64, adsZ: -0.36, hip: [0.12, -0.12, -0.3], flavor: 'Brrrrrrrr. Dop dop. Yes yes.' },
+  bw: { id: 'bw', model: 'bow', name: "Cupid's Ratio", type: 'Combat Bow', slot: 0, ammo: 'primary', rarity: 'legendary', kind: 'bow', dmg: 92, crit: 2.0, charge: 0.62, rof: 0.22, mag: 20, reload: 1.0, spread: 0.003, range: 150, falloff: [60, 120, 0.7], color: 0xff7aa8, sound: 'bow', kick: [0.028, 0.004, 0.6], aa: [1.6, 90], zoom: 46, adsZ: -0.34, hip: [0.1, -0.06, -0.38], flavor: 'Every arrow is a reply. Every crit is a ratio.' },
+  sa: { id: 'sa', model: 'sa', name: 'Pocket Pickle', type: 'Sidearm', slot: 1, ammo: 'primary', rarity: 'legendary', kind: 'single', dmg: 21, crit: 1.6, rof: 0.17, mag: 15, reload: 1.3, spread: 0.012, range: 50, falloff: [14, 30, 0.55], color: 0x9cff6a, sound: 'sa', kick: [0.014, 0.01, 0.6], aa: [2.4, 40], zoom: 66, adsZ: -0.32, hip: [0.11, -0.12, -0.27], flavor: "I turned myself into a pistol. Funniest thing I've ever seen." },
+  tr: { id: 'tr', model: 'tr', name: 'Laser Pointer', type: 'Trace Rifle', slot: 1, ammo: 'special', rarity: 'exotic', kind: 'trace', dmg: 5, crit: 1.5, rof: 0.05, mag: 100, reload: 2.0, spread: 0, range: 60, falloff: [30, 60, 0.6], color: 0xff2a3a, sound: 'tr', kick: [0.0015, 0.001, 0.05], aa: [2.2, 60], zoom: 62, adsZ: -0.36, hip: [0.12, -0.12, -0.32], brick: 30, maxRes: 200, fixedPerks: ['shiny', 'subsistence'], flavor: 'Built for cats. Works on memes. Do not point it at the Moai.' },
+  lf: { id: 'lf', model: 'lf', name: 'Main Character Beam', type: 'Linear Fusion Rifle', slot: 2, ammo: 'heavy', rarity: 'legendary', kind: 'linear', dmg: 300, crit: 2.2, charge: 0.55, rof: 0.9, mag: 3, reload: 2.4, spread: 0, range: 220, falloff: [200, 220, 0.9], color: 0xb98bff, sound: 'lf', kick: [0.05, 0.01, 2.0], aa: [1.0, 150], zoom: 36, adsZ: -0.38, hip: [0.14, -0.15, -0.38], brick: 3, maxRes: 9, flavor: 'Everyone else is an NPC. This proves it.' },
   sr: { id: 'sr', model: 'sr', name: 'The Sus-pect', type: 'Scout Rifle', slot: 0, ammo: 'primary', rarity: 'legendary', kind: 'single', dmg: 46, crit: 1.85, rof: 0.38, mag: 14, reload: 2.0, spread: 0.004, range: 170, falloff: [70, 130, 0.7], color: 0xff8080, sound: 'sr', kick: [0.024, 0.008, 0.8], aa: [1.4, 110], zoom: 40, adsZ: -0.38, hip: [0.13, -0.13, -0.32], flavor: 'Seen venting. Shoots anyway.' },
   sg: { id: 'sg', model: 'sg', name: 'The Chaperwoof', type: 'Shotgun', slot: 1, ammo: 'special', rarity: 'legendary', kind: 'pellets', dmg: 15, pellets: 10, crit: 1.4, rof: 0.85, mag: 5, shellTime: 0.48, spread: 0.065, range: 32, falloff: [10, 26, 0.35], color: 0xa0fff0, sound: 'sg', kick: [0.06, 0.02, 1.6], aa: [3.5, 16], zoom: 64, adsZ: -0.4, hip: [0.12, -0.125, -0.3], brick: 4, maxRes: 25, flavor: 'Who let the dogs out? This did.' },
   sn: { id: 'sn', model: 'sn', name: 'Big Brain', type: 'Sniper Rifle', slot: 1, ammo: 'special', rarity: 'legendary', kind: 'sniper', dmg: 105, crit: 2.6, rof: 0.95, mag: 4, reload: 2.4, spread: 0.06, range: 260, falloff: [220, 260, 1], color: 0xc8e8ff, sound: 'sn', kick: [0.07, 0.012, 1.8], aa: [1.0, 220], zoom: 54, scope: 'sn', adsZ: -0.36, hip: [0.13, -0.14, -0.3], brick: 4, maxRes: 16, flavor: 'Galaxy brain. Galaxy damage.' },
@@ -58,6 +63,7 @@ export const PERKS = {
   wolfpack: { name: 'Wolfpack Rounds', icon: '🐺', col: 'x', desc: 'Rockets split into seeking mini-rockets on impact.' },
   memento: { name: 'Memento Potato', icon: '🥔', col: 'x', desc: 'Reloading after a kill empowers the next 6 shots (+25% damage).' },
   grassy: { name: 'Touch of Grass', icon: '🌱', col: 'x', desc: 'The last 3 rounds in the mag deal +60% damage and grow back by themselves, at 4 health a shot (never lethal). Precision kills touch grass: health and shields back, and a stack of brainrot gone.' },
+  shiny: { name: 'Ooh, Shiny', icon: '🔴', col: 'x', desc: "The beam's damage ramps up the longer you hold it (up to double), and minor memes it touches get distracted and stop for a moment." },
   mlg: { name: '360 No Scope', icon: '🎮', col: 'x', desc: 'Shots fired while airborne are perfectly accurate and deal double damage. Airborne kills: AIRHORN.' },
 };
 
@@ -70,7 +76,7 @@ export function rollPerks(def) {
   return [pick(pool('a')), pick(pool('b'))];
 }
 // every gun's element
-const ELEMENT_OF = { tg: 'arc', hc: 'solar', ar: 'arc', pr: 'void', sr: 'void', sg: 'arc', sn: 'solar', ns: 'arc', fr: 'void', rl: 'solar', mg: 'arc', gl: 'void' };
+const ELEMENT_OF = { smg: 'arc', bw: 'void', sa: 'solar', tr: 'solar', lf: 'void', tg: 'arc', hc: 'solar', ar: 'arc', pr: 'void', sr: 'void', sg: 'arc', sn: 'solar', ns: 'arc', fr: 'void', rl: 'solar', mg: 'arc', gl: 'void' };
 for (const id in DEFS) DEFS[id].element = ELEMENT_OF[id] || 'solar';
 
 export function makeItem(id, perks = null) { return { uid: 'w' + (uidN++).toString(36), id, perks: perks || rollPerks(DEFS[id]), isNew: true }; }
@@ -201,6 +207,7 @@ export class PerkEngine {
     }
   }
   onHit(w, e, crit) {
+    if (this.has(w, 'shiny') && e && e.rank === 'minor' && !(e.shinyAt > G.time)) { e.shinyAt = G.time + 1.2; e.stunT = Math.max(e.stunT || 0, 0.3); if (Math.random() < 0.25) fxm.floatText(e.top(), pick(['ooh', 'shiny', '!?', 'red dot']), { height: 0.35, life: 0.6 }); }
     if (this.has(w, 'stonks')) { w.stonks = Math.min(15, (w.stonks || 0) + 1); w.misses = 0; }
     if (crit && this.has(w, 'ratio') && e) { e.ratioUntil = G.time + 4; if (Math.random() < 0.3) fxm.dmgNumber(e.top(), 'RATIO', 'immune'); }
     if (crit && this.has(w, 'triple_tap')) { w.crits = (w.crits || 0) + 1; if (w.crits % 3 === 0 && w.mag < w.def.mag) { w.mag++; play('shellIn'); } }
@@ -259,7 +266,7 @@ const BX = (w, h, d) => bevelBox(w, h, d);
 const CY = (r, l, s = 14, r2 = r) => new THREE.CylinderGeometry(r, r2, l, s);
 
 // Left-hand placement per model (foregrip)
-export const LEFT_HAND = { tg: [0, -0.06, -0.28], ar: [0, -0.06, -0.26], pr: [0, -0.06, -0.24], sr: [0, -0.06, -0.28], sn: [0, -0.07, -0.3], ns: [0, -0.07, -0.3], fr: [0, -0.07, -0.25], mg: [0, -0.09, -0.3], gl: [0, -0.08, -0.22] };
+export const LEFT_HAND = { smg: [0, -0.07, -0.2], sa: [0, -0.07, -0.02], bow: [0, -0.02, -0.02], tr: [0, -0.07, -0.26], lf: [0, -0.08, -0.32], tg: [0, -0.06, -0.28], ar: [0, -0.06, -0.26], pr: [0, -0.06, -0.24], sr: [0, -0.06, -0.28], sn: [0, -0.07, -0.3], ns: [0, -0.07, -0.3], fr: [0, -0.07, -0.25], mg: [0, -0.09, -0.3], gl: [0, -0.08, -0.22] };
 
 export function buildModel(kind) {
   if (kind === 'tg') {
@@ -327,6 +334,76 @@ export function buildModel(kind) {
     }
     sight.position.set(0, 0.09, 0.07);
     muzzleZ = -0.9;
+  } else if (kind === 'smg') {
+    // compact, boxy, a long stick mag and a neon trim
+    const body = M(0x262a24, { roughness: 0.4 }), neon = M(0x9cff3a, { emissive: 0x4a9a10, emissiveIntensity: 0.9 });
+    part(g, BX(0.05, 0.075, 0.24), body, 0, 0, -0.06);
+    part(g, BX(0.045, 0.06, 0.12), body, 0, -0.005, -0.23);
+    part(g, CY(0.012, 0.1), M(0x111111), 0, 0.01, -0.33, Math.PI / 2);
+    part(g, BX(0.052, 0.01, 0.2), neon, 0, 0.042, -0.07);
+    parts.mag = part(g, BX(0.032, 0.17, 0.04), poly, 0, -0.12, -0.12, 0.1);
+    part(g, BX(0.035, 0.09, 0.045), poly, 0, -0.07, 0.03, -0.3);
+    part(g, BX(0.012, 0.04, 0.16), poly, 0, -0.01, 0.13); // folding stock
+    part(g, BX(0.008, 0.03, 0.012), neon, 0, 0.062, -0.02);
+    sight.position.set(0, 0.062, 0.02);
+    muzzleZ = -0.39;
+  } else if (kind === 'sa') {
+    // a stubby pistol with a pickle-green slide
+    const slide = M(0x3f8a2a, { roughness: 0.35 }), frame = M(0x1c1d20, { roughness: 0.5 });
+    part(g, BX(0.042, 0.048, 0.2), slide, 0, 0.02, -0.08);
+    part(g, BX(0.04, 0.035, 0.18), frame, 0, -0.02, -0.07);
+    part(g, BX(0.036, 0.11, 0.055), frame, 0, -0.08, 0.02, -0.25);
+    parts.mag = part(g, BX(0.03, 0.04, 0.045), poly, 0, -0.14, 0.035, -0.25);
+    for (let i = 0; i < 5; i++) part(g, BX(0.044, 0.006, 0.006), M(0x2a6a1a), 0, 0.03, -0.13 + i * 0.02);
+    part(g, BX(0.008, 0.012, 0.012), M(0xffee66, { emissive: 0xaa8800, emissiveIntensity: 0.8 }), 0, 0.05, -0.16);
+    sight.position.set(0, 0.052, 0.0);
+    muzzleZ = -0.19;
+  } else if (kind === 'bow') {
+    // a recurve bow held upright: two curved limbs, a grip, the string and a nocked arrow
+    const limb = M(0x3a1f2c, { roughness: 0.4 }), pink = M(0xff7aa8, { emissive: 0xaa2a5a, emissiveIntensity: 0.7 });
+    const grip = part(g, BX(0.03, 0.12, 0.04), M(0x2a2a2a, { roughness: 0.8 }), 0, 0, -0.02);
+    for (const s of [1, -1]) {
+      const l = part(g, new THREE.TorusGeometry(0.155, 0.011, 6, 18, Math.PI * 0.42), limb, 0, s * 0.02, -0.13, 0, Math.PI / 2, s > 0 ? Math.PI * 0.5 : Math.PI * 1.08);
+      part(g, BX(0.012, 0.02, 0.012), pink, 0, s * 0.17, -0.08);
+    }
+    // the string is two halves that meet at the nock; the nock moves back as you draw
+    parts.nock = new THREE.Object3D(); parts.nock.position.set(0, 0, 0.06); g.add(parts.nock);
+    const strMat = new THREE.MeshBasicMaterial({ color: 0xfff4ff });
+    parts.strings = [1, -1].map((s) => { const m = part(g, CY(0.0045, 1, 5), strMat, 0, 0, 0); m.userData.s = s; return m; });
+    parts.arrow = part(parts.nock, CY(0.004, 0.42, 6), M(0xd8c8b0, { metalness: 0, roughness: 0.7 }), 0, 0, -0.21, Math.PI / 2);
+    part(parts.arrow, new THREE.ConeGeometry(0.01, 0.035, 6), pink, 0, -0.225, 0, Math.PI);
+    parts.bowTips = [new THREE.Vector3(0, 0.17, -0.08), new THREE.Vector3(0, -0.17, -0.08)];
+    // canted slightly toward the middle of the screen, the way FPS bows are held
+    const cant = new THREE.Group(); cant.rotation.z = -0.2;
+    for (const c of [...g.children]) cant.add(c);
+    g.add(cant); parts.cant = cant;
+    sight.position.set(0, 0.05, 0.03);
+    muzzleZ = -0.45;
+  } else if (kind === 'tr') {
+    // a sleek white trace rifle with a red emitter at the front... and cat ears
+    const shell = M(0xeeeef2, { roughness: 0.3, metalness: 0.2 }), red = M(0x220000, { emissive: 0xff2a3a, emissiveIntensity: 2.4 });
+    part(g, BX(0.06, 0.085, 0.4), shell, 0, 0, -0.1);
+    part(g, CY(0.03, 0.12, 14), shell, 0, 0.005, -0.36, Math.PI / 2);
+    part(g, new THREE.SphereGeometry(0.022, 12, 10), red, 0, 0.005, -0.43);
+    part(g, BX(0.062, 0.012, 0.3), red, 0, -0.03, -0.1);
+    for (const s of [-1, 1]) part(g, new THREE.ConeGeometry(0.018, 0.04, 4), M(0xffb6c8), s * 0.022, 0.06, -0.02);
+    parts.mag = part(g, BX(0.05, 0.05, 0.1), poly, 0, -0.07, -0.02);
+    part(g, BX(0.04, 0.09, 0.05), poly, 0, -0.07, 0.07, -0.3);
+    sight.position.set(0, 0.06, 0.04);
+    muzzleZ = -0.45;
+  } else if (kind === 'lf') {
+    // a long rail with three glowing charge coils
+    const body = M(0x1d1a2a, { roughness: 0.35 }), coil = M(0x2a1050, { emissive: 0xb98bff, emissiveIntensity: 1.6 });
+    part(g, BX(0.065, 0.09, 0.5), body, 0, 0, -0.14);
+    part(g, BX(0.03, 0.03, 0.4), M(0x111111), 0, 0.015, -0.55);
+    parts.coils = [];
+    for (let i = 0; i < 3; i++) parts.coils.push(part(g, new THREE.TorusGeometry(0.04, 0.009, 6, 16), coil, 0, 0.015, -0.42 - i * 0.11));
+    parts.mag = part(g, BX(0.05, 0.08, 0.1), poly, 0, -0.08, -0.05);
+    part(g, BX(0.045, 0.1, 0.05), poly, 0, -0.08, 0.08, -0.3);
+    part(g, BX(0.05, 0.07, 0.18), body, 0, -0.02, 0.2, 0.1);
+    part(g, CY(0.02, 0.18, 10), M(0x222222), 0, 0.08, -0.08, Math.PI / 2);
+    sight.position.set(0, 0.1, 0.02);
+    muzzleZ = -0.76;
   } else if (kind === 'fr') {
     const body = M(0x2a1f3a, { roughness: 0.35 }), glow = M(0xc58bff, { emissive: 0xb070ff, emissiveIntensity: 1 });
     part(g, BX(0.07, 0.09, 0.34), body, 0, 0, -0.08);
