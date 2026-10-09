@@ -44,6 +44,15 @@ function shieldMaterial(color) {
 const shieldBarMats = {};
 const shieldBarMat = (el) => (shieldBarMats[el] ||= new THREE.MeshBasicMaterial({ color: ELEMENTS[el].color, depthTest: false }));
 
+// The light count is part of every shader, so a light leaving the scene mid-fight recompiles everything in view (a
+// visible hitch, and it was landing right on Big Chungus's death, when the Moai statues go). An enemy that dies or
+// despawns leaves its lights behind in the world, switched off, until the arena is torn down.
+function parkLights(root) {
+  const lights = [];
+  root.traverse((o) => { if (o.isLight) lights.push(o); });
+  for (const l of lights) { l.intensity = 0; G.worldGroup.attach(l); }
+}
+
 export class Enemy {
   constructor(o = {}) {
     this.name = o.name || 'Meme';
@@ -198,6 +207,7 @@ export class Enemy {
     if (this.bar) G.fxGroup.remove(this.bar);
     this.beam?.dispose(); this.aimBeam?.dispose?.();
     if (this.shieldMesh) { G.fxGroup.remove(this.shieldMesh); this.shieldMesh.material.dispose(); }
+    parkLights(this.mesh);
     G.entities.remove(this.mesh);
     this.mesh.rotation.x = 0;
     // fall away from whoever landed the killing blow
@@ -215,6 +225,7 @@ export class Enemy {
     this.cleanupMesh();
   }
   cleanupMesh() {
+    parkLights(this.mesh);
     G.entities.remove(this.mesh);
     if (this.shieldMesh) { G.fxGroup.remove(this.shieldMesh); this.shieldMesh.material.dispose(); }
     if (this.bar) G.fxGroup.remove(this.bar);

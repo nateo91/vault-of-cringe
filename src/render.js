@@ -208,6 +208,29 @@ export function compileAll(cam = G.camera) {
   try { r.compile(G.scene, cam); r.compile(G.vmScene, G.vmCamera); } finally { r.setRenderTarget(prev); }
 }
 
+// For the warm-up: make the whole arena drawable for a moment, then put it back (call the returned function).
+// Hidden things get shown: your other guns, the super, shields, beams, signs, your own emote body, and the whole
+// viewmodel scene, which a boss intro hides along with its lights (so every gun compiled for an unlit scene and
+// recompiled on the first shot). Frustum culling goes off so the shadow pass draws every caster as well. Lights keep
+// their own on/off state: the light count is part of every shader, so it has to be the one the fight will have.
+let revealed = false; // (depth of field is on while revealed too: it's otherwise only on during intros and photos)
+export function revealAll() {
+  revealed = true;
+  const shown = [], culled = [];
+  for (const scene of [G.scene, G.vmScene]) {
+    scene.traverse((o) => {
+      if (o.isLight) return;
+      if (!o.visible) { o.visible = true; shown.push(o); }
+      if (o.frustumCulled) { o.frustumCulled = false; culled.push(o); }
+    });
+  }
+  return () => {
+    revealed = false;
+    for (const o of shown) o.visible = false;
+    for (const o of culled) o.frustumCulled = true;
+  };
+}
+
 export function render(dt) {
   hurtFx = damp(hurtFx, 0, 4, dt);
   if (!composer) {
@@ -219,7 +242,7 @@ export function render(dt) {
   }
   if (grade) { grade.uniforms.time.value = performance.now() / 1000; grade.uniforms.hurt.value = hurtFx; updateFlare(dt); }
   if (dof) {
-    dof.enabled = !!G.cine || !!G.photo;
+    dof.enabled = revealed || !!G.cine || !!G.photo;
     if (G.cine) dof.uniforms.focus.value = damp(dof.uniforms.focus.value, G.cine.focus || 6, 8, dt);
     else if (G.photo) dof.uniforms.focus.value = damp(dof.uniforms.focus.value, G.photoFocus || 10, 10, dt);
   }

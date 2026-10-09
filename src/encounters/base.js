@@ -12,6 +12,9 @@ export class Encounter {
   update() {}       // host only: the simulation
   localUpdate() {}  // every machine: mechanics that only affect *your* guardian (brainrot, lava...)
   clientStart() {}  // clients: instead of start()
+  // throwaway copies of what spawns mid-fight (and of anything a co-op client only gets from the host after its
+  // loading screen, like the boss), for the shader warm-up
+  warmActors() { return []; }
   netState() { return 0; }
   applyNet() {}
   cleanup() {}

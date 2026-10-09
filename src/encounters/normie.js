@@ -168,6 +168,7 @@ export class NormieGate extends Encounter {
     addLoreGhost(3, new THREE.Vector3(-47.5, 1.3, 47.5)); // behind the crate in the far corner
     this.spawners = [[-46, 40], [46, 40], [-46, 10], [46, 10], [-46, -30], [46, -30], [-25, -46], [25, -46], [0, 46]].map(([x, z]) => new THREE.Vector3(x, 0, z));
   }
+  warmActors() { return [new SkipAd(this)]; }
   start() {
     this.host = true;
     this.phase = 'plates'; this.spawnT = 2; this.wizardSpawned = false;

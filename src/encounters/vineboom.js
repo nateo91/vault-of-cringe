@@ -39,6 +39,9 @@ class MoaiStatue extends Enemy {
     this.crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.6), new THREE.MeshBasicMaterial({ color: def.color }));
     this.crystal.position.y = 5.4; this.mesh.add(this.crystal);
     this.light = new THREE.PointLight(def.color, 0, 18, 2); this.light.position.y = 4; this.mesh.add(this.light);
+    // the boom's beam into the sky (made now, hidden, so the loading screen compiles it)
+    this.skyBeam = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 1.1, 60, 16, 1, true), new THREE.MeshBasicMaterial({ color: new THREE.Color(def.color).multiplyScalar(2), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false, fog: false }));
+    this.skyBeam.position.y = 35; this.skyBeam.visible = false; this.mesh.add(this.skyBeam);
     this.hb(0, 3.1, 0.3, 1.6, false);
     this.glow = 0;
   }
@@ -57,10 +60,6 @@ class MoaiStatue extends Enemy {
       this.skyBeamK = 1;
     }
     this.prevGlow = this.glow;
-    if (!this.skyBeam) {
-      this.skyBeam = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 1.1, 60, 16, 1, true), new THREE.MeshBasicMaterial({ color: new THREE.Color(this.def.color).multiplyScalar(2), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false, fog: false }));
-      this.skyBeam.position.y = 35; this.mesh.add(this.skyBeam);
-    }
     this.skyBeamK = Math.max(0, (this.skyBeamK || 0) - dt * 1.6);
     this.skyBeam.material.opacity = this.skyBeamK * 0.55; this.skyBeam.visible = this.skyBeamK > 0.01;
     this.skyBeam.scale.set(0.6 + this.skyBeamK * 0.6, 1, 0.6 + this.skyBeamK * 0.6);
@@ -226,6 +225,7 @@ export class VineBoomChamber extends Encounter {
     this.spawners = [];
     for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + Math.PI / 8; this.spawners.push(new THREE.Vector3(Math.cos(a) * 30, 0, Math.sin(a) * 30)); }
   }
+  warmActors() { return [new Chungus(this)]; } // (co-op clients only get him from the host, after loading)
   start() {
     this.boss = applyMods(new Chungus(this));
     this.boss.pos.set(0, 1, 0);

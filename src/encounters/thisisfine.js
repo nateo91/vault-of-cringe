@@ -453,6 +453,7 @@ export class ThisIsFine extends Encounter {
     this.vmExt.visible = false; G.vmCamera.add(this.vmExt);
     this.spawners = [[-18, -18], [18, -18], [-19, 2], [19, 2], [-16, 18], [16, 18]].map(([x, z]) => new THREE.Vector3(x, 0, z));
   }
+  warmActors() { return [new HotTake(), new FineDog(this)]; } // (co-op clients only get the Dog from the host, after loading)
   start() {
     this.boss = applyMods(new FineDog(this));
     this.boss.pos.set(0, 0, -15.2);

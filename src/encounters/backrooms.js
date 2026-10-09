@@ -174,6 +174,7 @@ export class Backrooms extends Encounter {
     this.exitSign = textSprite('EXIT', 0.4, { font: IMPACT, weight: 'normal', color: '#ff3b3b', bg: '#220000', pad: 8 }); this.exitSign.position.set(ec.x, 2.85, ec.z); add(this.exitSign);
     this.got = 0; this.exitOpen = false; this.entity = null; this.flickT = 0;
   }
+  warmActors() { return [new Entity(this)]; }
   start() {
     this.host = true;
     HUD.objective(Backrooms.title, 'You noclipped out of reality.\nFind the Almond Water: 0/4');

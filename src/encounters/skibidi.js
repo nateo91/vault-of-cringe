@@ -167,6 +167,7 @@ export class SkibidiFinale extends Encounter {
     this.phase = 'fight'; this.vibe = null; this.p2 = false; this.aura = 0; this.grassT = 25;
     this.brainrot = 0; this.brainT = 0;
   }
+  warmActors() { return [new MiniToilet(this, 0), new SkibidiBoss(this)]; } // (co-op clients only get him from the host, after loading)
   start() {
     this.boss = applyMods(new SkibidiBoss(this));
     this.boss.pos.set(0, 1, 0);

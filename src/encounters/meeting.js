@@ -247,6 +247,7 @@ export class EmergencyMeeting extends Encounter {
     addLoreGhost(4, new THREE.Vector3(34.5, 5.3, 34.5)); // up on a sniper perch
     this.addSpawns = [[-36, -36], [36, 36], [-36, 36], [36, -36], [0, -37], [0, 37]].map(([x, z]) => new THREE.Vector3(x, 0, z));
   }
+  warmActors() { return [new Crewmate('Red', this)]; } // (co-op clients only get the crew from the host, after loading)
   start() {
     this.round = 0; this.phase = 'intro'; this.crew = [];
     HUD.objective(EmergencyMeeting.title, 'Find the impostor.');

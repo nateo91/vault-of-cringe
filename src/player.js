@@ -1147,6 +1147,14 @@ export class Player {
     lhud('bigText', 'RICKROLLED', 'never gonna let you live this down', 1.6, 'meme');
     play('rick');
   }
+  // your own guardian, seen in third person while you emote. The loading screen builds it ahead of time (hidden) so
+  // its shaders compile there instead of on your first dance.
+  ensureSelfBody() {
+    if (this.selfBody?.userData.cls === this.cls) return;
+    if (this.selfBody) G.avatarGroup.remove(this.selfBody);
+    this.selfBody = buildGuardian(this.cls); this.selfBody.userData.cls = this.cls; this.selfBody.visible = false;
+    G.avatarGroup.add(this.selfBody);
+  }
   updateEmote(dt, cam) {
     if (this.rickT > 0) { this.rickT -= dt; this.emote = this.alive ? EMOTES.dance : 0; if (this.rickT <= 0) this.emote = 0; }
     else {
@@ -1156,7 +1164,7 @@ export class Player {
     if (hit('KeyK')) this.emote = this.emote === EMOTES.L ? 0 : EMOTES.L;
     if (this.emote && (down('KeyW') || down('KeyA') || down('KeyS') || down('KeyD') || down('Space') || Input.left || Input.right || !this.alive || this.superActive || this.carry)) this.emote = 0;
     }
-    if (this.emote && !this.selfBody) { this.selfBody = buildGuardian(this.cls); this.selfBody.userData.cls = this.cls; G.avatarGroup.add(this.selfBody); }
+    if (this.emote) this.ensureSelfBody();
     if (this.selfBody && this.selfBody.userData.cls !== this.cls) { G.avatarGroup.remove(this.selfBody); this.selfBody = null; }
     this.emoteK = damp(this.emoteK || 0, this.emote ? 1 : 0, 6, dt);
     if (this.selfBody) {
